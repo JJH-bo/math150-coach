@@ -182,6 +182,10 @@ http://127.0.0.1:8000/trainer/
 
 The page calls only `/api/challenge/v1/*`. That API is a thin wrapper around `ChallengeEngine`; scoring still comes from `CompositeScoringEngine`, diagnosis still comes from `DiagnosisEngine`, and movement still comes from the existing challenge state transition rules.
 
+## Phase U1 Ultimate ODE Proof Slice
+
+Phase U1 keeps the runtime content on the current `ode_network_mvp` slice while improving the ultimate architecture proof: runtime graph quality projection, cosmic atlas visual grammar, quality HUD, and diagnostic verdict display. It does not add new chapter content, publish authoring drafts, add a database, connect a real LLM, or change scoring/diagnosis/movement ownership.
+
 ## Run the Minimal App
 
 ```bash
