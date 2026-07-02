@@ -85,6 +85,19 @@ def test_frontend_renders_authoring_readiness_projection() -> None:
     assert ".quality-gate-list" in styles
 
 
+def test_frontend_renders_draft_preview_graph() -> None:
+    app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
+
+    assert "renderDraftPreviewGraph" in app_js
+    assert "draft-preview-graph" in app_js
+    assert "draft-preview-node" in app_js
+    assert "draft-preview-edge" in app_js
+    assert ".draft-preview-graph" in styles
+    assert ".draft-preview-node" in styles
+    assert ".draft-preview-edge" in styles
+
+
 def _function_body(source: str, name: str) -> str:
     match = re.search(rf"function {name}\([^)]*\) \{{", source)
     assert match is not None

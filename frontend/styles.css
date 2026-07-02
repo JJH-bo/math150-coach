@@ -2732,6 +2732,7 @@ body::after {
 .import-sheet {
   position: relative;
   width: min(1120px, 100%);
+  min-width: 0;
   max-height: min(88vh, 860px);
   display: grid;
   gap: 12px;
@@ -2748,6 +2749,10 @@ body::after {
   transition: transform 260ms var(--ios-ease);
 }
 
+.import-sheet > * {
+  min-width: 0;
+}
+
 .import-modal.is-open .import-sheet {
   transform: translateY(0) scale(1);
 }
@@ -2762,6 +2767,8 @@ body::after {
 .import-report {
   display: grid;
   gap: 12px;
+  width: 100%;
+  min-width: 0;
   min-height: 88px;
   border: 1px solid rgba(210, 231, 255, 0.13);
   background: rgba(255, 255, 255, 0.04);
@@ -2873,6 +2880,104 @@ body::after {
   border-color: rgba(210, 231, 255, 0.12);
   background: rgba(255, 255, 255, 0.025);
   opacity: 0.84;
+}
+
+.draft-preview-graph {
+  position: relative;
+  width: min(100%, calc(100vw - 96px));
+  min-width: 0;
+  max-width: 100%;
+  height: clamp(240px, 44vw, 360px);
+  overflow: hidden;
+  border: 1px solid rgba(127, 241, 231, 0.18);
+  background:
+    radial-gradient(circle at 18% 24%, rgba(127, 241, 231, 0.08), transparent 28%),
+    radial-gradient(circle at 82% 72%, rgba(255, 210, 122, 0.07), transparent 30%),
+    rgba(4, 8, 16, 0.54);
+  border-radius: 8px;
+}
+
+.draft-preview-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.draft-preview-edge {
+  stroke: rgba(210, 231, 255, 0.28);
+  stroke-width: 0.42;
+  vector-effect: non-scaling-stroke;
+}
+
+.draft-preview-edge.repairs,
+.draft-preview-edge.transfers_to {
+  stroke: rgba(255, 124, 134, 0.42);
+}
+
+.draft-preview-edge.contrasts_with,
+.draft-preview-edge.commonly_confused_with {
+  stroke: rgba(255, 210, 122, 0.42);
+}
+
+.draft-preview-edge.boss_checks {
+  stroke: rgba(185, 156, 255, 0.46);
+}
+
+.draft-preview-node {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1%);
+  display: grid;
+  gap: 2px;
+  width: clamp(86px, 18%, 150px);
+  min-height: 46px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(210, 231, 255, 0.16);
+  background: rgba(7, 12, 22, 0.86);
+  border-radius: 8px;
+  padding: 7px 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+  text-align: left;
+}
+
+.draft-preview-node strong,
+.draft-preview-node em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-preview-node strong {
+  font-size: 11px;
+}
+
+.draft-preview-node em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.draft-preview-node.macro {
+  border-color: rgba(127, 241, 231, 0.42);
+  background: rgba(127, 241, 231, 0.1);
+}
+
+.draft-preview-node.micro {
+  border-color: rgba(118, 199, 255, 0.34);
+  background: rgba(118, 199, 255, 0.09);
+}
+
+.draft-preview-node.logic {
+  border-color: rgba(255, 210, 122, 0.34);
+  background: rgba(255, 210, 122, 0.08);
+}
+
+.draft-preview-node.boss {
+  border-color: rgba(185, 156, 255, 0.44);
+  background: rgba(185, 156, 255, 0.1);
 }
 
 .issue-list ul {

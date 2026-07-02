@@ -472,6 +472,7 @@ async function validateChapterDraft() {
     });
     renderImportReport(payload);
     injectAuthoringReadiness(payload.readiness);
+    injectDraftPreviewGraph(payload.preview);
   } finally {
     validateDraftBtn.disabled = false;
   }
@@ -533,6 +534,111 @@ function renderAuthoringReadiness(readiness) {
       </div>
     </div>
   `;
+}
+
+function injectDraftPreviewGraph(preview) {
+  const graphHtml = renderDraftPreviewGraph(preview);
+  if (!graphHtml) return;
+  const anchor = importReport.querySelector(".authoring-readiness")
+    || importReport.querySelector(".draft-counts");
+  anchor?.insertAdjacentHTML("afterend", graphHtml);
+}
+
+function renderDraftPreviewGraph(preview) {
+  const nodes = (preview?.nodes || []).filter((node) => node.id).slice(0, 36);
+  if (!nodes.length) return "";
+  const layout = draftPreviewLayout(nodes);
+  const edges = (preview?.edges || [])
+    .filter((edge) => layout[edge.source_id] && layout[edge.target_id])
+    .slice(0, 64);
+  return `
+    <div class="draft-preview-graph" aria-label="Draft graph preview">
+      <svg class="draft-preview-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        ${edges.map((edge) => {
+          const source = layout[edge.source_id];
+          const target = layout[edge.target_id];
+          return `
+            <line
+              class="draft-preview-edge ${cssToken(edge.edge_type || "link")}"
+              x1="${source.x}"
+              y1="${source.y}"
+              x2="${target.x}"
+              y2="${target.y}"
+            ></line>
+          `;
+        }).join("")}
+      </svg>
+      ${nodes.map((node) => {
+        const point = layout[node.id];
+        return `
+          <span
+            class="draft-preview-node ${draftPreviewNodeClass(node)}"
+            style="--x: ${point.x}; --y: ${point.y};"
+            title="${escapeHtml(node.title || node.id)}"
+          >
+            <strong>${escapeHtml(node.title || node.id)}</strong>
+            <em>${escapeHtml(draftPreviewNodeLabel(node))}</em>
+          </span>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function draftPreviewLayout(nodes) {
+  const layers = {
+    macro_node: [],
+    micro_node: [],
+    logic_node: [],
+    macro_challenge: [],
+  };
+  nodes.forEach((node) => {
+    layers[draftPreviewLayer(node)].push(node);
+  });
+  const yByLayer = {
+    macro_node: 15,
+    micro_node: 38,
+    logic_node: 63,
+    macro_challenge: 85,
+  };
+  return Object.entries(layers).reduce((layout, [layer, layerNodes]) => {
+    const count = layerNodes.length;
+    layerNodes.forEach((node, index) => {
+      const x = count <= 1 ? 50 : 18 + (64 * index) / (count - 1);
+      const stagger = count > 3 ? (index % 2 === 0 ? -3 : 3) : 0;
+      layout[node.id] = {
+        x: Number(x.toFixed(2)),
+        y: yByLayer[layer] + stagger,
+      };
+    });
+    return layout;
+  }, {});
+}
+
+function draftPreviewLayer(node) {
+  if (node.node_kind === "macro_node") return "macro_node";
+  if (node.node_kind === "micro_node") return "micro_node";
+  if (node.node_kind === "macro_challenge") return "macro_challenge";
+  return "logic_node";
+}
+
+function draftPreviewNodeClass(node) {
+  const layer = draftPreviewLayer(node);
+  if (layer === "macro_challenge") return `boss ${cssToken(node.node_kind)}`;
+  if (layer === "macro_node") return `macro ${cssToken(node.node_kind)}`;
+  if (layer === "micro_node") return `micro ${cssToken(node.node_kind)}`;
+  return `logic ${cssToken(node.node_kind)}`;
+}
+
+function draftPreviewNodeLabel(node) {
+  if (node.node_kind === "macro_node") return "Macro";
+  if (node.node_kind === "micro_node") return "Micro";
+  if (node.node_kind === "macro_challenge") return "Boss";
+  return node.node_kind || "Logic";
+}
+
+function cssToken(value) {
+  return String(value || "unknown").toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
 }
 
 function renderIssueList(title, issues) {
