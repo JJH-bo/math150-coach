@@ -717,6 +717,16 @@ h3 {
   opacity: 0.14;
 }
 
+.edge.light-language {
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px rgba(118, 199, 255, 0.2));
+}
+
+.edge.repair-beam {
+  stroke: rgba(255, 124, 134, 0.68);
+  filter: drop-shadow(0 0 10px rgba(255, 124, 134, 0.28));
+}
+
 .edge.requires {
   stroke: rgba(226, 240, 255, 0.42);
 }
@@ -2394,6 +2404,25 @@ body::after {
   pointer-events: auto;
 }
 
+.atlas-layer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.48) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(127, 241, 231, 0.28) 0 1px, transparent 1.4px);
+  background-size: 84px 84px, 137px 137px;
+  opacity: 0.18;
+}
+
+.atlas-copy,
+.atlas-galaxy {
+  position: relative;
+  z-index: 1;
+}
+
 .map-world.atlas-mode .atlas-layer {
   display: block;
 }
@@ -2438,6 +2467,11 @@ body::after {
   overflow: hidden;
 }
 
+.cosmic-subject-galaxy {
+  border: 1px solid rgba(127, 241, 231, 0.22);
+  box-shadow: inset 0 0 42px rgba(127, 241, 231, 0.08), 0 0 58px rgba(118, 199, 255, 0.12);
+}
+
 .atlas-galaxy::before {
   content: "";
   position: absolute;
@@ -2470,6 +2504,38 @@ body::after {
     0 0 42px rgba(118, 199, 255, 0.13);
 }
 
+.atlas-region.chapter-nebula {
+  --region-tone-soft: rgba(127, 241, 231, 0.16);
+  --region-ring: rgba(127, 241, 231, 0.16);
+  --region-glow: rgba(118, 199, 255, 0.13);
+  border-radius: 42% 58% 52% 48%;
+  background:
+    radial-gradient(circle at 50% 42%, var(--region-tone-soft), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.026)),
+    rgba(6, 12, 22, 0.84);
+  box-shadow:
+    0 20px 54px rgba(0, 0, 0, 0.36),
+    0 0 42px var(--region-glow);
+}
+
+.atlas-region.tone-cyan {
+  --region-tone-soft: rgba(127, 241, 231, 0.18);
+  --region-ring: rgba(127, 241, 231, 0.18);
+  --region-glow: rgba(127, 241, 231, 0.16);
+}
+
+.atlas-region.tone-gold {
+  --region-tone-soft: rgba(255, 210, 122, 0.17);
+  --region-ring: rgba(255, 210, 122, 0.18);
+  --region-glow: rgba(255, 210, 122, 0.15);
+}
+
+.atlas-region.tone-green {
+  --region-tone-soft: rgba(104, 224, 180, 0.17);
+  --region-ring: rgba(104, 224, 180, 0.18);
+  --region-glow: rgba(104, 224, 180, 0.15);
+}
+
 .atlas-region-core {
   position: absolute;
   inset: -18px;
@@ -2483,10 +2549,18 @@ body::after {
 .atlas-region-ring {
   position: absolute;
   inset: -22px;
-  border: 1px solid rgba(127, 241, 231, 0.16);
+  border: 1px solid var(--region-ring, rgba(127, 241, 231, 0.16));
   border-radius: 50%;
   transform: rotate(-16deg) scaleX(1.35);
   pointer-events: none;
+}
+
+.atlas-region.density-dense .atlas-region-ring {
+  opacity: 0.82;
+}
+
+.atlas-region.density-light .atlas-region-ring {
+  opacity: 0.38;
 }
 
 .atlas-region-title,

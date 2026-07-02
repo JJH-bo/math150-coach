@@ -51,6 +51,18 @@ def test_frontend_fetches_and_renders_runtime_quality_summary() -> None:
     assert ".quality-summary" in styles
 
 
+def test_frontend_uses_cosmic_visual_language_hooks() -> None:
+    app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
+
+    assert "visual_role" in app_js
+    assert "visualClassForRegion" in app_js
+    assert "cosmic-subject-galaxy" in styles
+    assert "chapter-nebula" in styles
+    assert "light-language" in styles
+    assert "repair-beam" in styles
+
+
 def _function_body(source: str, name: str) -> str:
     match = re.search(rf"function {name}\([^)]*\) \{{", source)
     assert match is not None

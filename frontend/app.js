@@ -203,7 +203,7 @@ function renderAtlas(payload) {
       <h2>${escapeHtml(payload.title || "课程星图")}</h2>
       <p>只加载章节摘要。点击星系后，再进入该章节的详细知识网。</p>
     </div>
-    <div class="atlas-galaxy">
+    <div class="atlas-galaxy cosmic-subject-galaxy">
       ${regions.map((region) => renderAtlasRegion(region)).join("")}
     </div>
   `;
@@ -245,9 +245,10 @@ function renderAtlasRegion(region) {
   return `
     <button
       type="button"
-      class="atlas-region ${region.id === currentChapterId ? "selected" : ""}"
+      class="atlas-region chapter-nebula ${visualClassForRegion(region)} ${region.id === currentChapterId ? "selected" : ""}"
       style="left:${x}%;top:${y}%"
       data-chapter-id="${escapeHtml(region.id)}"
+      data-celestial-role="${escapeHtml(region.visual_role?.celestial_role || "chapter_nebula")}"
       onclick="startAtlasChapter('${escapeHtml(region.id)}')"
     >
       <span class="atlas-region-core"></span>
@@ -261,6 +262,13 @@ function renderAtlasRegion(region) {
 function atlasRegionMeta(region) {
   const summary = region.summary || {};
   return `${summary.macro_count || 0} 大节点 · ${summary.micro_count || 0} 小节点 · ${summary.boss_count || 0} Boss`;
+}
+
+function visualClassForRegion(region) {
+  const role = region.visual_role || {};
+  const tone = role.primary_tone || "cyan";
+  const density = role.density || "medium";
+  return `tone-${tone} density-${density}`;
 }
 
 function startAtlasChapter(chapterId) {
@@ -891,7 +899,7 @@ function renderEdges(layout, challenge) {
       const target = layout.nodes[edge.target_id];
       if (!source || !target) return;
       const active = isCurrentNode(challenge, edge.source_id) || isCurrentNode(challenge, edge.target_id) || selectedNodeId === edge.source_id || selectedNodeId === edge.target_id;
-      lines.push(svgOrbitCurve(source, target, `${edge.edge_type} secondary-network${active ? " active" : ""}`));
+      lines.push(svgOrbitCurve(source, target, `${edge.edge_type} light-language secondary-network${active ? " active" : ""}`));
     });
   const overlay = challenge.logic_overlay || {};
   if (overlay.active) {
@@ -909,7 +917,8 @@ function renderEdges(layout, challenge) {
         const target = layout.nodes[edge.target_id];
         if (!source || !target) return;
         const active = selectedNodeId === edge.source_id || selectedNodeId === edge.target_id || logicEdgeTouchesCurrent(challenge, edge);
-        lines.push(svgOrbitCurve(source, target, `logic_edge ${edge.edge_type}${active ? " active" : ""}`));
+        const repairClass = edge.edge_type === "repairs" ? " repair-beam" : "";
+        lines.push(svgOrbitCurve(source, target, `logic_edge light-language ${edge.edge_type}${repairClass}${active ? " active" : ""}`));
       });
   }
 
