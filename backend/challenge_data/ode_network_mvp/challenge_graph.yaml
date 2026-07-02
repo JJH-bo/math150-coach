@@ -1,0 +1,588 @@
+chapter_id: ode_network_mvp
+title: 微分方程一阶知识网 MVP
+attempt_limits:
+  micro_node: 5
+  macro_challenge: 3
+macro_nodes:
+  - id: ode_separable
+    title: 可分离变量方程
+    knowledge_node_id: ode_separable
+  - id: ode_first_order_linear
+    title: 一阶线性微分方程
+    knowledge_node_id: ode_first_order_linear
+  - id: ode_homogeneous_first_order
+    title: 一阶齐次方程
+    knowledge_node_id: ode_homogeneous_first_order
+micro_nodes:
+  - id: ode_separable.concept
+    macro_node_id: ode_separable
+    type: concept
+    title: 可分离变量方程概念
+    description: 判断方程能否整理为只含 x 的因子乘只含 y 的因子。
+  - id: ode_separable.trigger
+    macro_node_id: ode_separable
+    type: trigger
+    title: 可分离变量题眼识别
+    description: 从乘积、分式或微分形式中识别可分离入口。
+  - id: ode_separable.method
+    macro_node_id: ode_separable
+    type: method
+    title: 分离变量方法选择
+    description: 选择分离变量法，并说明为什么可以这样做。
+  - id: ode_separable.transformation
+    macro_node_id: ode_separable
+    type: transformation
+    title: 化为变量分离形式
+    description: 把含 y 的项放到 dy 一侧，含 x 的项放到 dx 一侧。
+  - id: ode_separable.calculation
+    macro_node_id: ode_separable
+    type: calculation
+    title: 两边积分与常数处理
+    description: 完成积分、化简与任意常数处理。
+  - id: ode_separable.expression
+    macro_node_id: ode_separable
+    type: expression
+    title: 通解与特解表达
+    description: 规范写出通解或特解。
+  - id: ode_first_order_linear.concept
+    macro_node_id: ode_first_order_linear
+    type: concept
+    title: 一阶线性方程概念
+    description: 理解 y' + P(x)y = Q(x) 的标准结构。
+  - id: ode_first_order_linear.trigger
+    macro_node_id: ode_first_order_linear
+    type: trigger
+    title: 一阶线性题眼识别
+    description: 从方程形式中识别一阶线性入口。
+  - id: ode_first_order_linear.method
+    macro_node_id: ode_first_order_linear
+    type: method
+    title: 积分因子方法
+    description: 选择积分因子法，并写出 μ(x)=e^{∫P(x)dx}。
+  - id: ode_first_order_linear.transformation
+    macro_node_id: ode_first_order_linear
+    type: transformation
+    title: 化为标准形
+    description: 把方程整理为一阶线性标准形。
+  - id: ode_first_order_linear.calculation
+    macro_node_id: ode_first_order_linear
+    type: calculation
+    title: 积分因子计算执行
+    description: 计算积分因子、乘入方程并积分。
+  - id: ode_first_order_linear.expression
+    macro_node_id: ode_first_order_linear
+    type: expression
+    title: 一阶线性通解表达
+    description: 规范写出通解，或由初值确定特解。
+  - id: ode_homogeneous_first_order.concept
+    macro_node_id: ode_homogeneous_first_order
+    type: concept
+    title: 一阶齐次方程概念
+    description: 理解 dy/dx = φ(y/x) 或同次比值结构。
+  - id: ode_homogeneous_first_order.trigger
+    macro_node_id: ode_homogeneous_first_order
+    type: trigger
+    title: 一阶齐次题眼识别
+    description: 从 y/x、x/y 或同次比值结构中识别齐次入口。
+  - id: ode_homogeneous_first_order.method
+    macro_node_id: ode_homogeneous_first_order
+    type: method
+    title: 齐次换元方法
+    description: 选择 y=vx 或 x=vy，并说明依据。
+  - id: ode_homogeneous_first_order.transformation
+    macro_node_id: ode_homogeneous_first_order
+    type: transformation
+    title: y=vx 换元转化
+    description: 完成 y=vx 后的导数替换与方程整理。
+  - id: ode_homogeneous_first_order.calculation
+    macro_node_id: ode_homogeneous_first_order
+    type: calculation
+    title: 换元后分离变量计算
+    description: 解出 v 与 x 的关系。
+  - id: ode_homogeneous_first_order.expression
+    macro_node_id: ode_homogeneous_first_order
+    type: expression
+    title: 回代后的通解表达
+    description: 把 v 回代为 y/x，并规范写出结果。
+macro_challenges:
+  - id: ode_separable.macro_challenge
+    macro_node_id: ode_separable
+    title: 可分离变量方程综合验收
+    covers_micro_nodes:
+      - ode_separable.concept
+      - ode_separable.trigger
+      - ode_separable.method
+      - ode_separable.transformation
+      - ode_separable.calculation
+      - ode_separable.expression
+  - id: ode_first_order_linear.macro_challenge
+    macro_node_id: ode_first_order_linear
+    title: 一阶线性方程综合验收
+    covers_micro_nodes:
+      - ode_first_order_linear.concept
+      - ode_first_order_linear.trigger
+      - ode_first_order_linear.method
+      - ode_first_order_linear.transformation
+      - ode_first_order_linear.calculation
+      - ode_first_order_linear.expression
+  - id: ode_homogeneous_first_order.macro_challenge
+    macro_node_id: ode_homogeneous_first_order
+    title: 一阶齐次方程综合验收
+    covers_micro_nodes:
+      - ode_homogeneous_first_order.concept
+      - ode_homogeneous_first_order.trigger
+      - ode_homogeneous_first_order.method
+      - ode_homogeneous_first_order.transformation
+      - ode_homogeneous_first_order.calculation
+      - ode_homogeneous_first_order.expression
+atom_nodes:
+  - id: ode.atom.separable_product_form
+    micro_node_id: ode_separable.concept
+    title: 乘积结构原子判断
+    description: 能说清 dy/dx=f(x)g(y) 中 f 只含 x、g 只含 y。
+    dimensions: [concept]
+    repair_cues:
+      - 先把右端拆成只含 x 的部分和只含 y 的部分。
+      - 不要只写“可分离”，要说明为什么可分离。
+  - id: ode.atom.separable_trigger_split
+    micro_node_id: ode_separable.trigger
+    title: 分离入口识别
+    description: 看到乘积、商式或微分形式时，能判断是否能把 x/y 分到两侧。
+    dimensions: [trigger]
+    repair_cues:
+      - 标出哪些项只含 x，哪些项只含 y。
+      - 先判断能不能分离，再决定是否积分。
+  - id: ode.atom.separable_method_reason
+    micro_node_id: ode_separable.method
+    title: 分离变量法依据
+    description: 能说明为什么本题选择分离变量法，而不是一阶线性或齐次换元。
+    dimensions: [method]
+    repair_cues:
+      - 写出“因为可以整理为 g(y)dy=f(x)dx”。
+      - 对比一阶线性标准形，避免只凭熟悉感选方法。
+  - id: ode.atom.separable_side_move
+    micro_node_id: ode_separable.transformation
+    title: 两侧变量安放
+    description: 能把含 y 的表达式放到 dy 一侧，含 x 的表达式放到 dx 一侧。
+    dimensions: [transformation]
+    repair_cues:
+      - 每一步都检查变量是否被放到正确一侧。
+      - 除以含 y 的式子时说明非零条件或吸收特殊解。
+  - id: ode.atom.separable_integral_constant
+    micro_node_id: ode_separable.calculation
+    title: 积分与常数处理
+    description: 能完成两边积分，并正确处理任意常数 C。
+    dimensions: [calculation, final_answer]
+    repair_cues:
+      - 两边积分后只保留一个任意常数。
+      - 化简时注意对数、指数和常数吸收。
+  - id: ode.atom.separable_solution_format
+    micro_node_id: ode_separable.expression
+    title: 通解表达规范
+    description: 能把隐式解、显式解或特解写成题目要求的最终形式。
+    dimensions: [expression, final_answer]
+    repair_cues:
+      - 通解要带任意常数，特解要代入条件。
+      - 最后一句写清“因此通解为……”。
+  - id: ode.atom.linear_standard_form
+    micro_node_id: ode_first_order_linear.concept
+    title: 一阶线性标准形
+    description: 能识别 y' + P(x)y = Q(x) 的结构。
+    dimensions: [concept]
+    repair_cues:
+      - 先把 y' 的系数化为 1。
+      - P(x) 是 y 的系数，Q(x) 是右端只含 x 的项。
+  - id: ode.atom.linear_trigger_coefficients
+    micro_node_id: ode_first_order_linear.trigger
+    title: 线性题眼系数识别
+    description: 能抓住 y 与 y' 都一次出现、系数只依赖 x。
+    dimensions: [trigger]
+    repair_cues:
+      - 检查 y 是否只一次出现。
+      - 检查系数是否只含自变量 x。
+  - id: ode.atom.integrating_factor_formula
+    micro_node_id: ode_first_order_linear.method
+    title: 积分因子公式
+    description: 能写出 μ(x)=e^{∫P(x)dx} 并说明用途。
+    dimensions: [method]
+    repair_cues:
+      - 先找到 P(x)，再写积分因子。
+      - 说明乘入后左边成为 (μy)'。
+  - id: ode.atom.linear_normalize_yprime
+    micro_node_id: ode_first_order_linear.transformation
+    title: y' 系数归一
+    description: 能把方程整理到 y' + P(x)y = Q(x) 后再使用积分因子。
+    dimensions: [transformation]
+    repair_cues:
+      - 不要在未标准化时直接读 P(x)。
+      - 归一化后重新检查 P(x)、Q(x)。
+  - id: ode.atom.linear_integrating_factor_compute
+    micro_node_id: ode_first_order_linear.calculation
+    title: 积分因子计算链
+    description: 能计算积分因子、乘入方程并完成积分。
+    dimensions: [calculation, final_answer]
+    repair_cues:
+      - 乘入后检查左端是否真的是乘积导数。
+      - 积分后再除以积分因子。
+  - id: ode.atom.linear_initial_or_general
+    micro_node_id: ode_first_order_linear.expression
+    title: 通解/特解收束
+    description: 能根据题目要求写通解，或用初值求出特解。
+    dimensions: [expression, final_answer]
+    repair_cues:
+      - 有初值时不能停在带 C 的通解。
+      - 没有初值时不要丢任意常数。
+  - id: ode.atom.homogeneous_ratio_form
+    micro_node_id: ode_homogeneous_first_order.concept
+    title: y/x 比值结构
+    description: 能理解 dy/dx=φ(y/x) 或 x/y 比值结构。
+    dimensions: [concept]
+    repair_cues:
+      - 判断表达式是否只依赖 y/x 或 x/y。
+      - 不要把“齐次线性”和“一阶齐次”混为一谈。
+  - id: ode.atom.homogeneous_trigger_ratio
+    micro_node_id: ode_homogeneous_first_order.trigger
+    title: 齐次题眼比值识别
+    description: 能从同次项或比值式中看出齐次入口。
+    dimensions: [trigger]
+    repair_cues:
+      - 把分子分母同除以 x 或 y，看是否只剩比值。
+      - 对比可分离和一阶线性，不要只看符号相似。
+  - id: ode.atom.homogeneous_substitution_choice
+    micro_node_id: ode_homogeneous_first_order.method
+    title: y=vx 换元依据
+    description: 能选择 y=vx 或 x=vy，并说明选择依据。
+    dimensions: [method]
+    repair_cues:
+      - 若出现 y/x，优先令 y=vx。
+      - 写出 dy/dx=v+x dv/dx。
+  - id: ode.atom.homogeneous_derivative_substitution
+    micro_node_id: ode_homogeneous_first_order.transformation
+    title: 导数替换转化
+    description: 能完成 y=vx 后 dy/dx 的替换与整理。
+    dimensions: [transformation]
+    repair_cues:
+      - 不要只替 y，必须同时替 dy/dx。
+      - 整理后应回到可分离变量结构。
+  - id: ode.atom.homogeneous_solve_v
+    micro_node_id: ode_homogeneous_first_order.calculation
+    title: v 方程求解
+    description: 能解出 v 与 x 的关系并处理常数。
+    dimensions: [calculation, final_answer]
+    repair_cues:
+      - 换元后的方程通常再分离变量。
+      - 解出 v 后还要回代。
+  - id: ode.atom.homogeneous_back_substitute
+    micro_node_id: ode_homogeneous_first_order.expression
+    title: 回代表达
+    description: 能把 v 回代成 y/x，并规范写出最终解。
+    dimensions: [expression, final_answer]
+    repair_cues:
+      - 最后不能停在 v 的表达式。
+      - 回代后检查是否符合原变量要求。
+compare_nodes:
+  - id: ode.compare.separable_vs_linear
+    title: 可分离 vs 一阶线性
+    node_ids:
+      - ode_separable.trigger
+      - ode_first_order_linear.trigger
+    description: 区分“可以把变量分到两侧”和“y' + P(x)y = Q(x)”两种入口。
+    focus_dimensions: [trigger, method]
+    confusion_cues:
+      - 可分离先看能否整理成 g(y)dy=f(x)dx。
+      - 一阶线性先看 y 与 y' 是否线性出现。
+  - id: ode.compare.linear_vs_homogeneous
+    title: 一阶线性 vs 一阶齐次
+    node_ids:
+      - ode_first_order_linear.trigger
+      - ode_homogeneous_first_order.trigger
+    description: 区分线性标准形与 y/x 比值结构。
+    focus_dimensions: [trigger, method]
+    confusion_cues:
+      - 一阶线性看 P(x)、Q(x)。
+      - 一阶齐次看 y/x 或同次比值。
+  - id: ode.compare.separable_vs_homogeneous
+    title: 可分离 vs 一阶齐次
+    node_ids:
+      - ode_separable.method
+      - ode_homogeneous_first_order.method
+    description: 区分直接分离变量和先换元再分离变量。
+    focus_dimensions: [method, transformation]
+    confusion_cues:
+      - 可分离可以直接把 x/y 分到两侧。
+      - 一阶齐次通常先 y=vx，再转成可分离。
+guide_nodes:
+  - id: ode.guide.first_order_foundation
+    kind: foundation_anchor
+    title: 一阶方程基础锚点
+    description: 先判断入口结构，再决定方法；这是所有一阶微分方程分支的底层顺序。
+    related_node_ids:
+      - ode_separable
+      - ode_first_order_linear
+      - ode_homogeneous_first_order
+    focus_dimensions: [concept, trigger]
+    map_hint: 先看结构，不先算。
+  - id: ode.guide.separable_to_linear_bridge
+    kind: bridge
+    title: 可分离到一阶线性的桥
+    description: 两类题都可能先整理形式，但一个看变量能否分两侧，一个看线性标准形。
+    related_node_ids:
+      - ode_separable.trigger
+      - ode_first_order_linear.trigger
+      - ode.compare.separable_vs_linear
+    focus_dimensions: [trigger, method]
+    map_hint: 如果入口摇摆，先做对比，不急着推进。
+  - id: ode.guide.linear_to_homogeneous_bridge
+    kind: bridge
+    title: 一阶线性到一阶齐次的桥
+    description: 区分 y'+P(x)y=Q(x) 与只依赖 y/x 或 x/y 的比值结构。
+    related_node_ids:
+      - ode_first_order_linear.trigger
+      - ode_homogeneous_first_order.trigger
+      - ode.compare.linear_vs_homogeneous
+    focus_dimensions: [trigger, method]
+    map_hint: 相邻入口相似时，用结构证据而不是题感。
+  - id: ode.guide.boss_readiness_gate
+    kind: boss_gate
+    title: Boss 验收门槛
+    description: Boss 不是新知识点，而是检查概念、题眼、方法、转化、计算、表达是否能串起来。
+    related_node_ids:
+      - ode_separable.macro_challenge
+      - ode_first_order_linear.macro_challenge
+      - ode_homogeneous_first_order.macro_challenge
+    focus_dimensions: [trigger, method, transformation, calculation, expression]
+    map_hint: 小节点全亮只代表可挑战，Boss 通过才代表大节点点亮。
+  - id: ode.guide.constant_condition_warning
+    kind: warning_beacon
+    title: 常数与初值警示
+    description: 通解漏 C、初值题停在通解，是微分方程里非常高频的伪通过风险。
+    related_node_ids:
+      - ode_separable.calculation
+      - ode_separable.expression
+      - ode_first_order_linear.expression
+      - ode_homogeneous_first_order.expression
+    focus_dimensions: [calculation, final_answer, expression]
+    map_hint: 最后一行检查 C、初值、定义域。
+typed_edges:
+  - id: edge.guide.foundation_to_separable
+    edge_type: support
+    source_id: ode.guide.first_order_foundation
+    target_id: ode_separable
+    label: 基础判断支撑
+  - id: edge.guide.foundation_to_linear
+    edge_type: support
+    source_id: ode.guide.first_order_foundation
+    target_id: ode_first_order_linear
+    label: 基础判断支撑
+  - id: edge.guide.foundation_to_homogeneous
+    edge_type: support
+    source_id: ode.guide.first_order_foundation
+    target_id: ode_homogeneous_first_order
+    label: 基础判断支撑
+  - id: edge.guide.separable_linear_bridge
+    edge_type: bridge
+    source_id: ode.guide.separable_to_linear_bridge
+    target_id: ode.compare.separable_vs_linear
+    label: 相邻入口桥接
+  - id: edge.guide.linear_homogeneous_bridge
+    edge_type: bridge
+    source_id: ode.guide.linear_to_homogeneous_bridge
+    target_id: ode.compare.linear_vs_homogeneous
+    label: 相邻入口桥接
+  - id: edge.guide.boss_gate
+    edge_type: gateway
+    source_id: ode.guide.boss_readiness_gate
+    target_id: ode_separable.macro_challenge
+    label: Boss 前验收门槛
+  - id: edge.guide.constant_warning
+    edge_type: repair
+    source_id: ode.guide.constant_condition_warning
+    target_id: ode_separable.expression
+    label: 常数与初值修复提醒
+  - id: edge.atom.separable_product_form
+    edge_type: prerequisite
+    source_id: ode.atom.separable_product_form
+    target_id: ode_separable.concept
+    label: 原子前置
+  - id: edge.atom.separable_trigger_split
+    edge_type: prerequisite
+    source_id: ode.atom.separable_trigger_split
+    target_id: ode_separable.trigger
+    label: 原子前置
+  - id: edge.atom.separable_method_reason
+    edge_type: prerequisite
+    source_id: ode.atom.separable_method_reason
+    target_id: ode_separable.method
+    label: 原子前置
+  - id: edge.atom.separable_side_move
+    edge_type: prerequisite
+    source_id: ode.atom.separable_side_move
+    target_id: ode_separable.transformation
+    label: 原子前置
+  - id: edge.atom.separable_integral_constant
+    edge_type: prerequisite
+    source_id: ode.atom.separable_integral_constant
+    target_id: ode_separable.calculation
+    label: 原子前置
+  - id: edge.atom.separable_solution_format
+    edge_type: prerequisite
+    source_id: ode.atom.separable_solution_format
+    target_id: ode_separable.expression
+    label: 原子前置
+  - id: edge.atom.linear_standard_form
+    edge_type: prerequisite
+    source_id: ode.atom.linear_standard_form
+    target_id: ode_first_order_linear.concept
+    label: 原子前置
+  - id: edge.atom.linear_trigger_coefficients
+    edge_type: prerequisite
+    source_id: ode.atom.linear_trigger_coefficients
+    target_id: ode_first_order_linear.trigger
+    label: 原子前置
+  - id: edge.atom.integrating_factor_formula
+    edge_type: prerequisite
+    source_id: ode.atom.integrating_factor_formula
+    target_id: ode_first_order_linear.method
+    label: 原子前置
+  - id: edge.atom.linear_normalize_yprime
+    edge_type: prerequisite
+    source_id: ode.atom.linear_normalize_yprime
+    target_id: ode_first_order_linear.transformation
+    label: 原子前置
+  - id: edge.atom.linear_integrating_factor_compute
+    edge_type: prerequisite
+    source_id: ode.atom.linear_integrating_factor_compute
+    target_id: ode_first_order_linear.calculation
+    label: 原子前置
+  - id: edge.atom.linear_initial_or_general
+    edge_type: prerequisite
+    source_id: ode.atom.linear_initial_or_general
+    target_id: ode_first_order_linear.expression
+    label: 原子前置
+  - id: edge.atom.homogeneous_ratio_form
+    edge_type: prerequisite
+    source_id: ode.atom.homogeneous_ratio_form
+    target_id: ode_homogeneous_first_order.concept
+    label: 原子前置
+  - id: edge.atom.homogeneous_trigger_ratio
+    edge_type: prerequisite
+    source_id: ode.atom.homogeneous_trigger_ratio
+    target_id: ode_homogeneous_first_order.trigger
+    label: 原子前置
+  - id: edge.atom.homogeneous_substitution_choice
+    edge_type: prerequisite
+    source_id: ode.atom.homogeneous_substitution_choice
+    target_id: ode_homogeneous_first_order.method
+    label: 原子前置
+  - id: edge.atom.homogeneous_derivative_substitution
+    edge_type: prerequisite
+    source_id: ode.atom.homogeneous_derivative_substitution
+    target_id: ode_homogeneous_first_order.transformation
+    label: 原子前置
+  - id: edge.atom.homogeneous_solve_v
+    edge_type: prerequisite
+    source_id: ode.atom.homogeneous_solve_v
+    target_id: ode_homogeneous_first_order.calculation
+    label: 原子前置
+  - id: edge.atom.homogeneous_back_substitute
+    edge_type: prerequisite
+    source_id: ode.atom.homogeneous_back_substitute
+    target_id: ode_homogeneous_first_order.expression
+    label: 原子前置
+  - id: edge.compare.separable_linear_a
+    edge_type: confusion
+    source_id: ode.compare.separable_vs_linear
+    target_id: ode_separable.trigger
+    label: 易混对比
+  - id: edge.compare.separable_linear_b
+    edge_type: confusion
+    source_id: ode.compare.separable_vs_linear
+    target_id: ode_first_order_linear.trigger
+    label: 易混对比
+  - id: edge.compare.linear_homogeneous_a
+    edge_type: confusion
+    source_id: ode.compare.linear_vs_homogeneous
+    target_id: ode_first_order_linear.trigger
+    label: 易混对比
+  - id: edge.compare.linear_homogeneous_b
+    edge_type: confusion
+    source_id: ode.compare.linear_vs_homogeneous
+    target_id: ode_homogeneous_first_order.trigger
+    label: 易混对比
+  - id: edge.compare.separable_homogeneous_a
+    edge_type: confusion
+    source_id: ode.compare.separable_vs_homogeneous
+    target_id: ode_separable.method
+    label: 易混对比
+  - id: edge.compare.separable_homogeneous_b
+    edge_type: confusion
+    source_id: ode.compare.separable_vs_homogeneous
+    target_id: ode_homogeneous_first_order.method
+    label: 易混对比
+  - id: edge.synthesis.separable.boss
+    edge_type: synthesis
+    source_id: ode_separable.expression
+    target_id: ode_separable.macro_challenge
+    label: 汇入 Boss
+  - id: edge.synthesis.linear.boss
+    edge_type: synthesis
+    source_id: ode_first_order_linear.expression
+    target_id: ode_first_order_linear.macro_challenge
+    label: 汇入 Boss
+  - id: edge.synthesis.homogeneous.boss
+    edge_type: synthesis
+    source_id: ode_homogeneous_first_order.expression
+    target_id: ode_homogeneous_first_order.macro_challenge
+    label: 汇入 Boss
+contains:
+  ode_separable:
+    - ode_separable.concept
+    - ode_separable.trigger
+    - ode_separable.method
+    - ode_separable.transformation
+    - ode_separable.calculation
+    - ode_separable.expression
+  ode_first_order_linear:
+    - ode_first_order_linear.concept
+    - ode_first_order_linear.trigger
+    - ode_first_order_linear.method
+    - ode_first_order_linear.transformation
+    - ode_first_order_linear.calculation
+    - ode_first_order_linear.expression
+  ode_homogeneous_first_order:
+    - ode_homogeneous_first_order.concept
+    - ode_homogeneous_first_order.trigger
+    - ode_homogeneous_first_order.method
+    - ode_homogeneous_first_order.transformation
+    - ode_homogeneous_first_order.calculation
+    - ode_homogeneous_first_order.expression
+unlock_edges:
+  - from_macro_node_id: ode_separable
+    to_micro_node_ids:
+      - ode_first_order_linear.concept
+      - ode_first_order_linear.trigger
+      - ode_first_order_linear.method
+      - ode_first_order_linear.transformation
+      - ode_first_order_linear.calculation
+      - ode_first_order_linear.expression
+  - from_macro_node_id: ode_first_order_linear
+    to_micro_node_ids:
+      - ode_homogeneous_first_order.concept
+      - ode_homogeneous_first_order.trigger
+      - ode_homogeneous_first_order.method
+      - ode_homogeneous_first_order.transformation
+      - ode_homogeneous_first_order.calculation
+      - ode_homogeneous_first_order.expression
+error_to_micro_mapping:
+  concept_gap: concept
+  trigger_failure: trigger
+  method_error: method
+  transformation_error: transformation
+  calculation_error: calculation
+  formula_memory_error: calculation
+  expression_weakness: expression
+  process_gap: expression
+  condition_miss: trigger
+  knowledge_confusion: trigger
+  synthesis_failure: method
+  migration_failure: method

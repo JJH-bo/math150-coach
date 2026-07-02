@@ -1,0 +1,146 @@
+{
+  "candidate_record": {
+    "manifest": {
+      "answer_key_version": "1.0",
+      "audience": "learner",
+      "catalog_schema_version": "1.0",
+      "content_hash": "sha256:5c6dbe85b7882ea3b5dbee579f2c852cade324eba1f1c5c25d5122da06a36c5d",
+      "logical_question_id": "ode-hom-standard-y-over-x",
+      "node_id": "ode_homogeneous_first_order",
+      "question_family_id": "phase-4-8-ode-homogeneous",
+      "question_id": "ode-hom-cand-001",
+      "question_version": "1.0",
+      "rubric_version": "1.0",
+      "status": "published",
+      "supersedes": null,
+      "tags": [
+        "ode",
+        "homogeneous-first-order",
+        "y-vx",
+        "phase-4-8"
+      ]
+    },
+    "presentation": {
+      "answer_format": "expression_with_reasoning",
+      "difficulty": "standard",
+      "display_assets": [],
+      "hints_public": [
+        "Look for a right side that depends on the ratio y/x."
+      ],
+      "node_id": "ode_homogeneous_first_order",
+      "prompt_markdown": "Solve dy/dx = 1 + y/x. Explain the homogeneous trigger and use a y=vx substitution.",
+      "question_id": "ode-hom-cand-001",
+      "response_step_mode": "optional",
+      "stem": "Solve a first-order homogeneous equation using substitution.",
+      "title": "Homogeneous equation with y over x"
+    },
+    "trusted_scoring": {
+      "answer_aliases": [
+        "y = x(ln|x| + C)",
+        "y/x=ln|x|+C"
+      ],
+      "authoring_metadata": {
+        "authoring_notes": "Original homogeneous y/x substitution item.",
+        "source_status": "ai_assisted_original"
+      },
+      "expected_answer": "y=x(ln|x|+C)",
+      "golden_case_refs": [],
+      "rubric": {
+        "dimension_weights": {},
+        "items": [
+          {
+            "description": "Recognizes the y/x ratio structure.",
+            "evidence_on_hit": "Identified the homogeneous ratio trigger.",
+            "evidence_on_miss": "Did not identify the y/x ratio trigger.",
+            "expected_patterns": [],
+            "id": "trigger_ratio_structure",
+            "required": true,
+            "required_keywords": [
+              "y/x"
+            ],
+            "target_dimensions": [
+              "trigger"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Chooses the y=vx substitution.",
+            "evidence_on_hit": "Chose y=vx substitution.",
+            "evidence_on_miss": "Did not state the y=vx substitution.",
+            "expected_patterns": [],
+            "id": "method_y_equals_vx",
+            "required": true,
+            "required_keywords": [
+              "y=vx"
+            ],
+            "target_dimensions": [
+              "method"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Transforms y' into v + x v'.",
+            "evidence_on_hit": "Correctly transformed the derivative.",
+            "evidence_on_miss": "Did not show the derivative transformation.",
+            "expected_patterns": [],
+            "id": "transformation_derivative",
+            "required": true,
+            "required_keywords": [
+              "v+xv'"
+            ],
+            "target_dimensions": [
+              "transformation"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Integrates the reduced separable equation.",
+            "evidence_on_hit": "Integrated the reduced equation.",
+            "evidence_on_miss": "Did not integrate the reduced equation correctly.",
+            "expected_patterns": [],
+            "id": "calculation_integrate_ratio",
+            "required": true,
+            "required_keywords": [
+              "ln|x|"
+            ],
+            "target_dimensions": [
+              "calculation"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Restores y from v.",
+            "evidence_on_hit": "Restored the answer in terms of y.",
+            "evidence_on_miss": "Final answer was not restored to y.",
+            "expected_patterns": [],
+            "id": "final_answer_restore_y",
+            "required": true,
+            "required_keywords": [
+              "x",
+              "ln|x|",
+              "C"
+            ],
+            "target_dimensions": [
+              "final_answer"
+            ],
+            "weight": 1.0
+          }
+        ],
+        "key_points": [],
+        "merge_policy": {
+          "manual_override_first": true,
+          "missing_if_no_signal": true,
+          "strategy": "weighted_by_confidence"
+        }
+      },
+      "scoring_notes_internal": "Phase 4.8 authoring-only original candidate; not formal catalog.",
+      "solution_outline": "Let y=vx, so y'=v+xv'. Then v+xv'=1+v, so dv/dx=1/x and v=ln|x|+C. Hence y=x(ln|x|+C).",
+      "validator_config": {
+        "answer_equivalence_mode": "normalized",
+        "requires_constant": true
+      }
+    }
+  },
+  "content_hash": "sha256:5c6dbe85b7882ea3b5dbee579f2c852cade324eba1f1c5c25d5122da06a36c5d",
+  "dry_run_only": true
+}

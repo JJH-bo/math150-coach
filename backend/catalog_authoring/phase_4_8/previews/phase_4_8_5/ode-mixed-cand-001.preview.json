@@ -1,0 +1,165 @@
+{
+  "candidate_record": {
+    "manifest": {
+      "answer_key_version": "1.0",
+      "audience": "learner",
+      "catalog_schema_version": "1.0",
+      "content_hash": "sha256:7254ef262c09f8dff92d6a5e6b3c327a75144d6f75e88bbffa5de620a7991b62",
+      "logical_question_id": "ode-mixed-linear-vs-separable",
+      "node_id": "ode_first_order_linear",
+      "question_family_id": "phase-4-8-ode-mixed-recognition",
+      "question_id": "ode-mixed-cand-001",
+      "question_version": "1.0",
+      "rubric_version": "1.0",
+      "status": "published",
+      "supersedes": null,
+      "tags": [
+        "ode",
+        "recognition",
+        "first-order-linear",
+        "phase-4-8"
+      ]
+    },
+    "presentation": {
+      "answer_format": "expression_with_reasoning",
+      "difficulty": "standard",
+      "display_assets": [],
+      "hints_public": [
+        "Compare the equation with the standard form y' + P(x)y = Q(x)."
+      ],
+      "node_id": "ode_first_order_linear",
+      "prompt_markdown": "Solve y' + (1/x)y = x for x>0. First decide the equation type carefully, compare whether separation is appropriate, then solve.",
+      "question_id": "ode-mixed-cand-001",
+      "response_step_mode": "required",
+      "stem": "Decide the method before solving a first-order equation.",
+      "title": "Decide method before solving"
+    },
+    "trusted_scoring": {
+      "answer_aliases": [
+        "y = x^2/3 + C/x",
+        "xy=x^3/3+C",
+        "y=C/x+x^2/3"
+      ],
+      "authoring_metadata": {
+        "authoring_notes": "Original mixed-recognition item bound to existing first-order linear node.",
+        "source_status": "ai_assisted_original"
+      },
+      "expected_answer": "y=x^2/3+C/x",
+      "golden_case_refs": [],
+      "rubric": {
+        "dimension_weights": {},
+        "items": [
+          {
+            "description": "Recognizes first-order linear standard form rather than relying on a keyword alone.",
+            "evidence_on_hit": "Identified first-order linear structure with standard-form evidence.",
+            "evidence_on_miss": "Did not identify the linear trigger with enough structural evidence.",
+            "expected_patterns": [
+              "(?:first[- ]?order linear|linear form|y'\\s*\\+\\s*P\\(x\\)y\\s*=\\s*Q\\(x\\))"
+            ],
+            "id": "trigger_linear_not_separable_first",
+            "required": true,
+            "required_keywords": [
+              "linear"
+            ],
+            "target_dimensions": [
+              "trigger"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Explains why the equation should not be forced into standard separable-variable handling.",
+            "evidence_on_hit": "Explained why forced separation is not the reliable path.",
+            "evidence_on_miss": "Did not explain why forced separation is not the reliable path.",
+            "expected_patterns": [
+              "(?:not\\s+(?:a\\s+)?(?:standard\\s+)?separable|cannot\\s+separate|not\\s+separate\\s+variables|do\\s+not\\s+force\\s+separation|not\\s+forced\\s+separation)"
+            ],
+            "id": "diagnostic_not_standard_separable",
+            "required": true,
+            "required_keywords": [],
+            "target_dimensions": [
+              "trigger",
+              "method"
+            ],
+            "weight": 0.8
+          },
+          {
+            "description": "Chooses integrating factor method with enough process evidence.",
+            "evidence_on_hit": "Chose integrating factor method and connected it to the x multiplier/product form.",
+            "evidence_on_miss": "Did not state integrating factor method with enough supporting process evidence.",
+            "expected_patterns": [
+              "(?:integrating factor\\s*(?:is|=)?\\s*x|mu\\s*=\\s*x|xy\\s*=)"
+            ],
+            "id": "method_integrating_factor",
+            "required": true,
+            "required_keywords": [
+              "integrating factor"
+            ],
+            "target_dimensions": [
+              "method"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Uses integrating factor x for x>0.",
+            "evidence_on_hit": "Identified the integrating factor x.",
+            "evidence_on_miss": "Did not identify the integrating factor x.",
+            "expected_patterns": [
+              "(?:integrating factor\\s*(?:is|=)?\\s*x|mu\\s*=\\s*x|xy\\s*=|x\\s*>\\s*0)"
+            ],
+            "id": "transformation_integrating_factor_x",
+            "required": true,
+            "required_keywords": [],
+            "target_dimensions": [
+              "transformation"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Integrates the product derivative.",
+            "evidence_on_hit": "Integrated the product derivative correctly.",
+            "evidence_on_miss": "Did not compute the product integration correctly.",
+            "expected_patterns": [
+              "x\\^3\\s*/\\s*3"
+            ],
+            "id": "calculation_integrate_x_squared",
+            "required": true,
+            "required_keywords": [],
+            "target_dimensions": [
+              "calculation"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Gives the solution in y form.",
+            "evidence_on_hit": "Final answer has the expected y form.",
+            "evidence_on_miss": "Final answer is missing the expected y form.",
+            "expected_patterns": [
+              "(?:y\\s*=\\s*x\\^2\\s*/\\s*3\\s*\\+\\s*C\\s*/\\s*x|xy\\s*=\\s*x\\^3\\s*/\\s*3\\s*\\+\\s*C)"
+            ],
+            "id": "final_answer_linear_solution",
+            "required": true,
+            "required_keywords": [],
+            "target_dimensions": [
+              "final_answer"
+            ],
+            "weight": 1.0
+          }
+        ],
+        "key_points": [],
+        "merge_policy": {
+          "manual_override_first": true,
+          "missing_if_no_signal": true,
+          "strategy": "weighted_by_confidence"
+        }
+      },
+      "scoring_notes_internal": "Phase 4.8 authoring-only original mixed-recognition candidate; not formal catalog.",
+      "solution_outline": "The equation has first-order linear form y' + P(x)y = Q(x), with P(x)=1/x on x>0. It is not a standard separable-variable equation before applying the linear method. The integrating factor is x, so (xy)' = x^2, xy = x^3/3 + C, and y = x^2/3 + C/x.",
+      "validator_config": {
+        "answer_equivalence_mode": "normalized",
+        "requires_constant": true
+      }
+    }
+  },
+  "content_hash": "sha256:7254ef262c09f8dff92d6a5e6b3c327a75144d6f75e88bbffa5de620a7991b62",
+  "dry_run_only": true
+}

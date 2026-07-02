@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Math150 Coach 终极知识网</title>
+    <link rel="stylesheet" href="/trainer/styles.css?v=ultimate-atlas-1" />
+  </head>
+  <body>
+    <section id="startScreen" class="start-screen">
+      <div class="start-card">
+        <div class="start-copy">
+          <p class="eyebrow">Math150 Coach Engine</p>
+          <h1>星系知识网训练舱</h1>
+          <p class="start-subtitle">从课程星图进入章节，再下钻到严密的逻辑知识网。</p>
+        </div>
+        <div class="session-panel">
+          <label for="sessionId">训练 ID</label>
+          <div class="session-row">
+            <input id="sessionId" autocomplete="off" />
+            <button id="startBtn" type="button">进入章节</button>
+            <button id="statusBtn" type="button">刷新</button>
+            <button id="resetBtn" type="button">重置</button>
+          </div>
+          <div class="start-actions">
+            <button id="startAtlasBtn" type="button" class="ghost-button">打开课程星图</button>
+            <button id="startImportBtn" type="button" class="ghost-button">导入章节草稿</button>
+          </div>
+        </div>
+        <div id="startAtlas" class="start-atlas" aria-label="课程星图预览"></div>
+      </div>
+    </section>
+
+    <section id="mapWorld" class="map-world is-hidden" aria-label="知识网地图">
+      <header class="world-hud">
+        <div class="hud-title">
+          <p class="eyebrow">Knowledge Network</p>
+          <h2 id="graphTitle">微分方程 2D 逻辑知识网</h2>
+        </div>
+        <div id="overallStats" class="stats-grid"></div>
+        <div class="hud-actions">
+          <span id="hudSession" class="hud-session"></span>
+          <button id="atlasModeBtn" type="button">星图</button>
+          <button id="graphModeBtn" type="button">章节</button>
+          <button id="openImportBtn" type="button">导入</button>
+          <button id="worldRefreshBtn" type="button">刷新</button>
+          <button id="worldResetBtn" type="button">重置</button>
+        </div>
+      </header>
+
+      <main id="mapViewport" class="map-viewport">
+        <section id="atlasLayer" class="atlas-layer" aria-label="课程宏观星图"></section>
+        <div id="mapCameraSurface" class="map-camera-surface">
+          <div id="graphView" class="map-canvas" aria-label="章节知识网地图"></div>
+        </div>
+      </main>
+    </section>
+
+    <div id="nodeModal" class="node-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="nodePanelTitle">
+      <div class="node-sheet">
+        <button id="closeNodePanelBtn" class="icon-button" type="button" aria-label="关闭">×</button>
+        <div id="selectedNodeView" class="selected-node empty-state">选择一个节点查看状态。</div>
+
+        <section class="task-panel" aria-labelledby="taskTitle">
+          <div class="panel-heading">
+            <p class="eyebrow">Current Challenge</p>
+            <h2 id="taskTitle">当前训练</h2>
+          </div>
+          <div id="taskCard" class="task-card empty-state">点击当前高亮节点进入训练。</div>
+          <form id="answerForm" class="answer-form">
+            <label for="answerInput">你的答案</label>
+            <textarea id="answerInput" rows="6" placeholder="写出判断、步骤和最终结论。"></textarea>
+            <label for="explanationInput">自我说明</label>
+            <textarea id="explanationInput" rows="3" placeholder="简单说明你为什么这样做。"></textarea>
+
+            <button id="submitBtn" type="submit">提交作答</button>
+          </form>
+        </section>
+
+        <section class="coach-panel" aria-labelledby="coachTitle">
+          <div class="panel-heading">
+            <p class="eyebrow">Coach Output</p>
+            <h2 id="coachTitle">教练反馈</h2>
+          </div>
+          <div id="coachView" class="coach-view empty-state">
+            提交后会看到本次评分摘要、诊断解释、证据缺口和下一步动作。
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="importModal" class="import-modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+      <div class="import-sheet">
+        <button id="closeImportBtn" class="icon-button" type="button" aria-label="关闭">×</button>
+        <div class="panel-heading">
+          <p class="eyebrow">Chapter Authoring</p>
+          <h2 id="importTitle">章节草稿导入</h2>
+        </div>
+        <p class="import-intro">粘贴结构化 Markdown，系统会生成草稿图谱、预览和质量报告。草稿不会自动进入正式训练库。</p>
+        <textarea id="chapterDraftInput" class="chapter-draft-input" rows="16" spellcheck="false"></textarea>
+        <div class="import-actions">
+          <button id="loadTemplateBtn" type="button" class="ghost-button">填入模板</button>
+          <button id="validateDraftBtn" type="button">校验草稿</button>
+        </div>
+        <div id="importReport" class="import-report empty-state">等待导入草稿。</div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/trainer/app.js?v=ultimate-atlas-1" defer></script>
+  </body>
+</html>

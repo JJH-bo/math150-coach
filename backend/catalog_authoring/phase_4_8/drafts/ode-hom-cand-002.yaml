@@ -1,0 +1,108 @@
+draft_id: draft-ode-hom-cand-002
+import_batch_id: phase-4-8-ode-p0
+status: draft
+ai_assisted: true
+candidate_record:
+  manifest:
+    question_id: ode-hom-cand-002
+    logical_question_id: ode-hom-identify-before-substitution
+    question_family_id: phase-4-8-ode-homogeneous
+    node_id: ode_homogeneous_first_order
+    status: draft
+    audience: learner
+    question_version: "1.0"
+    rubric_version: "1.0"
+    answer_key_version: "1.0"
+    catalog_schema_version: "1.0"
+    tags: [ode, homogeneous-first-order, recognition, phase-4-8]
+  presentation:
+    question_id: ode-hom-cand-002
+    node_id: ode_homogeneous_first_order
+    title: Identify homogeneity before substitution
+    stem: Identify a homogeneous first-order equation and solve it.
+    prompt_markdown: "Solve dy/dx = (x^2+y^2)/(xy). First explain why the equation is homogeneous, then use a ratio substitution."
+    answer_format: expression_with_reasoning
+    response_step_mode: required
+    difficulty: standard
+    display_assets: []
+    hints_public:
+      - Rewrite the right side in terms of y/x or x/y before choosing the substitution.
+  trusted_scoring:
+    expected_answer: "(y/x)^2=2ln|x|+C"
+    answer_aliases:
+      - "y^2=x^2(2ln|x|+C)"
+      - "(y/x)^2 = 2ln|x| + C"
+    rubric:
+      items:
+        - id: trigger_homogeneous_structure
+          description: Recognizes homogeneous ratio structure after rewriting.
+          target_dimensions: [trigger]
+          required_keywords: [homogeneous]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Identified homogeneous structure.
+          evidence_on_miss: Did not identify homogeneous structure.
+        - id: method_ratio_substitution
+          description: Chooses an appropriate ratio substitution.
+          target_dimensions: [method]
+          required_keywords: ["y=vx"]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Chose y=vx or equivalent ratio substitution.
+          evidence_on_miss: Did not state a ratio substitution.
+        - id: transformation_reduced_equation
+          description: Reduces to v dv = dx/x or equivalent.
+          target_dimensions: [transformation]
+          required_keywords: ["v dv", "dx/x"]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Reduced to a separable equation in v and x.
+          evidence_on_miss: Did not reach the reduced separable equation.
+        - id: calculation_integrate_reduced_form
+          description: Integrates the reduced equation.
+          target_dimensions: [calculation]
+          required_keywords: ["2ln|x|"]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Integrated the reduced equation correctly.
+          evidence_on_miss: Did not integrate the reduced equation correctly.
+        - id: final_answer_ratio_form
+          description: Gives the implicit ratio-form general solution.
+          target_dimensions: [final_answer]
+          required_keywords: ["(y/x)^2", "2ln|x|", "C"]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Final answer is in a valid ratio form.
+          evidence_on_miss: Final answer is missing the expected ratio form.
+    solution_outline: "Rewrite as dy/dx = x/y + y/x. Let y=vx, so v+xv' = 1/v + v. Then v dv = dx/x, giving (y/x)^2 = 2ln|x| + C."
+    validator_config:
+      requires_constant: true
+      answer_equivalence_mode: normalized
+    scoring_notes_internal: "Phase 4.8 authoring-only original candidate; not formal catalog."
+    golden_case_refs: []
+    authoring_metadata:
+      source_status: ai_assisted_original
+      authoring_notes: "Original homogeneous recognition item."
+source_metadata:
+  source_type: generated_variant
+  source_name: Math150 Coach Phase 4.8 original ODE batch
+  source_section: ODE first-order homogeneous equations
+  author_notes: "Original same-type practice item; not copied from textbook, PDF, lecture, or past exam."
+  copyright_note: "Authoring-only original candidate."
+  imported_by: codex
+review_checklist:
+  math_i_scope_confirmed: true
+  module_topic_type_confirmed: true
+  node_id_confirmed: true
+  public_prompt_clear: true
+  expected_answer_checked: true
+  aliases_checked: true
+  solution_outline_checked: true
+  rubric_checked: true
+  target_dimensions_checked: true
+  validator_config_checked: true
+  no_public_leak_confirmed: true
+  question_id_version_checked: true
+  publish_approved: true
+  reviewer: phase-4-8-human-gate-placeholder
+  notes: "Dry-run authoring review placeholder; formal publish still requires explicit approval."

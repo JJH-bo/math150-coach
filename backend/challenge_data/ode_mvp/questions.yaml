@@ -1,0 +1,233 @@
+chapter_id: ode_mvp
+questions:
+  - id: ode-mvp-sep-concept-001
+    owner_id: ode_separable.concept
+    task_type: micro_node
+    node_id: ode_separable.concept
+    title: Identify separable structure
+    stem: Explain the structure of a separable differential equation.
+    prompt_markdown: "What does it mean for a first-order differential equation to be separable?"
+    answer_format: free_text
+    response_step_mode: required
+    difficulty: basic
+    hints_public:
+      - Describe how x terms and y terms can be placed on different sides.
+    rubric:
+      items:
+        - id: concept_separable_structure
+          description: States that variables can be separated into x-side and y-side factors.
+          target_dimensions: [concept]
+          required_keywords: [separable, variables]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Explained separable-variable structure.
+          evidence_on_miss: Did not explain separable-variable structure.
+
+  - id: ode-mvp-sep-concept-002
+    owner_id: ode_separable.concept
+    task_type: micro_node
+    node_id: ode_separable.concept
+    title: Recognize f(x)g(y) form
+    stem: Explain a common separable-equation form.
+    prompt_markdown: "Why does a form like dy/dx = f(x)g(y) point toward a separable equation?"
+    answer_format: free_text
+    response_step_mode: required
+    difficulty: basic
+    hints_public:
+      - Focus on moving y terms with dy and x terms with dx.
+    rubric:
+      items:
+        - id: concept_fx_gy_structure
+          description: Connects f(x)g(y) form to separating x and y factors.
+          target_dimensions: [concept]
+          required_keywords: [f(x), g(y), separate]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Connected f(x)g(y) structure to separation.
+          evidence_on_miss: Did not connect f(x)g(y) structure to separation.
+
+  - id: ode-mvp-sep-trigger-001
+    owner_id: ode_separable.trigger
+    task_type: micro_node
+    node_id: ode_separable.trigger
+    title: Separable trigger check
+    stem: Identify the trigger in a first-order equation.
+    prompt_markdown: "For dy/dx = 2xy, state the equation type and the trigger that tells you this."
+    answer_format: free_text
+    response_step_mode: required
+    difficulty: basic
+    hints_public:
+      - Look for a product of an x-only part and a y-only part.
+    rubric:
+      items:
+        - id: trigger_product_structure
+          description: Identifies separability from product structure.
+          target_dimensions: [trigger]
+          required_keywords: [separable, product]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Identified the product trigger for separability.
+          evidence_on_miss: Did not identify the separability trigger.
+
+  - id: ode-mvp-sep-method-001
+    owner_id: ode_separable.method
+    task_type: micro_node
+    node_id: ode_separable.method
+    title: Select separation method
+    stem: Choose the solving method.
+    prompt_markdown: "For dy/dx = 2xy, which method should be used and why?"
+    answer_format: free_text
+    response_step_mode: required
+    difficulty: basic
+    hints_public:
+      - Name the method and give a one-sentence reason.
+    rubric:
+      items:
+        - id: method_separate_variables
+          description: Chooses separation of variables with a structural reason.
+          target_dimensions: [method]
+          required_keywords: [separate variables, y terms]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Chose separation of variables with a reason.
+          evidence_on_miss: Did not choose separation of variables with enough reason.
+
+  - id: ode-mvp-sep-transformation-001
+    owner_id: ode_separable.transformation
+    task_type: micro_node
+    node_id: ode_separable.transformation
+    title: Write separated form
+    stem: Rearrange into separated form.
+    prompt_markdown: "Rearrange (1+x^2) dy/dx = 2xy into a separated differential form."
+    answer_format: expression_with_reasoning
+    response_step_mode: required
+    difficulty: standard
+    hints_public:
+      - Isolate dy/dx first, then put y terms with dy.
+    rubric:
+      items:
+        - id: transformation_separated_form
+          description: Writes dy/y = 2x/(1+x^2) dx.
+          target_dimensions: [transformation]
+          required_keywords: ["dy/y", "2x/(1+x^2)"]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Wrote the separated form.
+          evidence_on_miss: Did not write the correct separated form.
+
+  - id: ode-mvp-sep-calculation-001
+    owner_id: ode_separable.calculation
+    task_type: micro_node
+    node_id: ode_separable.calculation
+    title: Integrate separated sides
+    stem: Complete the integration step.
+    prompt_markdown: "Starting from dy/y = 2x/(1+x^2) dx, integrate both sides."
+    answer_format: expression_with_reasoning
+    response_step_mode: required
+    difficulty: standard
+    hints_public:
+      - The right side is a logarithmic derivative.
+    rubric:
+      items:
+        - id: calculation_log_integral
+          description: Integrates to logarithmic form with constant.
+          target_dimensions: [calculation]
+          required_keywords: [integrate, "ln(1+x^2)", C]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Integrated the separated equation correctly.
+          evidence_on_miss: Did not complete the logarithmic integration.
+
+  - id: ode-mvp-sep-expression-001
+    owner_id: ode_separable.expression
+    task_type: micro_node
+    node_id: ode_separable.expression
+    title: Express the general solution
+    stem: Write a clean general-solution form.
+    prompt_markdown: "From ln|y| = ln(1+x^2) + C, write the general solution cleanly."
+    answer_format: expression_with_reasoning
+    response_step_mode: required
+    difficulty: standard
+    hints_public:
+      - Absorb constants into one arbitrary constant.
+    expected_answer: "y=C(1+x^2)"
+    answer_aliases:
+      - "ln|y| = ln(1+x^2) + C"
+    solution_outline: "Exponentiate and absorb constants to get y=C(1+x^2), with C arbitrary."
+    validator_config:
+      requires_constant: true
+      answer_equivalence_mode: normalized
+    rubric:
+      items:
+        - id: expression_general_solution
+          description: Writes explicit general solution with arbitrary constant.
+          target_dimensions: [expression, final_answer]
+          expected_patterns:
+            - "(?:y\\s*=\\s*C\\s*\\(1\\s*\\+\\s*x\\^2\\)|ln\\|y\\|\\s*=\\s*ln\\(1\\s*\\+\\s*x\\^2\\)\\s*\\+\\s*C)"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Wrote a clean general solution.
+          evidence_on_miss: Did not write the general solution cleanly.
+
+  - id: ode-mvp-sep-macro-001
+    owner_id: ode_separable.macro_challenge
+    task_type: macro_challenge
+    node_id: ode_separable
+    title: Separable equation macro challenge
+    stem: Solve a separable equation from trigger through final expression.
+    prompt_markdown: "Solve (1+x^2) dy/dx = 2xy. State the trigger, choose the method, show the separated form, integrate, and give the general solution."
+    answer_format: expression_with_reasoning
+    response_step_mode: required
+    difficulty: standard
+    hints_public:
+      - Your answer should show the method choice and the transformation before the final solution.
+    expected_answer: "y=C(1+x^2)"
+    answer_aliases:
+      - "ln|y| = ln(1+x^2) + C"
+    solution_outline: "Recognize separability, write dy/y = 2x/(1+x^2) dx, integrate, and absorb constants to get y=C(1+x^2)."
+    validator_config:
+      requires_constant: true
+      answer_equivalence_mode: normalized
+    rubric:
+      items:
+        - id: macro_trigger
+          description: Identifies separability.
+          target_dimensions: [trigger]
+          required_keywords: [separable]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Identified the separable trigger.
+          evidence_on_miss: Did not identify the separable trigger.
+        - id: macro_method
+          description: Chooses separation of variables.
+          target_dimensions: [method]
+          required_keywords: [separate variables]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Chose separation of variables.
+          evidence_on_miss: Did not choose separation of variables.
+        - id: macro_transformation
+          description: Writes the separated form.
+          target_dimensions: [transformation]
+          required_keywords: ["dy/y", "2x/(1+x^2)"]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Wrote the correct separated form.
+          evidence_on_miss: Did not write the correct separated form.
+        - id: macro_calculation
+          description: Integrates both sides.
+          target_dimensions: [calculation]
+          required_keywords: [integrate, "ln(1+x^2)"]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Integrated correctly.
+          evidence_on_miss: Did not integrate correctly.
+        - id: macro_expression
+          description: Gives a clean general solution.
+          target_dimensions: [expression, final_answer]
+          expected_patterns:
+            - "(?:y\\s*=\\s*C\\s*\\(1\\s*\\+\\s*x\\^2\\)|ln\\|y\\|\\s*=\\s*ln\\(1\\s*\\+\\s*x\\^2\\)\\s*\\+\\s*C)"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Gave the general solution.
+          evidence_on_miss: Did not give the general solution.

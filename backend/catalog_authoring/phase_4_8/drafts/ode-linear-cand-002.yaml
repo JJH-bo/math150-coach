@@ -1,0 +1,114 @@
+draft_id: draft-ode-linear-cand-002
+import_batch_id: phase-4-8-ode-p0
+status: draft
+ai_assisted: true
+candidate_record:
+  manifest:
+    question_id: ode-linear-cand-002
+    logical_question_id: ode-linear-rearrange-standard
+    question_family_id: phase-4-8-ode-linear
+    node_id: ode_first_order_linear
+    status: draft
+    audience: learner
+    question_version: "1.0"
+    rubric_version: "1.0"
+    answer_key_version: "1.0"
+    catalog_schema_version: "1.0"
+    tags: [ode, first-order-linear, standard-form, phase-4-8]
+  presentation:
+    question_id: ode-linear-cand-002
+    node_id: ode_first_order_linear
+    title: Rearrange into first-order linear standard form
+    stem: Rearrange a first-order equation into standard linear form and solve it.
+    prompt_markdown: "Solve 2y' + 4y = 6x. First rewrite it in first-order linear standard form, then solve."
+    answer_format: expression_with_reasoning
+    response_step_mode: required
+    difficulty: standard
+    display_assets: []
+    hints_public:
+      - Divide the equation first so the coefficient of y' is one.
+  trusted_scoring:
+    expected_answer: "y=3x/2-3/4+Ce^(-2x)"
+    answer_aliases:
+      - "y = 3x/2 - 3/4 + C e^(-2x)"
+      - "y=Ce^(-2x)+3x/2-3/4"
+      - "y=3x/2+C e^(-2x)-3/4"
+      - "y=C e^(-2x)+(3/2)x-3/4"
+    rubric:
+      items:
+        - id: trigger_linear_after_rewrite
+          description: Recognizes first-order linear structure after rewriting.
+          target_dimensions: [trigger]
+          required_keywords: [linear]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Identified first-order linear structure.
+          evidence_on_miss: Did not identify the first-order linear trigger.
+        - id: method_integrating_factor
+          description: Chooses integrating factor method.
+          target_dimensions: [method]
+          required_keywords: [integrating factor]
+          weight: 1.0
+          required: true
+          evidence_on_hit: Chose integrating factor method.
+          evidence_on_miss: Did not state integrating factor method.
+        - id: transformation_standard_form
+          description: Rewrites as y' + 2y = 3x.
+          target_dimensions: [transformation]
+          expected_patterns:
+            - "(?:y'\\s*\\+\\s*2y\\s*=\\s*3x|dy/dx\\s*\\+\\s*2y\\s*=\\s*3x)"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Rewrote to the correct standard form.
+          evidence_on_miss: Did not rewrite to the correct standard form.
+        - id: calculation_linear_solution
+          description: Solves the linear equation after applying the integrating factor.
+          target_dimensions: [calculation]
+          expected_patterns:
+            - "3x\\s*/\\s*2"
+            - "-\\s*3\\s*/\\s*4"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Computed the particular linear term correctly.
+          evidence_on_miss: Did not compute the linear solution correctly.
+        - id: final_answer_linear_general
+          description: Gives the general solution with homogeneous term.
+          target_dimensions: [final_answer]
+          expected_patterns:
+            - "(?=.*3x\\s*/\\s*2)(?=.*-\\s*3\\s*/\\s*4)(?=.*C\\s*e\\^\\(-2x\\))"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Final answer has the expected general solution.
+          evidence_on_miss: Final answer is missing the expected general solution.
+    solution_outline: "Divide by 2 to get y'+2y=3x. Use integrating factor e^(2x), then solve (e^(2x)y)'=3xe^(2x) to get y=3x/2-3/4+Ce^(-2x). Equivalent term orders are acceptable."
+    validator_config:
+      requires_constant: true
+      answer_equivalence_mode: normalized
+    scoring_notes_internal: "Phase 4.8 authoring-only original candidate; not formal catalog."
+    golden_case_refs: []
+    authoring_metadata:
+      source_status: ai_assisted_original
+      authoring_notes: "Original linear-standard-form rearrangement candidate."
+source_metadata:
+  source_type: generated_variant
+  source_name: Math150 Coach Phase 4.8 original ODE batch
+  source_section: ODE first-order linear equations
+  author_notes: "Original same-type practice item; not copied from textbook, PDF, lecture, or past exam."
+  copyright_note: "Authoring-only original candidate."
+  imported_by: codex
+review_checklist:
+  math_i_scope_confirmed: true
+  module_topic_type_confirmed: true
+  node_id_confirmed: true
+  public_prompt_clear: true
+  expected_answer_checked: true
+  aliases_checked: true
+  solution_outline_checked: true
+  rubric_checked: true
+  target_dimensions_checked: true
+  validator_config_checked: true
+  no_public_leak_confirmed: true
+  question_id_version_checked: true
+  publish_approved: true
+  reviewer: phase-4-8-human-gate-placeholder
+  notes: "Dry-run authoring review placeholder; formal publish still requires explicit approval."

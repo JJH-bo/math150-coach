@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Local runtime state
+training_sessions/
+backend/training_sessions/
+.superpowers/
+*.log
+uvicorn-*.out.log
+uvicorn-*.err.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

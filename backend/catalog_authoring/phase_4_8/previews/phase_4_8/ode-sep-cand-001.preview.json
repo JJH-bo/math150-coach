@@ -1,0 +1,147 @@
+{
+  "candidate_record": {
+    "manifest": {
+      "answer_key_version": "1.0",
+      "audience": "learner",
+      "catalog_schema_version": "1.0",
+      "content_hash": "sha256:a3ed215102371252c8a9ee5f1a507c8a24cf42f06b6d9479b6fb46a3d24e32ec",
+      "logical_question_id": "ode-sep-direct-general",
+      "node_id": "ode_separable",
+      "question_family_id": "phase-4-8-ode-separable",
+      "question_id": "ode-sep-cand-001",
+      "question_version": "1.0",
+      "rubric_version": "1.0",
+      "status": "published",
+      "supersedes": null,
+      "tags": [
+        "ode",
+        "separable",
+        "general-solution",
+        "phase-4-8"
+      ]
+    },
+    "presentation": {
+      "answer_format": "expression_with_reasoning",
+      "difficulty": "basic",
+      "display_assets": [],
+      "hints_public": [
+        "Check whether all y terms can be moved to one side and all x terms to the other side."
+      ],
+      "node_id": "ode_separable",
+      "prompt_markdown": "Solve dy/dx = 3xy. State the method trigger, separate variables, integrate, and give the general solution.",
+      "question_id": "ode-sep-cand-001",
+      "response_step_mode": "optional",
+      "stem": "Solve a direct separable first-order differential equation.",
+      "title": "Direct separable equation"
+    },
+    "trusted_scoring": {
+      "answer_aliases": [
+        "y=Ce^(3x^2/2)",
+        "ln|y| = 3x^2/2 + C"
+      ],
+      "authoring_metadata": {
+        "authoring_notes": "Original same-type practice item for separable equations.",
+        "source_status": "ai_assisted_original"
+      },
+      "expected_answer": "ln|y|=3x^2/2+C",
+      "golden_case_refs": [],
+      "rubric": {
+        "dimension_weights": {},
+        "items": [
+          {
+            "description": "Recognizes that variables can be separated.",
+            "evidence_on_hit": "Identified separable structure.",
+            "evidence_on_miss": "Did not identify the separable trigger.",
+            "expected_patterns": [],
+            "id": "trigger_separable",
+            "required": true,
+            "required_keywords": [
+              "separable"
+            ],
+            "target_dimensions": [
+              "trigger"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Chooses separation of variables.",
+            "evidence_on_hit": "Selected separation of variables.",
+            "evidence_on_miss": "Did not state separation of variables.",
+            "expected_patterns": [],
+            "id": "method_separate_variables",
+            "required": true,
+            "required_keywords": [
+              "separate variables"
+            ],
+            "target_dimensions": [
+              "method"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Writes a separated differential form.",
+            "evidence_on_hit": "Wrote a separated form with y and x separated.",
+            "evidence_on_miss": "Did not show a valid separated form.",
+            "expected_patterns": [],
+            "id": "transform_separated_form",
+            "required": true,
+            "required_keywords": [
+              "dy/y",
+              "3x"
+            ],
+            "target_dimensions": [
+              "transformation"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Integrates both sides after separation.",
+            "evidence_on_hit": "Integrated both sides.",
+            "evidence_on_miss": "Did not show the integration step.",
+            "expected_patterns": [],
+            "id": "calculation_integrate",
+            "required": true,
+            "required_keywords": [
+              "integrate"
+            ],
+            "target_dimensions": [
+              "calculation"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Gives a general solution with arbitrary constant.",
+            "evidence_on_hit": "Final answer has the expected general-solution form.",
+            "evidence_on_miss": "Final answer is missing the expected solution form.",
+            "expected_patterns": [],
+            "id": "final_answer_general_solution",
+            "required": true,
+            "required_keywords": [
+              "ln|y|",
+              "3x^2/2",
+              "C"
+            ],
+            "target_dimensions": [
+              "final_answer"
+            ],
+            "weight": 1.0
+          }
+        ],
+        "key_points": [],
+        "merge_policy": {
+          "manual_override_first": true,
+          "missing_if_no_signal": true,
+          "strategy": "weighted_by_confidence"
+        }
+      },
+      "scoring_notes_internal": "Phase 4.8 authoring-only original candidate; not formal catalog.",
+      "solution_outline": "Separate dy/y = 3x dx and integrate to ln|y| = 3x^2/2 + C.",
+      "validator_config": {
+        "answer_equivalence_mode": "normalized",
+        "requires_constant": true
+      }
+    }
+  },
+  "content_hash": "sha256:a3ed215102371252c8a9ee5f1a507c8a24cf42f06b6d9479b6fb46a3d24e32ec",
+  "dry_run_only": true
+}

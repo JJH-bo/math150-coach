@@ -1,0 +1,125 @@
+draft_id: draft-ode-mixed-cand-001
+import_batch_id: phase-4-8-ode-p0
+status: draft
+ai_assisted: true
+candidate_record:
+  manifest:
+    question_id: ode-mixed-cand-001
+    logical_question_id: ode-mixed-linear-vs-separable
+    question_family_id: phase-4-8-ode-mixed-recognition
+    node_id: ode_first_order_linear
+    status: draft
+    audience: learner
+    question_version: "1.0"
+    rubric_version: "1.0"
+    answer_key_version: "1.0"
+    catalog_schema_version: "1.0"
+    tags: [ode, recognition, first-order-linear, phase-4-8]
+  presentation:
+    question_id: ode-mixed-cand-001
+    node_id: ode_first_order_linear
+    title: Decide method before solving
+    stem: Decide the method before solving a first-order equation.
+    prompt_markdown: "Solve y' + (1/x)y = x for x>0. First decide the equation type carefully, compare whether separation is appropriate, then solve."
+    answer_format: expression_with_reasoning
+    response_step_mode: required
+    difficulty: standard
+    display_assets: []
+    hints_public:
+      - Compare the equation with the standard form y' + P(x)y = Q(x).
+  trusted_scoring:
+    expected_answer: "y=x^2/3+C/x"
+    answer_aliases:
+      - "y = x^2/3 + C/x"
+      - "xy=x^3/3+C"
+      - "y=C/x+x^2/3"
+    rubric:
+      items:
+        - id: trigger_linear_not_separable_first
+          description: Recognizes first-order linear standard form rather than relying on a keyword alone.
+          target_dimensions: [trigger]
+          required_keywords: [linear]
+          expected_patterns:
+            - "(?:first[- ]?order linear|linear form|y'\\s*\\+\\s*P\\(x\\)y\\s*=\\s*Q\\(x\\))"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Identified first-order linear structure with standard-form evidence.
+          evidence_on_miss: Did not identify the linear trigger with enough structural evidence.
+        - id: diagnostic_not_standard_separable
+          description: Explains why the equation should not be forced into standard separable-variable handling.
+          target_dimensions: [trigger, method]
+          expected_patterns:
+            - "(?:not\\s+(?:a\\s+)?(?:standard\\s+)?separable|cannot\\s+separate|not\\s+separate\\s+variables|do\\s+not\\s+force\\s+separation|not\\s+forced\\s+separation)"
+          weight: 0.8
+          required: true
+          evidence_on_hit: Explained why forced separation is not the reliable path.
+          evidence_on_miss: Did not explain why forced separation is not the reliable path.
+        - id: method_integrating_factor
+          description: Chooses integrating factor method with enough process evidence.
+          target_dimensions: [method]
+          required_keywords: [integrating factor]
+          expected_patterns:
+            - "(?:integrating factor\\s*(?:is|=)?\\s*x|mu\\s*=\\s*x|xy\\s*=)"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Chose integrating factor method and connected it to the x multiplier/product form.
+          evidence_on_miss: Did not state integrating factor method with enough supporting process evidence.
+        - id: transformation_integrating_factor_x
+          description: Uses integrating factor x for x>0.
+          target_dimensions: [transformation]
+          expected_patterns:
+            - "(?:integrating factor\\s*(?:is|=)?\\s*x|mu\\s*=\\s*x|xy\\s*=|x\\s*>\\s*0)"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Identified the integrating factor x.
+          evidence_on_miss: Did not identify the integrating factor x.
+        - id: calculation_integrate_x_squared
+          description: Integrates the product derivative.
+          target_dimensions: [calculation]
+          expected_patterns:
+            - "x\\^3\\s*/\\s*3"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Integrated the product derivative correctly.
+          evidence_on_miss: Did not compute the product integration correctly.
+        - id: final_answer_linear_solution
+          description: Gives the solution in y form.
+          target_dimensions: [final_answer]
+          expected_patterns:
+            - "(?:y\\s*=\\s*x\\^2\\s*/\\s*3\\s*\\+\\s*C\\s*/\\s*x|xy\\s*=\\s*x\\^3\\s*/\\s*3\\s*\\+\\s*C)"
+          weight: 1.0
+          required: true
+          evidence_on_hit: Final answer has the expected y form.
+          evidence_on_miss: Final answer is missing the expected y form.
+    solution_outline: "The equation has first-order linear form y' + P(x)y = Q(x), with P(x)=1/x on x>0. It is not a standard separable-variable equation before applying the linear method. The integrating factor is x, so (xy)' = x^2, xy = x^3/3 + C, and y = x^2/3 + C/x."
+    validator_config:
+      requires_constant: true
+      answer_equivalence_mode: normalized
+    scoring_notes_internal: "Phase 4.8 authoring-only original mixed-recognition candidate; not formal catalog."
+    golden_case_refs: []
+    authoring_metadata:
+      source_status: ai_assisted_original
+      authoring_notes: "Original mixed-recognition item bound to existing first-order linear node."
+source_metadata:
+  source_type: generated_variant
+  source_name: Math150 Coach Phase 4.8 original ODE batch
+  source_section: ODE first-order method recognition
+  author_notes: "Original same-type practice item; not copied from textbook, PDF, lecture, or past exam."
+  copyright_note: "Authoring-only original candidate."
+  imported_by: codex
+review_checklist:
+  math_i_scope_confirmed: true
+  module_topic_type_confirmed: true
+  node_id_confirmed: true
+  public_prompt_clear: true
+  expected_answer_checked: true
+  aliases_checked: true
+  solution_outline_checked: true
+  rubric_checked: true
+  target_dimensions_checked: true
+  validator_config_checked: true
+  no_public_leak_confirmed: true
+  question_id_version_checked: true
+  publish_approved: true
+  reviewer: phase-4-8-human-gate-placeholder
+  notes: "Dry-run authoring review placeholder; formal publish still requires explicit approval."

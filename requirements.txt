@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pydantic>=2
+pytest
+pyyaml
+httpx2

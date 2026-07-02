@@ -1,0 +1,10 @@
+{
+  "dry_run_only": true,
+  "validation_report": {
+    "batch_id": "phase-4-8-ode-p0",
+    "candidate_id": "ode-sep-cand-001",
+    "issues": [],
+    "passed": true,
+    "validator_version": "catalog_validator_phase_4_2"
+  }
+}

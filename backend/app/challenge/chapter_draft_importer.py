@@ -1,0 +1,437 @@
+from __future__ import annotations
+
+import re
+from collections import Counter, defaultdict
+from typing import Any
+
+
+MICRO_TYPES = {"concept", "trigger", "method", "transformation", "calculation", "expression"}
+EDGE_TYPES = {
+    "requires",
+    "supports",
+    "derives_to",
+    "transforms_to",
+    "contrasts_with",
+    "commonly_confused_with",
+    "checks",
+    "repairs",
+    "transfers_to",
+    "boss_checks",
+    "blocks",
+}
+ERROR_TYPES = {
+    "concept_gap",
+    "trigger_failure",
+    "method_error",
+    "transformation_error",
+    "process_gap",
+    "calculation_error",
+    "condition_miss",
+    "formula_memory_error",
+    "knowledge_confusion",
+    "expression_weakness",
+    "migration_failure",
+    "synthesis_failure",
+}
+
+
+def validate_chapter_markdown(markdown: str) -> dict[str, Any]:
+    importer = ChapterDraftImporter()
+    return importer.validate(markdown)
+
+
+class ChapterDraftImporter:
+    """Deterministic structured-Markdown importer for chapter graph drafts."""
+
+    def validate(self, markdown: str) -> dict[str, Any]:
+        metadata, sections = self._parse(markdown)
+        draft = self._build_draft(metadata, sections)
+        report = self._validate_draft(draft)
+        preview = self._preview(draft)
+        return {
+            "mode": "structured_markdown_draft",
+            "publish_state": "draft_only",
+            "report": report,
+            "draft": draft,
+            "preview": preview,
+            "template": self.template(),
+        }
+
+    @staticmethod
+    def template() -> str:
+        return """# 一阶微分方程扩展示例
+chapter_id: ode_extension_demo
+title: 一阶微分方程扩展示例
+
+## MacroNodes
+| id | title | knowledge_node_id |
+| --- | --- | --- |
+| ode_demo | 示例大节点 | ode_demo |
+
+## MicroNodes
+| id | macro_node_id | type | title | description |
+| --- | --- | --- | --- | --- |
+| ode_demo.concept | ode_demo | concept | 概念判断 | 说明这个节点训练什么 |
+
+## MacroChallenges
+| id | macro_node_id | title | covers_micro_nodes |
+| --- | --- | --- | --- |
+| ode_demo.macro_challenge | ode_demo | 示例综合验收 | ode_demo.concept |
+
+## HiddenAbilities
+| id | owner_node_id | title | dimensions | why_exists | evidence_sources | failure_modes | repair_target_node_id |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ode_demo.hidden.concept_basis | ode_demo.concept | 概念依据说清 | concept | 判断是否真懂概念 | rubric, self_explanation | 只写关键词 | ode_demo.concept |
+
+## CompareGuards
+| id | title | node_ids | contrast |
+| --- | --- | --- | --- |
+| ode_demo.compare.demo_vs_other | 示例对比 | ode_demo.concept, ode_demo.macro_challenge | 题眼差异 |
+
+## TransferNodes
+| id | title | owner_node_id | repair_target_node_id | why_exists |
+| --- | --- | --- | --- | --- |
+| ode_demo.transfer.variant | 变式迁移 | ode_demo.concept | ode_demo.concept | 防止只会原题 |
+
+## SynthesisNodes
+| id | title | owner_node_id | repair_target_node_id | why_exists |
+| --- | --- | --- | --- | --- |
+| ode_demo.synthesis.boss | 综合拆解 | ode_demo.macro_challenge | ode_demo.concept | Boss 前拆解能力链 |
+
+## Edges
+| id | edge_type | source_id | target_id | reason |
+| --- | --- | --- | --- | --- |
+| e1 | supports | ode_demo.hidden.concept_basis | ode_demo.concept | 隐藏能力支撑训练节点 |
+
+## ErrorRepairMap
+| root_cause | repair_target_node_id |
+| --- | --- |
+| concept_gap | ode_demo.concept |
+"""
+
+    def _parse(self, markdown: str) -> tuple[dict[str, str], dict[str, list[dict[str, str]]]]:
+        metadata: dict[str, str] = {}
+        raw_sections: dict[str, list[str]] = defaultdict(list)
+        current_section = "__meta__"
+        for raw_line in markdown.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("# "):
+                metadata.setdefault("title", line[2:].strip())
+                continue
+            if line.startswith("## "):
+                current_section = self._normalize_section(line[3:].strip())
+                continue
+            if current_section == "__meta__" and ":" in line and not line.startswith("|"):
+                key, value = line.split(":", 1)
+                metadata[key.strip().lower()] = value.strip()
+                continue
+            raw_sections[current_section].append(line)
+
+        sections = {
+            section: self._parse_table(lines)
+            for section, lines in raw_sections.items()
+            if section != "__meta__"
+        }
+        return metadata, sections
+
+    @staticmethod
+    def _normalize_section(section: str) -> str:
+        key = re.sub(r"[^a-z0-9]+", "_", section.strip().lower()).strip("_")
+        aliases = {
+            "macro_nodes": "macronodes",
+            "micro_nodes": "micronodes",
+            "macro_challenges": "macrochallenges",
+            "hidden_abilities": "hiddenabilities",
+            "compare_guards": "compareguards",
+            "transfer_nodes": "transfernodes",
+            "synthesis_nodes": "synthesisnodes",
+            "error_repair_map": "errorrepairmap",
+        }
+        return aliases.get(key, key)
+
+    @staticmethod
+    def _parse_table(lines: list[str]) -> list[dict[str, str]]:
+        table_lines = [line for line in lines if line.startswith("|") and line.endswith("|")]
+        if len(table_lines) < 2:
+            return []
+        headers = [cell.strip() for cell in table_lines[0].strip("|").split("|")]
+        rows: list[dict[str, str]] = []
+        for line in table_lines[2:]:
+            values = [cell.strip() for cell in line.strip("|").split("|")]
+            values += [""] * max(0, len(headers) - len(values))
+            rows.append({headers[index]: values[index] for index in range(len(headers))})
+        return rows
+
+    def _build_draft(self, metadata: dict[str, str], sections: dict[str, list[dict[str, str]]]) -> dict[str, Any]:
+        chapter_id = metadata.get("chapter_id", "")
+        title = metadata.get("title", chapter_id)
+        macros = [
+            {
+                "id": row.get("id", ""),
+                "title": row.get("title", ""),
+                "knowledge_node_id": row.get("knowledge_node_id", "") or row.get("id", ""),
+            }
+            for row in sections.get("macronodes", [])
+        ]
+        micros = [
+            {
+                "id": row.get("id", ""),
+                "macro_node_id": row.get("macro_node_id", ""),
+                "type": row.get("type", ""),
+                "title": row.get("title", ""),
+                "description": row.get("description", ""),
+            }
+            for row in sections.get("micronodes", [])
+        ]
+        challenges = [
+            {
+                "id": row.get("id", ""),
+                "macro_node_id": row.get("macro_node_id", ""),
+                "title": row.get("title", ""),
+                "covers_micro_nodes": self._split_list(row.get("covers_micro_nodes", "")),
+            }
+            for row in sections.get("macrochallenges", [])
+        ]
+        abilities = self._logic_abilities(sections)
+        compare_guards = [
+            {
+                "id": row.get("id", ""),
+                "title": row.get("title", ""),
+                "node_ids": self._split_list(row.get("node_ids", "")),
+                "contrast": row.get("contrast", ""),
+                "node_kind": "compare_guard",
+            }
+            for row in sections.get("compareguards", [])
+        ]
+        edges = [
+            {
+                "id": row.get("id", ""),
+                "edge_type": row.get("edge_type", ""),
+                "source_id": row.get("source_id", ""),
+                "target_id": row.get("target_id", ""),
+                "reason": row.get("reason", ""),
+            }
+            for row in sections.get("edges", [])
+        ]
+        repair_map = [
+            {
+                "root_cause": row.get("root_cause", ""),
+                "repair_target_node_id": row.get("repair_target_node_id", ""),
+            }
+            for row in sections.get("errorrepairmap", [])
+        ]
+        return {
+            "chapter_id": chapter_id,
+            "title": title,
+            "macro_nodes": macros,
+            "micro_nodes": micros,
+            "macro_challenges": challenges,
+            "logic_nodes": abilities + compare_guards,
+            "logic_edges": edges,
+            "error_repair_map": repair_map,
+            "challenge_graph_draft": {
+                "chapter_id": chapter_id,
+                "title": title,
+                "macro_nodes": macros,
+                "micro_nodes": micros,
+                "macro_challenges": challenges,
+            },
+            "logic_graph_draft": {
+                "chapter_id": chapter_id,
+                "title": f"{title} 逻辑能力网",
+                "abilities": abilities + compare_guards,
+                "edges": edges,
+            },
+        }
+
+    def _logic_abilities(self, sections: dict[str, list[dict[str, str]]]) -> list[dict[str, Any]]:
+        abilities: list[dict[str, Any]] = []
+        for section, node_kind in [
+            ("hiddenabilities", "hidden_ability"),
+            ("transfernodes", "transfer_node"),
+            ("synthesisnodes", "synthesis_node"),
+        ]:
+            for row in sections.get(section, []):
+                abilities.append(
+                    {
+                        "id": row.get("id", ""),
+                        "title": row.get("title", ""),
+                        "node_kind": node_kind,
+                        "owner_node_id": row.get("owner_node_id", ""),
+                        "repair_target_node_id": row.get("repair_target_node_id", ""),
+                        "dimensions": self._split_list(row.get("dimensions", "")),
+                        "why_exists": row.get("why_exists", ""),
+                        "evidence_sources": self._split_list(row.get("evidence_sources", "")),
+                        "failure_modes": self._split_list(row.get("failure_modes", "")),
+                    }
+                )
+        return abilities
+
+    def _validate_draft(self, draft: dict[str, Any]) -> dict[str, Any]:
+        errors: list[dict[str, str]] = []
+        warnings: list[dict[str, str]] = []
+        self._basic_checks(draft, errors)
+        self._reference_checks(draft, errors, warnings)
+        self._quality_checks(draft, errors, warnings)
+        return {
+            "passed": not errors,
+            "error_count": len(errors),
+            "warning_count": len(warnings),
+            "errors": errors,
+            "warnings": warnings,
+        }
+
+    def _basic_checks(self, draft: dict[str, Any], errors: list[dict[str, str]]) -> None:
+        if not re.fullmatch(r"[a-zA-Z0-9_.-]+", draft.get("chapter_id", "")):
+            errors.append(self._issue("chapter_id", "chapter_id 必须存在，并且只能包含字母、数字、下划线、点或短横线。"))
+        for collection in ["macro_nodes", "micro_nodes", "macro_challenges", "logic_nodes", "logic_edges"]:
+            ids = [item.get("id", "") for item in draft.get(collection, [])]
+            missing = [item for item in draft.get(collection, []) if not item.get("id")]
+            if missing:
+                errors.append(self._issue(collection, "存在缺少 id 的条目。"))
+            duplicates = [node_id for node_id, count in Counter(ids).items() if node_id and count > 1]
+            if duplicates:
+                errors.append(self._issue(collection, f"id 重复：{', '.join(duplicates)}。"))
+
+    def _reference_checks(
+        self,
+        draft: dict[str, Any],
+        errors: list[dict[str, str]],
+        warnings: list[dict[str, str]],
+    ) -> None:
+        macro_ids = {node["id"] for node in draft.get("macro_nodes", []) if node.get("id")}
+        micro_ids = {node["id"] for node in draft.get("micro_nodes", []) if node.get("id")}
+        challenge_ids = {node["id"] for node in draft.get("macro_challenges", []) if node.get("id")}
+        logic_ids = {node["id"] for node in draft.get("logic_nodes", []) if node.get("id")}
+        known_ids = macro_ids | micro_ids | challenge_ids | logic_ids
+
+        for micro in draft.get("micro_nodes", []):
+            if micro.get("macro_node_id") not in macro_ids:
+                errors.append(self._issue(micro.get("id", "micro_nodes"), "MicroNode 引用了不存在的 MacroNode。"))
+            if micro.get("type") not in MICRO_TYPES:
+                errors.append(self._issue(micro.get("id", "micro_nodes"), f"MicroNode type 必须是：{', '.join(sorted(MICRO_TYPES))}。"))
+
+        for challenge in draft.get("macro_challenges", []):
+            if challenge.get("macro_node_id") not in macro_ids:
+                errors.append(self._issue(challenge.get("id", "macro_challenges"), "MacroChallenge 引用了不存在的 MacroNode。"))
+            for micro_id in challenge.get("covers_micro_nodes", []):
+                if micro_id not in micro_ids:
+                    errors.append(self._issue(challenge.get("id", "macro_challenges"), f"Boss 覆盖了不存在的 MicroNode：{micro_id}。"))
+
+        for logic in draft.get("logic_nodes", []):
+            if logic.get("node_kind") == "compare_guard":
+                node_ids = logic.get("node_ids", [])
+                if len(node_ids) < 2:
+                    errors.append(self._issue(logic.get("id", "compare_guard"), "CompareGuard 至少要连接两个易混节点。"))
+                if not logic.get("contrast"):
+                    errors.append(self._issue(logic.get("id", "compare_guard"), "CompareGuard 必须写清 contrast/题眼差异。"))
+                for node_id in node_ids:
+                    if node_id not in known_ids:
+                        errors.append(self._issue(logic.get("id", "compare_guard"), f"CompareGuard 引用了不存在的节点：{node_id}。"))
+                continue
+            if logic.get("owner_node_id") and logic.get("owner_node_id") not in known_ids:
+                errors.append(self._issue(logic.get("id", "logic_nodes"), "逻辑节点 owner_node_id 不存在。"))
+            if logic.get("repair_target_node_id") not in micro_ids:
+                errors.append(self._issue(logic.get("id", "logic_nodes"), "逻辑节点必须指向明确的 MicroNode repair_target_node_id。"))
+
+        for edge in draft.get("logic_edges", []):
+            if edge.get("edge_type") not in EDGE_TYPES:
+                errors.append(self._issue(edge.get("id", "logic_edges"), f"edge_type 不在允许集合内：{edge.get('edge_type')}。"))
+            if edge.get("source_id") == edge.get("target_id"):
+                errors.append(self._issue(edge.get("id", "logic_edges"), "语义边不能自连。"))
+            for field in ["source_id", "target_id"]:
+                if edge.get(field) not in known_ids:
+                    errors.append(self._issue(edge.get("id", "logic_edges"), f"{field} 引用了不存在的节点：{edge.get(field)}。"))
+            if not edge.get("reason"):
+                warnings.append(self._issue(edge.get("id", "logic_edges"), "语义边缺少 reason，后续解释力会变弱。"))
+
+    def _quality_checks(
+        self,
+        draft: dict[str, Any],
+        errors: list[dict[str, str]],
+        warnings: list[dict[str, str]],
+    ) -> None:
+        micro_by_macro: dict[str, int] = defaultdict(int)
+        micro_ids = {node["id"] for node in draft.get("micro_nodes", []) if node.get("id")}
+        logic_ids = {node["id"] for node in draft.get("logic_nodes", []) if node.get("id")}
+        for micro in draft.get("micro_nodes", []):
+            micro_by_macro[micro.get("macro_node_id", "")] += 1
+        for macro_id, count in micro_by_macro.items():
+            if count > 12:
+                errors.append(self._issue(macro_id, "单个 MacroNode 可见 MicroNode 超过 12 个，地图会膨胀。"))
+            elif count > 8:
+                warnings.append(self._issue(macro_id, "单个 MacroNode 可见 MicroNode 超过 8 个，建议合并或转为 HiddenAbility。"))
+
+        for logic in draft.get("logic_nodes", []):
+            if logic.get("node_kind") == "compare_guard":
+                continue
+            if not logic.get("why_exists"):
+                errors.append(self._issue(logic.get("id", "logic_nodes"), "隐藏/迁移/综合能力必须写 why_exists。"))
+            if logic.get("node_kind") == "hidden_ability" and not logic.get("evidence_sources"):
+                errors.append(self._issue(logic.get("id", "logic_nodes"), "HiddenAbility 必须写 evidence_sources。"))
+
+        mapped_errors = set()
+        for item in draft.get("error_repair_map", []):
+            root_cause = item.get("root_cause", "")
+            repair_target = item.get("repair_target_node_id", "")
+            if root_cause not in ERROR_TYPES:
+                errors.append(self._issue(root_cause or "error_repair_map", "root_cause 不在已知错因集合内。"))
+            if repair_target not in micro_ids:
+                errors.append(self._issue(root_cause or "error_repair_map", "每个 root_cause 必须映射到明确的 MicroNode repair target。"))
+            mapped_errors.add(root_cause)
+        if not mapped_errors:
+            errors.append(self._issue("error_repair_map", "必须提供至少一个 root cause 到 repair target 的映射。"))
+
+        edge_connected_logic = {
+            edge.get("source_id")
+            for edge in draft.get("logic_edges", [])
+            if edge.get("source_id") in logic_ids or edge.get("target_id") in logic_ids
+        } | {
+            edge.get("target_id")
+            for edge in draft.get("logic_edges", [])
+            if edge.get("source_id") in logic_ids or edge.get("target_id") in logic_ids
+        }
+        orphan_logic = sorted(logic_ids - edge_connected_logic)
+        if orphan_logic:
+            warnings.append(self._issue("logic_edges", f"存在未被语义边连接的逻辑节点：{', '.join(orphan_logic)}。"))
+
+    @staticmethod
+    def _preview(draft: dict[str, Any]) -> dict[str, Any]:
+        nodes = []
+        for collection, kind in [
+            ("macro_nodes", "macro_node"),
+            ("micro_nodes", "micro_node"),
+            ("macro_challenges", "macro_challenge"),
+            ("logic_nodes", "logic_node"),
+        ]:
+            for node in draft.get(collection, []):
+                nodes.append(
+                    {
+                        "id": node.get("id"),
+                        "title": node.get("title"),
+                        "node_kind": node.get("node_kind", kind),
+                    }
+                )
+        return {
+            "nodes": nodes,
+            "edges": draft.get("logic_edges", []),
+            "counts": {
+                "macro_nodes": len(draft.get("macro_nodes", [])),
+                "micro_nodes": len(draft.get("micro_nodes", [])),
+                "macro_challenges": len(draft.get("macro_challenges", [])),
+                "logic_nodes": len(draft.get("logic_nodes", [])),
+                "logic_edges": len(draft.get("logic_edges", [])),
+            },
+        }
+
+    @staticmethod
+    def _split_list(value: str) -> list[str]:
+        if not value:
+            return []
+        return [item.strip() for item in re.split(r"[,，;；]", value) if item.strip()]
+
+    @staticmethod
+    def _issue(target: str, message: str) -> dict[str, str]:
+        return {"target": target, "message": message}

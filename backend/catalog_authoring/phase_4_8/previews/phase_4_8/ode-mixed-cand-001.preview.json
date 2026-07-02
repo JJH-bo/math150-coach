@@ -1,0 +1,146 @@
+{
+  "candidate_record": {
+    "manifest": {
+      "answer_key_version": "1.0",
+      "audience": "learner",
+      "catalog_schema_version": "1.0",
+      "content_hash": "sha256:e42be0f4aa76372903d4bc361efc090ed2266c7c7005c8f1c44b643dae0e048c",
+      "logical_question_id": "ode-mixed-linear-vs-separable",
+      "node_id": "ode_first_order_linear",
+      "question_family_id": "phase-4-8-ode-mixed-recognition",
+      "question_id": "ode-mixed-cand-001",
+      "question_version": "1.0",
+      "rubric_version": "1.0",
+      "status": "published",
+      "supersedes": null,
+      "tags": [
+        "ode",
+        "recognition",
+        "first-order-linear",
+        "phase-4-8"
+      ]
+    },
+    "presentation": {
+      "answer_format": "expression_with_reasoning",
+      "difficulty": "standard",
+      "display_assets": [],
+      "hints_public": [
+        "Compare the equation with the standard form y' + P(x)y = Q(x)."
+      ],
+      "node_id": "ode_first_order_linear",
+      "prompt_markdown": "Solve y' + (1/x)y = x for x>0. First decide why first-order linear form is the reliable method here, then solve.",
+      "question_id": "ode-mixed-cand-001",
+      "response_step_mode": "required",
+      "stem": "Decide whether the equation should be handled as separable or first-order linear.",
+      "title": "Decide method before solving"
+    },
+    "trusted_scoring": {
+      "answer_aliases": [
+        "y = x^2/3 + C/x",
+        "xy=x^3/3+C"
+      ],
+      "authoring_metadata": {
+        "authoring_notes": "Original mixed-recognition item bound to existing first-order linear node.",
+        "source_status": "ai_assisted_original"
+      },
+      "expected_answer": "y=x^2/3+C/x",
+      "golden_case_refs": [],
+      "rubric": {
+        "dimension_weights": {},
+        "items": [
+          {
+            "description": "Recognizes first-order linear standard form.",
+            "evidence_on_hit": "Identified first-order linear structure.",
+            "evidence_on_miss": "Did not identify the linear trigger.",
+            "expected_patterns": [],
+            "id": "trigger_linear_not_separable_first",
+            "required": true,
+            "required_keywords": [
+              "linear"
+            ],
+            "target_dimensions": [
+              "trigger"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Chooses integrating factor method rather than forcing separation.",
+            "evidence_on_hit": "Chose integrating factor method.",
+            "evidence_on_miss": "Did not state integrating factor method.",
+            "expected_patterns": [],
+            "id": "method_integrating_factor",
+            "required": true,
+            "required_keywords": [
+              "integrating factor"
+            ],
+            "target_dimensions": [
+              "method"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Uses integrating factor x for x>0.",
+            "evidence_on_hit": "Identified the integrating factor x.",
+            "evidence_on_miss": "Did not identify the integrating factor x.",
+            "expected_patterns": [],
+            "id": "transformation_integrating_factor_x",
+            "required": true,
+            "required_keywords": [
+              "integrating factor",
+              "x"
+            ],
+            "target_dimensions": [
+              "transformation"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Integrates the product derivative.",
+            "evidence_on_hit": "Integrated the product derivative correctly.",
+            "evidence_on_miss": "Did not compute the product integration correctly.",
+            "expected_patterns": [],
+            "id": "calculation_integrate_x_squared",
+            "required": true,
+            "required_keywords": [
+              "x^3/3"
+            ],
+            "target_dimensions": [
+              "calculation"
+            ],
+            "weight": 1.0
+          },
+          {
+            "description": "Gives the solution in y form.",
+            "evidence_on_hit": "Final answer has the expected y form.",
+            "evidence_on_miss": "Final answer is missing the expected y form.",
+            "expected_patterns": [],
+            "id": "final_answer_linear_solution",
+            "required": true,
+            "required_keywords": [
+              "x^2/3",
+              "C/x"
+            ],
+            "target_dimensions": [
+              "final_answer"
+            ],
+            "weight": 1.0
+          }
+        ],
+        "key_points": [],
+        "merge_policy": {
+          "manual_override_first": true,
+          "missing_if_no_signal": true,
+          "strategy": "weighted_by_confidence"
+        }
+      },
+      "scoring_notes_internal": "Phase 4.8 authoring-only original mixed-recognition candidate; not formal catalog.",
+      "solution_outline": "The equation is y' + (1/x)y = x, with integrating factor x on x>0. Then (xy)' = x^2, so xy = x^3/3 + C and y = x^2/3 + C/x.",
+      "validator_config": {
+        "answer_equivalence_mode": "normalized",
+        "requires_constant": true
+      }
+    }
+  },
+  "content_hash": "sha256:e42be0f4aa76372903d4bc361efc090ed2266c7c7005c8f1c44b643dae0e048c",
+  "dry_run_only": true
+}

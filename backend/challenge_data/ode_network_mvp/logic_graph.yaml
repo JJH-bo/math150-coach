@@ -1,0 +1,873 @@
+version: 1
+chapter_id: ode_network_mvp
+title: 微分方程隐藏逻辑能力网
+abilities:
+  - id: ode.logic.separable.product_structure
+    title: 可分离方程的乘积分离结构
+    kind: concept_criterion
+    role: prerequisite
+    owner_node_id: ode_separable.concept
+    why_exists: 可分离变量法必须先证明变量确实能分到两侧，不能只凭题型名称推进。
+    dimensions: [concept]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 能说明 dy/dx=f(x)g(y) 中 f 只含 x、g 只含 y
+      - 不能只写“可分离”，必须指出变量为什么能分开
+    positive_cues: [f(x)g(y), 只含 x, 只含 y, 变量能分开]
+    weak_cues: [可分离]
+    contradiction_cues: [特征方程, 积分因子, y=vx]
+    failure_modes:
+      - 只凭“可分离”关键词推进，不能说明乘积结构
+      - 把不能分离的项强行移到两侧
+    repair_cues:
+      - 先圈出只含 x 的因子和只含 y 的因子
+      - 用一句话解释“为什么能整理成 g(y)dy=f(x)dx”
+    repair_target_node_id: ode_separable.concept
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.separable.trigger_split
+    title: 可分离题眼：变量能否放到两侧
+    kind: trigger_pattern
+    role: atomic
+    owner_node_id: ode_separable.trigger
+    why_exists: 题眼识别必须先判断变量能否放到两侧，避免把答案对的题误判为真正掌握。
+    dimensions: [trigger]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 看到乘积、商式或微分形式时先判断 x/y 是否能分到两边
+      - 能区分“可分离”与“一阶线性”的入口
+    positive_cues: [可分离, 分离变量, g(y)dy, f(x)dx, dy/y]
+    weak_cues: [分开, 积分]
+    contradiction_cues: [一阶线性, 积分因子, 特征方程, y=vx]
+    failure_modes:
+      - 只写方法名，不说明题目条件为什么触发可分离
+      - 与一阶线性或齐次入口混淆
+    repair_cues:
+      - 先写“触发条件”，再写方法名
+      - 与一阶线性标准形做一次对比
+    repair_target_node_id: ode_separable.trigger
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.separable.method_reason
+    title: 分离变量法的选择依据
+    kind: method_step
+    role: atomic
+    owner_node_id: ode_separable.method
+    why_exists: 方法选择要由题眼推出，防止学生只记住“这类题分离变量”而无法迁移。
+    dimensions: [method]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 能说明为什么采用分离变量法
+      - 能写出分离后的第一步形式
+    positive_cues: [分离变量法, 分离变量, dy/y, g(y)dy=f(x)dx]
+    weak_cues: [可分离]
+    contradiction_cues: [积分因子, 特征方程, 齐次换元]
+    failure_modes:
+      - 方法名正确但没有给出选择依据
+      - 入口判断错误导致后续方法套错
+    repair_cues:
+      - 写出 dy/y = f(x)dx 这类可执行入口
+      - 不要只凭题型记忆直接套方法
+    repair_target_node_id: ode_separable.method
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.separable.side_move
+    title: 分离变量的两侧安放规则
+    kind: transformation_rule
+    role: atomic
+    owner_node_id: ode_separable.transformation
+    why_exists: 可分离方法真正落地在变量与微分符号的等价安放，转化错会派生计算错。
+    dimensions: [transformation]
+    evidence_sources: [score_vector, rubric_evidence, response_text, math_validator_flags, hidden_logic_cues]
+    evidence_requirements:
+      - 含 y 的表达式必须跟 dy 同侧
+      - 含 x 的表达式必须跟 dx 同侧
+    positive_cues: [dy/y, g(y)dy, f(x)dx, dx]
+    weak_cues: [移项, 分离]
+    contradiction_cues: [直接积分右端, 先求特征根]
+    failure_modes:
+      - 分离时把 x、y 混在同侧
+      - 除以含 y 项时没有意识到等价条件
+    repair_cues:
+      - 每一步检查变量是否已经放到正确一侧
+      - 除以含 y 的表达式时注意非零条件或特殊解
+    repair_target_node_id: ode_separable.transformation
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.separable.integral_constant
+    title: 分离后积分与任意常数处理
+    kind: calculation_skill
+    role: atomic
+    owner_node_id: ode_separable.calculation
+    why_exists: 漏 C、积分或常数吸收错误是下游答案错的常见来源，但不应回推成方法错。
+    dimensions: [calculation, final_answer]
+    evidence_sources: [score_vector, rubric_evidence, math_validator_flags, response_text]
+    evidence_requirements:
+      - 两边积分正确
+      - 通解题必须保留任意常数 C
+    positive_cues: [C, 任意常数, ln|, 积分]
+    weak_cues: [常数]
+    contradiction_cues: [不需要常数, 忘记C, 漏C]
+    failure_modes:
+      - 积分正确但漏写任意常数 C
+      - 常数吸收或对数绝对值处理不稳
+    repair_cues:
+      - 两边积分后只保留一个任意常数
+      - 指数化或对数化时检查常数吸收
+    repair_target_node_id: ode_separable.calculation
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.separable.solution_format
+    title: 通解与特解的收束表达
+    kind: expression_rule
+    role: expression
+    owner_node_id: ode_separable.expression
+    why_exists: 最终表达要回答题目要求，区分通解、特解、隐式解和常数形式。
+    dimensions: [expression, final_answer]
+    evidence_sources: [score_vector, rubric_evidence, math_validator_flags, response_text]
+    evidence_requirements:
+      - 通解保留 C，初值题求出特解
+      - 最后一行符合题目要求的形式
+    positive_cues: [通解, 特解, 因此, y=, C]
+    weak_cues: [答案]
+    contradiction_cues: [停在通解, 不代初值]
+    failure_modes:
+      - 过程可追踪但最后一行没有按题目收束
+      - 初值题停在含 C 的通解
+    repair_cues:
+      - 最后一行写清“因此通解为...”
+      - 有初值时不能停在含 C 的通解
+    repair_target_node_id: ode_separable.expression
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.linear.standard_form
+    title: 一阶线性标准形识别
+    kind: concept_criterion
+    role: prerequisite
+    owner_node_id: ode_first_order_linear.concept
+    why_exists: 一阶线性法依赖标准形对象 P(x)、Q(x)，否则积分因子链条没有合法入口。
+    dimensions: [concept]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 能整理到 y' + P(x)y = Q(x)
+      - 能指出 P(x)、Q(x) 的对象
+    positive_cues: ["一阶线性", "P(x)", "Q(x)", "线性标准形"]
+    weak_cues: [线性]
+    contradiction_cues: [可分离, y=vx, 特征方程]
+    failure_modes:
+      - 未标准化就声称是一阶线性
+      - 不能指出 P(x) 与 Q(x)
+    repair_cues:
+      - 先把 y' 的系数化为 1
+      - 再识别 P(x) 和 Q(x)
+    repair_target_node_id: ode_first_order_linear.concept
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.linear.trigger_coefficients
+    title: 一阶线性题眼：y 与 y' 线性出现
+    kind: trigger_pattern
+    role: atomic
+    owner_node_id: ode_first_order_linear.trigger
+    why_exists: 线性题眼判断要确认 y、y' 的出现方式和系数对象，不能只看“线性”字眼。
+    dimensions: [trigger]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - y 与 y' 只一次出现
+      - 系数只依赖自变量 x
+    positive_cues: ["一阶线性", "y'", "P(x)", "Q(x)"]
+    weak_cues: [线性]
+    contradiction_cues: [可分离, 齐次, y=vx]
+    failure_modes:
+      - 把含 y 的非线性表达误认为一阶线性
+      - 与可分离或一阶齐次入口混淆
+    repair_cues:
+      - 先检查 y 是否非线性出现
+      - 再和可分离入口对比
+    repair_target_node_id: ode_first_order_linear.trigger
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.linear.integrating_factor_reason
+    title: 积分因子法的选择依据
+    kind: method_step
+    role: atomic
+    owner_node_id: ode_first_order_linear.method
+    why_exists: 积分因子不是记忆公式，它必须由标准形和乘积导数结构推出。
+    dimensions: [method]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 能写出积分因子 e^{∫P(x)dx}
+      - 能说明乘入后左侧成为乘积导数
+    positive_cues: ["积分因子", "P(x)", "乘积导数"]
+    weak_cues: [因子]
+    contradiction_cues: [分离变量, y=vx, 特征方程]
+    failure_modes:
+      - 只写积分因子公式，不说明为什么乘入
+      - 方法依据与标准形不匹配
+    repair_cues:
+      - 先找 P(x)，再写积分因子
+      - 写出“乘入后左边是 (μy)'”
+    repair_target_node_id: ode_first_order_linear.method
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.linear.normalize_before_factor
+    title: 使用积分因子前必须标准化
+    kind: transformation_rule
+    role: atomic
+    owner_node_id: ode_first_order_linear.transformation
+    why_exists: 未标准化会直接取错 P(x)，使积分因子、计算和答案全部派生错误。
+    dimensions: [transformation]
+    evidence_sources: [score_vector, rubric_evidence, math_validator_flags, response_text]
+    evidence_requirements:
+      - y' 系数归一之后才确定 P(x)
+      - 标准形错误会导致后续全错
+    positive_cues: [标准形, y'系数, P(x), Q(x)]
+    weak_cues: [整理]
+    contradiction_cues: [未标准化, 直接取P]
+    failure_modes:
+      - 没有除以 y' 系数就计算积分因子
+      - 标准形右端 Q(x) 处理错误
+    repair_cues:
+      - 不要在未标准化时直接取 P(x)
+      - 标准化后重新检查右端 Q(x)
+    repair_target_node_id: ode_first_order_linear.transformation
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.linear.initial_condition_resolution
+    title: 初值条件收束为特解
+    kind: condition_rule
+    role: condition
+    owner_node_id: ode_first_order_linear.expression
+    why_exists: 初值遗漏要定位为条件跟踪问题，而不是被最终答案分数或计算错误掩盖。
+    dimensions: [expression, final_answer]
+    evidence_sources: [score_vector, rubric_evidence, math_validator_flags, response_text]
+    evidence_requirements:
+      - 初值题必须求出 C 的具体值
+      - 最终答案不能仍停在通解
+    positive_cues: [C=, 代入初值, y(0), 特解]
+    weak_cues: [初值]
+    contradiction_cues: [停在通解, 含C]
+    failure_modes:
+      - 写出通解但没有代入初值
+      - 求出 C 后没有把特解写成最终答案
+    repair_cues:
+      - 列出初值条件并代入通解
+      - 最后一行写成不含 C 的特解
+    repair_target_node_id: ode_first_order_linear.expression
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.homogeneous.ratio_trigger
+    title: 一阶齐次题眼：只依赖 y/x 或 x/y
+    kind: trigger_pattern
+    role: atomic
+    owner_node_id: ode_homogeneous_first_order.trigger
+    why_exists: 一阶齐次入口来自比值结构，必须和一阶线性齐次、可分离入口分开。
+    dimensions: [trigger]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 能把右端整理成 y/x 或 x/y 的函数
+      - 能区分一阶齐次与一阶线性
+    positive_cues: [齐次, y/x, x/y, 比值]
+    weak_cues: [同次]
+    contradiction_cues: [积分因子, 一阶线性, 特征方程]
+    failure_modes:
+      - 把“齐次线性”和“一阶齐次”混用
+      - 看到 y/x 但不能说明整体只依赖比值
+    repair_cues:
+      - 同除 x 或 y，看是否只剩比值
+      - 不要把“齐次线性”和“一阶齐次”混用
+    repair_target_node_id: ode_homogeneous_first_order.trigger
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.homogeneous.substitution
+    title: 齐次换元 y=vx 与导数替换
+    kind: transformation_rule
+    role: atomic
+    owner_node_id: ode_homogeneous_first_order.transformation
+    why_exists: 齐次换元的关键不是只替换 y，而是同步替换导数并转回可分离结构。
+    dimensions: [method, transformation]
+    evidence_sources: [score_vector, rubric_evidence, math_validator_flags, response_text]
+    evidence_requirements:
+      - 选择 y=vx 或 x=vy 有依据
+      - dy/dx 同步替换为 v+x dv/dx
+    positive_cues: [y=vx, x=vy, v+x, dv/dx]
+    weak_cues: [换元]
+    contradiction_cues: [只替换y, 积分因子, integrating factor]
+    failure_modes:
+      - 只替换 y，没有替换 dy/dx
+      - 换元后没有得到可分离结构
+    repair_cues:
+      - 不能只替换 y，必须替换 dy/dx
+      - 换元后应回到可分离结构
+    repair_target_node_id: ode_homogeneous_first_order.transformation
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.compare.separable_linear
+    title: 可分离与一阶线性的入口对比
+    kind: misconception_guard
+    role: confusion_guard
+    owner_node_id: ode.compare.separable_vs_linear
+    why_exists: 这两类一阶方程都会先整理形式，必须用入口条件而不是熟悉感区分。
+    dimensions: [trigger, method]
+    evidence_sources: [response_text, hidden_logic_cues, diagnosis_root_cause]
+    evidence_requirements:
+      - 可分离先问能否 x/y 两侧分离
+      - 一阶线性先问能否化为 y'+P(x)y=Q(x)
+    positive_cues: [可分离, 一阶线性, 对比, 标准形]
+    weak_cues: [都是一阶, 都能积分]
+    contradiction_cues: [直接套积分因子, 直接分离]
+    failure_modes:
+      - 把可分离入口和一阶线性标准形入口混在一起
+      - 只因两类题都要积分就误选方法
+    repair_cues:
+      - 把两个入口写成判别表
+      - 答题时先写触发条件，再写方法名
+    repair_target_node_id: ode_separable.trigger
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.compare.linear_homogeneous
+    title: 一阶线性与一阶齐次的入口对比
+    kind: misconception_guard
+    role: confusion_guard
+    owner_node_id: ode.compare.linear_vs_homogeneous
+    why_exists: 一阶线性和一阶齐次都可能出现比例或标准形整理，需要显式对比入口。
+    dimensions: [trigger, method]
+    evidence_sources: [response_text, hidden_logic_cues, diagnosis_root_cause]
+    evidence_requirements:
+      - 一阶线性看 y 与 y' 的线性结构
+      - 一阶齐次看比值结构
+    positive_cues: [一阶线性, 一阶齐次, 比值, 标准形]
+    weak_cues: [齐次, 线性]
+    contradiction_cues: [把一阶齐次当线性齐次, 看到比值仍套积分因子]
+    failure_modes:
+      - 把一阶齐次和线性齐次混为一谈
+      - 在比值结构和线性标准形之间没有明确判据
+    repair_cues:
+      - 同一题先尝试标准形，再看比值结构是否成立
+      - 不要只因为出现 y/x 就忽略整体形式
+    repair_target_node_id: ode_first_order_linear.trigger
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.linear.integrating_factor_compute
+    title: 积分因子计算链
+    kind: calculation_skill
+    role: atomic
+    owner_node_id: ode_first_order_linear.calculation
+    why_exists: 线性方程答案错常由积分因子计算链派生，应和方法选择错误区分。
+    dimensions: [calculation, final_answer]
+    evidence_sources: [score_vector, rubric_evidence, math_validator_flags, response_text]
+    evidence_requirements:
+      - 从标准化后的 P(x) 计算积分因子
+      - 乘入方程后能识别左侧乘积导数并积分
+    positive_cues: [积分因子, mu, μ, 乘积导数, 积分]
+    weak_cues: [因子, integral]
+    contradiction_cues: [P取错, 未标准化, 忘记因子]
+    failure_modes:
+      - 积分因子计算错误导致后续答案错
+      - 乘入后没有识别乘积导数
+    repair_cues:
+      - 先标准化，再计算积分因子。
+      - 积分前检查左侧是否真的变成乘积导数。
+    repair_target_node_id: ode_first_order_linear.calculation
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.homogeneous.ratio_concept
+    title: 一阶齐次比值结构概念
+    kind: concept_criterion
+    role: prerequisite
+    owner_node_id: ode_homogeneous_first_order.concept
+    why_exists: 一阶齐次方法依赖比值结构概念，必须先排除线性齐次等相邻概念混用。
+    dimensions: [concept]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 能说明右端只依赖 y/x 或 x/y
+      - 能区分一阶齐次方程与线性齐次方程
+    positive_cues: [y/x, x/y, 比值, 一阶齐次]
+    weak_cues: [齐次]
+    contradiction_cues: [线性齐次, 特征方程]
+    failure_modes:
+      - 用“齐次”一词代替具体比值结构判断
+      - 与二阶线性齐次或线性齐次概念混淆
+    repair_cues:
+      - 化简后说清剩下的是哪个比值。
+      - 不要把一阶齐次和线性齐次混用。
+    repair_target_node_id: ode_homogeneous_first_order.concept
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.homogeneous.substitution_reason
+    title: 齐次换元选择依据
+    kind: method_step
+    role: atomic
+    owner_node_id: ode_homogeneous_first_order.method
+    why_exists: 换元方法必须由比值结构推出，避免学生机械写 y=vx 却不能解释。
+    dimensions: [method]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 根据比值结构选择 y=vx 或 x=vy
+      - 说明为什么要先换元再分离
+    positive_cues: [y=vx, x=vy, 换元, 比值]
+    weak_cues: [v]
+    contradiction_cues: [积分因子, integrating factor, 直接分离]
+    failure_modes:
+      - 写出换元但没有说明选择依据
+      - 比值方向与换元方式不匹配
+    repair_cues:
+      - 从题目中出现的比值决定换元方式。
+      - 说明换元后为什么会转成可分离结构。
+    repair_target_node_id: ode_homogeneous_first_order.method
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.homogeneous.solve_v_chain
+    title: 换元后 v 方程求解链
+    kind: calculation_skill
+    role: atomic
+    owner_node_id: ode_homogeneous_first_order.calculation
+    why_exists: 换元后的 v 方程计算错是局部执行问题，不能自动回推为题眼或方法错误。
+    dimensions: [calculation, final_answer]
+    evidence_sources: [score_vector, rubric_evidence, math_validator_flags, response_text]
+    evidence_requirements:
+      - 解出换元后的可分离方程
+      - 回代前后都保留任意常数
+    positive_cues: [dv/dx, 分离, 积分, C]
+    weak_cues: [积分]
+    contradiction_cues: [漏C, 停在v]
+    failure_modes:
+      - v 方程分离或积分错误
+      - 求出 v 后丢失任意常数
+    repair_cues:
+      - 换元后把 v 方程当作一个新的可分离问题求解。
+      - 写回原变量之前不要丢掉 C。
+    repair_target_node_id: ode_homogeneous_first_order.calculation
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.homogeneous.back_substitute_expression
+    title: 回代后的最终表达
+    kind: expression_rule
+    role: expression
+    owner_node_id: ode_homogeneous_first_order.expression
+    why_exists: 一阶齐次答案必须回到原变量，停在 v 是表达与收束问题。
+    dimensions: [expression, final_answer]
+    evidence_sources: [score_vector, rubric_evidence, math_validator_flags, response_text]
+    evidence_requirements:
+      - 把 v 回代成 y/x 或 x/y
+      - 最终答案写回原变量
+    positive_cues: [回代, y/x, 原变量, 最终答案]
+    weak_cues: [答案]
+    contradiction_cues: [停在v, 没有回代]
+    failure_modes:
+      - 最后一行停留在 v 或辅助变量
+      - 最终表达没有回答原题变量
+    repair_cues:
+      - 最后一行必须回到 x 与 y。
+      - 检查最终表达是否回答了原题。
+    repair_target_node_id: ode_homogeneous_first_order.expression
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.compare.separable_homogeneous
+    title: 可分离与一阶齐次的入口对比
+    kind: misconception_guard
+    role: confusion_guard
+    owner_node_id: ode.compare.separable_vs_homogeneous
+    why_exists: 可分离和一阶齐次最终都可能分离变量，但进入分离之前的结构判断不同。
+    dimensions: [method, transformation]
+    evidence_sources: [response_text, hidden_logic_cues, diagnosis_root_cause]
+    evidence_requirements:
+      - 可分离方程可以直接把变量移到两侧
+      - 一阶齐次方程通常先做 y=vx 或 x=vy 换元
+    positive_cues: [可分离和齐次, y=vx, 直接分离]
+    weak_cues: [对比]
+    contradiction_cues: [比值式直接分离, 已可分离仍换元]
+    failure_modes:
+      - 能直接分离时仍机械换元
+      - 一阶齐次需要先换元时却强行直接分离
+    repair_cues:
+      - 先判断能否直接分离，再决定是否换元。
+      - 如果只剩比值结构，通常先换元再分离。
+    repair_target_node_id: ode_homogeneous_first_order.method
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.transfer.first_order_method_selection
+    title: 一阶方程方法迁移选择
+    kind: synthesis_path
+    role: transfer_node
+    owner_node_id: ode.compare.separable_vs_homogeneous
+    why_exists: 学生从标准题迁移到变式时，最容易在可分离、线性、齐次之间摇摆。
+    dimensions: [migration, trigger, method]
+    evidence_sources: [score_vector, response_text, hidden_logic_cues]
+    evidence_requirements:
+      - 能先判断入口结构，再迁移到对应方法
+      - 能说明为什么不用相邻方法
+    positive_cues: [先判断结构, 迁移, 对比方法]
+    weak_cues: [方法]
+    contradiction_cues: [只凭题感, 直接套公式]
+    failure_modes:
+      - 标准题会做，变式中无法判断入口
+      - 在相邻方法之间来回切换但没有证据
+    repair_cues:
+      - 把题目先归类为可分离、线性或齐次，再写方法。
+      - 每次迁移都写一句“为什么不是另外两类”。
+    repair_target_node_id: ode_separable.trigger
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.synthesis.first_order_chain_decomposition
+    title: 一阶方程综合拆解门
+    kind: synthesis_path
+    role: synthesis_node
+    owner_node_id: ode_first_order_linear.macro_challenge
+    why_exists: 综合题不能只看最终答案，必须先拆成概念、题眼、方法、转化、计算、表达六段能力链，再进入 Boss 验收。
+    dimensions: [concept, trigger, method, transformation, calculation, expression]
+    evidence_sources: [score_vector, rubric_evidence, response_text, hidden_logic_cues, graph_edge_semantics]
+    evidence_requirements:
+      - 能把综合题先拆成题型识别、方法选择、可执行转化、计算收束四段主链
+      - 能说明哪一段是前置，哪一段只是下游结果
+    positive_cues: [先判断题型, 再选方法, 转化后计算, 最后收束表达]
+    weak_cues: [直接套公式, 只写答案, 步骤跳跃]
+    contradiction_cues: [题型未判定就计算, 方法与题眼不一致, 过程无法追踪]
+    failure_modes:
+      - 综合题一上来套某个方法，缺少拆解顺序
+      - 答案接近正确但无法说明每一步依赖哪段能力
+    repair_cues:
+      - 先画出“题眼 -> 方法 -> 转化 -> 计算 -> 表达”的五步链
+      - 标出当前卡住的是入口、方法、转化还是下游计算
+    repair_target_node_id: ode_first_order_linear.method
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.synthesis.separable_boss
+    title: 可分离变量 Boss 综合验收标准
+    kind: synthesis_path
+    role: boss_criterion
+    owner_node_id: ode_separable.macro_challenge
+    why_exists: Boss 必须验证概念、题眼、方法、转化、计算、表达能串成完整链条。
+    dimensions: [trigger, method, transformation, calculation, expression]
+    evidence_sources: [score_vector, rubric_evidence, hidden_logic_cues]
+    evidence_requirements:
+      - 能从题眼走到方法选择
+      - 能完成分离、积分、常数与最终表达
+    failure_modes:
+      - 小节点分别会，但综合题链条断裂
+      - 最终答案错误掩盖了上游转化问题
+    repair_cues:
+      - 按“题眼-方法-转化-计算-表达”重写完整链。
+    repair_target_node_id: ode_separable.method
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.synthesis.linear_boss
+    title: 一阶线性 Boss 综合验收标准
+    kind: synthesis_path
+    role: boss_criterion
+    owner_node_id: ode_first_order_linear.macro_challenge
+    why_exists: Boss 要检查标准化、积分因子、乘积导数和最终表达是否能串起来。
+    dimensions: [trigger, method, transformation, calculation, expression]
+    evidence_sources: [score_vector, rubric_evidence, hidden_logic_cues]
+    evidence_requirements:
+      - 能标准化到 y' + P(x)y = Q(x)
+      - 能正确使用积分因子并收束答案
+    failure_modes:
+      - 未标准化就取 P(x)
+      - 只记公式但不能解释乘积导数
+    repair_cues:
+      - 先重做标准形，再检查积分因子链条。
+    repair_target_node_id: ode_first_order_linear.transformation
+    visibility_policy: diagnosis_only
+
+  - id: ode.logic.synthesis.homogeneous_boss
+    title: 一阶齐次 Boss 综合验收标准
+    kind: synthesis_path
+    role: boss_criterion
+    owner_node_id: ode_homogeneous_first_order.macro_challenge
+    why_exists: Boss 要检查比值识别、换元、分离变量和回代表达是否闭合。
+    dimensions: [trigger, method, transformation, calculation, expression]
+    evidence_sources: [score_vector, rubric_evidence, hidden_logic_cues]
+    evidence_requirements:
+      - 能识别 y/x 或 x/y 比值结构
+      - 能换元、求 v 方程并回代
+    failure_modes:
+      - 只替换 y 没替换 dy/dx
+      - 答案停在 v 而未回代
+    repair_cues:
+      - 重写换元导数替换，再检查最后一行是否回到 x、y。
+    repair_target_node_id: ode_homogeneous_first_order.transformation
+    visibility_policy: diagnosis_only
+
+edges:
+  - id: logic.edge.sep.concept_to_trigger
+    edge_type: supports
+    source_id: ode.logic.separable.product_structure
+    target_id: ode.logic.separable.trigger_split
+    label: 概念支撑题眼
+  - id: logic.edge.sep.trigger_to_method
+    edge_type: requires
+    source_id: ode.logic.separable.trigger_split
+    target_id: ode.logic.separable.method_reason
+    label: 题眼决定方法
+  - id: logic.edge.sep.trigger_derives_method
+    edge_type: derives_to
+    source_id: ode.logic.separable.trigger_split
+    target_id: ode.logic.separable.method_reason
+    label: 题眼推导到方法
+  - id: logic.edge.sep.method_to_transform
+    edge_type: transforms_to
+    source_id: ode.logic.separable.method_reason
+    target_id: ode.logic.separable.side_move
+    label: 方法落到转化
+  - id: logic.edge.sep.transform_to_calc
+    edge_type: requires
+    source_id: ode.logic.separable.side_move
+    target_id: ode.logic.separable.integral_constant
+    label: 转化正确才计算
+  - id: logic.edge.sep.calc_to_expression
+    edge_type: supports
+    source_id: ode.logic.separable.integral_constant
+    target_id: ode.logic.separable.solution_format
+    label: 计算支撑表达
+  - id: logic.edge.compare.sep_linear
+    edge_type: commonly_confused_with
+    source_id: ode.logic.separable.trigger_split
+    target_id: ode.logic.linear.trigger_coefficients
+    label: 可分离与线性易混
+  - id: logic.edge.compare.linear_hom
+    edge_type: commonly_confused_with
+    source_id: ode.logic.linear.trigger_coefficients
+    target_id: ode.logic.homogeneous.ratio_trigger
+    label: 线性与齐次易混
+  - id: logic.edge.linear.concept_to_trigger
+    edge_type: supports
+    source_id: ode.logic.linear.standard_form
+    target_id: ode.logic.linear.trigger_coefficients
+    label: 标准形概念支撑题眼
+  - id: logic.edge.linear.trigger_derives_method
+    edge_type: derives_to
+    source_id: ode.logic.linear.trigger_coefficients
+    target_id: ode.logic.linear.integrating_factor_reason
+    label: 线性题眼推导积分因子法
+  - id: logic.edge.linear.method_to_transform
+    edge_type: transforms_to
+    source_id: ode.logic.linear.integrating_factor_reason
+    target_id: ode.logic.linear.normalize_before_factor
+    label: 积分因子法要求先标准化
+  - id: logic.edge.linear.transform_to_calc
+    edge_type: requires
+    source_id: ode.logic.linear.normalize_before_factor
+    target_id: ode.logic.linear.integrating_factor_compute
+    label: 标准化正确才计算积分因子
+  - id: logic.edge.linear.calc_to_expression
+    edge_type: supports
+    source_id: ode.logic.linear.integrating_factor_compute
+    target_id: ode.logic.linear.initial_condition_resolution
+    label: 计算链支撑最终表达
+  - id: logic.edge.homogeneous.concept_to_trigger
+    edge_type: supports
+    source_id: ode.logic.homogeneous.ratio_concept
+    target_id: ode.logic.homogeneous.ratio_trigger
+    label: 比值概念支撑题眼
+  - id: logic.edge.homogeneous.trigger_derives_method
+    edge_type: derives_to
+    source_id: ode.logic.homogeneous.ratio_trigger
+    target_id: ode.logic.homogeneous.substitution_reason
+    label: 比值题眼推导换元方法
+  - id: logic.edge.homogeneous.method_to_transform
+    edge_type: transforms_to
+    source_id: ode.logic.homogeneous.substitution_reason
+    target_id: ode.logic.homogeneous.substitution
+    label: 换元方法落到导数替换
+  - id: logic.edge.homogeneous.transform_to_calc
+    edge_type: requires
+    source_id: ode.logic.homogeneous.substitution
+    target_id: ode.logic.homogeneous.solve_v_chain
+    label: 换元转化正确才求 v
+  - id: logic.edge.homogeneous.calc_to_expression
+    edge_type: supports
+    source_id: ode.logic.homogeneous.solve_v_chain
+    target_id: ode.logic.homogeneous.back_substitute_expression
+    label: v 方程计算支撑回代表达
+  - id: logic.edge.compare.sep_linear_repairs
+    edge_type: repairs
+    source_id: ode.logic.compare.separable_linear
+    target_id: ode.logic.separable.trigger_split
+    label: 可分离线性混淆修复题眼
+  - id: logic.edge.compare.linear_hom_repairs
+    edge_type: repairs
+    source_id: ode.logic.compare.linear_homogeneous
+    target_id: ode.logic.linear.trigger_coefficients
+    label: 线性齐次混淆修复题眼
+  - id: logic.edge.compare.sep_hom_repairs
+    edge_type: repairs
+    source_id: ode.logic.compare.separable_homogeneous
+    target_id: ode.logic.homogeneous.substitution_reason
+    label: 可分离齐次混淆修复方法
+  - id: logic.edge.transfer.method_selection
+    edge_type: transfers_to
+    source_id: ode.logic.separable.method_reason
+    target_id: ode.logic.transfer.first_order_method_selection
+    label: 可分离方法迁移到一阶方法选择
+  - id: logic.edge.transfer.homogeneous_method_selection
+    edge_type: transfers_to
+    source_id: ode.logic.homogeneous.substitution_reason
+    target_id: ode.logic.transfer.first_order_method_selection
+    label: 齐次换元迁移到一阶方法选择
+  - id: logic.edge.synthesis.chain_to_sep_boss
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.first_order_chain_decomposition
+    target_id: ode.logic.synthesis.separable_boss
+    label: 综合拆解门连接可分离 Boss 验收
+  - id: logic.edge.synthesis.chain_to_linear_boss
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.first_order_chain_decomposition
+    target_id: ode.logic.synthesis.linear_boss
+    label: 综合拆解门连接线性 Boss 验收
+  - id: logic.edge.synthesis.chain_to_homogeneous_boss
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.first_order_chain_decomposition
+    target_id: ode.logic.synthesis.homogeneous_boss
+    label: 综合拆解门连接齐次 Boss 验收
+  - id: logic.edge.boss.sep.checks_method
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.separable_boss
+    target_id: ode.logic.separable.method_reason
+    label: Boss 检查可分离方法链
+  - id: logic.edge.boss.sep.checks_expression
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.separable_boss
+    target_id: ode.logic.separable.solution_format
+    label: Boss 检查可分离收束表达
+  - id: logic.edge.boss.linear.checks_transform
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.linear_boss
+    target_id: ode.logic.linear.normalize_before_factor
+    label: Boss 检查线性标准化
+  - id: logic.edge.boss.linear.checks_calc
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.linear_boss
+    target_id: ode.logic.linear.integrating_factor_compute
+    label: Boss 检查积分因子计算链
+  - id: logic.edge.boss.homogeneous.checks_transform
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.homogeneous_boss
+    target_id: ode.logic.homogeneous.substitution
+    label: Boss 检查齐次换元转化
+  - id: logic.edge.boss.homogeneous.checks_expression
+    edge_type: boss_checks
+    source_id: ode.logic.synthesis.homogeneous_boss
+    target_id: ode.logic.homogeneous.back_substitute_expression
+    label: Boss 检查齐次回代表达
+
+node_ability_map:
+  ode_separable:
+    - ode.logic.separable.product_structure
+    - ode.logic.separable.trigger_split
+    - ode.logic.separable.method_reason
+    - ode.logic.separable.side_move
+    - ode.logic.separable.integral_constant
+    - ode.logic.separable.solution_format
+  ode_separable.concept:
+    - ode.logic.separable.product_structure
+  ode_separable.trigger:
+    - ode.logic.separable.trigger_split
+  ode_separable.method:
+    - ode.logic.separable.method_reason
+  ode_separable.transformation:
+    - ode.logic.separable.side_move
+  ode_separable.calculation:
+    - ode.logic.separable.integral_constant
+  ode_separable.expression:
+    - ode.logic.separable.solution_format
+  ode_first_order_linear:
+    - ode.logic.linear.standard_form
+    - ode.logic.linear.trigger_coefficients
+    - ode.logic.linear.integrating_factor_reason
+    - ode.logic.linear.normalize_before_factor
+    - ode.logic.linear.integrating_factor_compute
+    - ode.logic.linear.initial_condition_resolution
+  ode_first_order_linear.concept:
+    - ode.logic.linear.standard_form
+  ode_first_order_linear.trigger:
+    - ode.logic.linear.trigger_coefficients
+  ode_first_order_linear.method:
+    - ode.logic.linear.integrating_factor_reason
+  ode_first_order_linear.transformation:
+    - ode.logic.linear.normalize_before_factor
+  ode_first_order_linear.calculation:
+    - ode.logic.linear.integrating_factor_compute
+  ode_first_order_linear.expression:
+    - ode.logic.linear.initial_condition_resolution
+  ode_homogeneous_first_order:
+    - ode.logic.homogeneous.ratio_concept
+    - ode.logic.homogeneous.ratio_trigger
+    - ode.logic.homogeneous.substitution_reason
+    - ode.logic.homogeneous.substitution
+    - ode.logic.homogeneous.solve_v_chain
+    - ode.logic.homogeneous.back_substitute_expression
+  ode_homogeneous_first_order.concept:
+    - ode.logic.homogeneous.ratio_concept
+  ode_homogeneous_first_order.trigger:
+    - ode.logic.homogeneous.ratio_trigger
+  ode_homogeneous_first_order.method:
+    - ode.logic.homogeneous.substitution_reason
+  ode_homogeneous_first_order.transformation:
+    - ode.logic.homogeneous.substitution
+  ode_homogeneous_first_order.calculation:
+    - ode.logic.homogeneous.solve_v_chain
+  ode_homogeneous_first_order.expression:
+    - ode.logic.homogeneous.back_substitute_expression
+  ode.compare.separable_vs_linear:
+    - ode.logic.compare.separable_linear
+  ode.compare.linear_vs_homogeneous:
+    - ode.logic.compare.linear_homogeneous
+  ode.compare.separable_vs_homogeneous:
+    - ode.logic.compare.separable_homogeneous
+    - ode.logic.transfer.first_order_method_selection
+  ode_separable.macro_challenge:
+    - ode.logic.synthesis.separable_boss
+  ode_first_order_linear.macro_challenge:
+    - ode.logic.synthesis.first_order_chain_decomposition
+    - ode.logic.synthesis.linear_boss
+  ode_homogeneous_first_order.macro_challenge:
+    - ode.logic.synthesis.homogeneous_boss
+
+error_ability_map:
+  concept_gap:
+    - ode.logic.separable.product_structure
+    - ode.logic.linear.standard_form
+    - ode.logic.homogeneous.ratio_concept
+  trigger_failure:
+    - ode.logic.separable.trigger_split
+    - ode.logic.linear.trigger_coefficients
+    - ode.logic.homogeneous.ratio_trigger
+  method_error:
+    - ode.logic.separable.method_reason
+    - ode.logic.linear.integrating_factor_reason
+    - ode.logic.homogeneous.substitution_reason
+  transformation_error:
+    - ode.logic.separable.side_move
+    - ode.logic.linear.normalize_before_factor
+    - ode.logic.homogeneous.substitution
+  process_gap:
+    - ode.logic.separable.method_reason
+    - ode.logic.separable.side_move
+    - ode.logic.separable.solution_format
+  calculation_error:
+    - ode.logic.separable.integral_constant
+    - ode.logic.linear.integrating_factor_compute
+    - ode.logic.homogeneous.solve_v_chain
+  formula_memory_error:
+    - ode.logic.linear.integrating_factor_reason
+  expression_weakness:
+    - ode.logic.separable.solution_format
+    - ode.logic.linear.initial_condition_resolution
+    - ode.logic.homogeneous.back_substitute_expression
+  condition_miss:
+    - ode.logic.linear.initial_condition_resolution
+  knowledge_confusion:
+    - ode.logic.compare.separable_linear
+    - ode.logic.compare.linear_homogeneous
+    - ode.logic.compare.separable_homogeneous
+  synthesis_failure:
+    - ode.logic.separable.method_reason
+    - ode.logic.separable.side_move
+    - ode.logic.synthesis.first_order_chain_decomposition
+    - ode.logic.synthesis.separable_boss
+    - ode.logic.synthesis.linear_boss
+    - ode.logic.synthesis.homogeneous_boss
+  migration_failure:
+    - ode.logic.compare.separable_linear
+    - ode.logic.compare.separable_homogeneous
+    - ode.logic.transfer.first_order_method_selection

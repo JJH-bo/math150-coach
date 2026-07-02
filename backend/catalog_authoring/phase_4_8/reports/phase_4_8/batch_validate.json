@@ -1,0 +1,133 @@
+{
+  "candidates_built": 0,
+  "dry_run_only": true,
+  "failed": 0,
+  "generated_at": "2026-06-29T06:19:01.876434Z",
+  "import_batch_id": "phase-4-8-ode-p0",
+  "issues": [],
+  "passed": 8,
+  "per_draft_results": [
+    {
+      "content_hash": null,
+      "draft_id": "draft-ode-sep-cand-001",
+      "human_review_status": "ready",
+      "publish_candidate_preview_path": null,
+      "question_id": "ode-sep-cand-001",
+      "status": "validation_passed",
+      "validation_report": {
+        "batch_id": "phase-4-8-ode-p0",
+        "candidate_id": "ode-sep-cand-001",
+        "issues": [],
+        "passed": true,
+        "validator_version": "catalog_validator_phase_4_2"
+      }
+    },
+    {
+      "content_hash": null,
+      "draft_id": "draft-ode-sep-cand-002",
+      "human_review_status": "ready",
+      "publish_candidate_preview_path": null,
+      "question_id": "ode-sep-cand-002",
+      "status": "validation_passed",
+      "validation_report": {
+        "batch_id": "phase-4-8-ode-p0",
+        "candidate_id": "ode-sep-cand-002",
+        "issues": [],
+        "passed": true,
+        "validator_version": "catalog_validator_phase_4_2"
+      }
+    },
+    {
+      "content_hash": null,
+      "draft_id": "draft-ode-sep-cand-003",
+      "human_review_status": "ready",
+      "publish_candidate_preview_path": null,
+      "question_id": "ode-sep-cand-003",
+      "status": "validation_passed",
+      "validation_report": {
+        "batch_id": "phase-4-8-ode-p0",
+        "candidate_id": "ode-sep-cand-003",
+        "issues": [],
+        "passed": true,
+        "validator_version": "catalog_validator_phase_4_2"
+      }
+    },
+    {
+      "content_hash": null,
+      "draft_id": "draft-ode-hom-cand-001",
+      "human_review_status": "ready",
+      "publish_candidate_preview_path": null,
+      "question_id": "ode-hom-cand-001",
+      "status": "validation_passed",
+      "validation_report": {
+        "batch_id": "phase-4-8-ode-p0",
+        "candidate_id": "ode-hom-cand-001",
+        "issues": [],
+        "passed": true,
+        "validator_version": "catalog_validator_phase_4_2"
+      }
+    },
+    {
+      "content_hash": null,
+      "draft_id": "draft-ode-hom-cand-002",
+      "human_review_status": "ready",
+      "publish_candidate_preview_path": null,
+      "question_id": "ode-hom-cand-002",
+      "status": "validation_passed",
+      "validation_report": {
+        "batch_id": "phase-4-8-ode-p0",
+        "candidate_id": "ode-hom-cand-002",
+        "issues": [],
+        "passed": true,
+        "validator_version": "catalog_validator_phase_4_2"
+      }
+    },
+    {
+      "content_hash": null,
+      "draft_id": "draft-ode-linear-cand-001",
+      "human_review_status": "ready",
+      "publish_candidate_preview_path": null,
+      "question_id": "ode-linear-cand-001",
+      "status": "validation_passed",
+      "validation_report": {
+        "batch_id": "phase-4-8-ode-p0",
+        "candidate_id": "ode-linear-cand-001",
+        "issues": [],
+        "passed": true,
+        "validator_version": "catalog_validator_phase_4_2"
+      }
+    },
+    {
+      "content_hash": null,
+      "draft_id": "draft-ode-linear-cand-002",
+      "human_review_status": "ready",
+      "publish_candidate_preview_path": null,
+      "question_id": "ode-linear-cand-002",
+      "status": "validation_passed",
+      "validation_report": {
+        "batch_id": "phase-4-8-ode-p0",
+        "candidate_id": "ode-linear-cand-002",
+        "issues": [],
+        "passed": true,
+        "validator_version": "catalog_validator_phase_4_2"
+      }
+    },
+    {
+      "content_hash": null,
+      "draft_id": "draft-ode-mixed-cand-001",
+      "human_review_status": "ready",
+      "publish_candidate_preview_path": null,
+      "question_id": "ode-mixed-cand-001",
+      "status": "validation_passed",
+      "validation_report": {
+        "batch_id": "phase-4-8-ode-p0",
+        "candidate_id": "ode-mixed-cand-001",
+        "issues": [],
+        "passed": true,
+        "validator_version": "catalog_validator_phase_4_2"
+      }
+    }
+  ],
+  "tool_version": "phase_4_4_dry_run",
+  "total": 8
+}

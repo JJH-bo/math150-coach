@@ -1,0 +1,130 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from app.challenge.repository import ChallengeRepository
+from app.main import create_app
+from app.training.session_log import ensure_no_trusted_fields
+
+
+TRUSTED_FIELDS = {
+    "expected_answer",
+    "answer_aliases",
+    "rubric",
+    "solution_outline",
+    "validator_config",
+    "trusted_scoring",
+    "answer_key",
+    "scorer_results",
+    "diagnosis_trace",
+    "debug_trace",
+    "evidence_sources",
+    "raw_rollback_level",
+    "raw_forward_level",
+    "score_overrides",
+    "evidence_overrides",
+    "manual_override",
+    "scenario",
+    "include_debug",
+}
+
+
+def test_ode_network_mvp_loads_three_macro_nodes() -> None:
+    repository = ChallengeRepository()
+
+    graph = repository.load_graph("ode_network_mvp")
+    questions = repository.load_question_bank("ode_network_mvp")
+
+    assert [node.id for node in graph.macro_nodes] == [
+        "ode_separable",
+        "ode_first_order_linear",
+        "ode_homogeneous_first_order",
+    ]
+    assert len(graph.micro_nodes) == 18
+    assert len(graph.macro_challenges) == 3
+    assert len(questions.questions) == 21
+    assert graph.unlock_edges[0].from_macro_node_id == "ode_separable"
+
+
+def test_challenge_api_is_only_registered_on_mixed_profile() -> None:
+    mixed_paths = set(TestClient(create_app("mixed")).get("/openapi.json").json()["paths"])
+    learner_paths = set(TestClient(create_app("learner")).get("/openapi.json").json()["paths"])
+    internal_paths = set(TestClient(create_app("internal")).get("/openapi.json").json()["paths"])
+
+    assert "/api/challenge/v1/health" in mixed_paths
+    assert "/api/challenge/v1/health" not in learner_paths
+    assert "/api/challenge/v1/health" not in internal_paths
+
+
+def test_challenge_api_start_returns_public_current_question(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("CHALLENGE_SESSION_ROOT", str(tmp_path))
+    client = TestClient(create_app("mixed"))
+
+    response = client.post(
+        "/api/challenge/v1/start",
+        json={"chapter_id": "ode_network_mvp", "session_id": "web-start"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["challenge"]["current_task"]["task_id"] == "ode_separable.concept"
+    assert payload["challenge"]["current_question"]["question_id"] == "ode-net-sep-concept-001"
+    assert "mastery" in payload["challenge"]
+    assert_no_trusted_fields(payload)
+
+
+def test_challenge_api_submit_advances_micro_node_without_trusted_fields(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("CHALLENGE_SESSION_ROOT", str(tmp_path))
+    client = TestClient(create_app("mixed"))
+    client.post("/api/challenge/v1/start", json={"chapter_id": "ode_network_mvp", "session_id": "web-submit"})
+
+    response = client.post(
+        "/api/challenge/v1/submit",
+        json={
+            "session_id": "web-submit",
+            "answer": "属于可分离，dy/dx=f(x)g(y)，其中 f(x)=x，g(y)=1+y^2。",
+            "steps": ["识别 f(x)g(y)", "指出 f(x) 与 g(y)"],
+            "explanation": "右端是只含 x 的因子乘只含 y 的因子。",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["challenge_attempt"]["pass_state"] == "pass"
+    assert payload["challenge"]["micro_nodes"]["ode_separable.concept"]["status"] == "mastered"
+    assert payload["challenge"]["mastery"]["ode_separable.concept"]["mastery_score"] >= 70
+    assert payload["challenge"]["current_task"]["task_id"] == "ode_separable.trigger"
+    assert "已点亮当前小节点" in payload["progression_advice"]
+    assert "不建议推进" not in payload["progression_advice"]
+    assert_no_trusted_fields(payload)
+
+
+def test_challenge_api_rejects_invalid_session_id(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("CHALLENGE_SESSION_ROOT", str(tmp_path))
+    client = TestClient(create_app("mixed"))
+
+    response = client.post(
+        "/api/challenge/v1/start",
+        json={"chapter_id": "ode_network_mvp", "session_id": "../bad"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error_code"] == "challenge_request_schema_invalid"
+
+
+def test_trainer_static_page_is_served_from_mixed_profile() -> None:
+    response = TestClient(create_app("mixed")).get("/trainer/")
+
+    assert response.status_code == 200
+    assert "星系知识网训练舱" in response.text
+    assert "/api/challenge/v1" not in response.text
+
+
+def assert_no_trusted_fields(value) -> None:
+    ensure_no_trusted_fields(value)
+    text = json.dumps(value, ensure_ascii=False)
+    for field in TRUSTED_FIELDS:
+        assert field not in text

@@ -1,0 +1,1560 @@
+cases:
+- id: ode_separable_complete_correct
+  category: complete_correct
+  scoring_path: manual_override
+  title: 完全正确
+  question:
+    id: q_ode_sep_001
+    node_id: ode_separable
+    question_type: diagnostic
+    prompt: 求解 dy/dx = 2xy，并写出通解。
+  user_answer: 先分离变量 dy/y = 2x dx，积分得 ln|y| = x^2 + C，因此 y = Ce^{x^2}。
+  expected_scores:
+    concept: 90
+    trigger: 92
+    method: 95
+    transformation: 95
+    process: 92
+    calculation: 95
+    final_answer: 95
+    expression: 90
+    migration: null
+  expected_errors: []
+  expected_pass_state: pass
+  expected_rollback_behavior:
+    rollback_level: null
+    forward_level: p3_strong
+    target_nodes: []
+    should_not_return_all_prerequisites: true
+    explanation: 无主错因，可正常推进到后继节点。
+- id: ode_separable_process_right_calculation_wrong
+  category: process_right_calculation_wrong
+  scoring_path: manual_override
+  title: 过程对但计算错
+  question:
+    id: q_ode_sep_002
+    node_id: ode_separable
+    question_type: diagnostic
+    prompt: 求解 dy/dx = 2xy，并写出通解。
+  user_answer: 分离变量 dy/y = 2x dx，积分后误写为 ln|y| = 2x^2 + C，所以 y = Ce^{2x^2}。
+  expected_scores:
+    concept: 85
+    trigger: 88
+    method: 90
+    transformation: 88
+    process: 82
+    calculation: 20
+    final_answer: 0
+    expression: 75
+    migration: null
+  expected_errors:
+  - error_type: calculation_error
+    weight: 0.85
+    related_dimensions:
+    - calculation
+    - final_answer
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 方法和变量分离正确，但积分系数计算错误。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_separable
+    should_not_return_all_prerequisites: true
+    explanation: 方法和转化证据较好，只做局部计算回溯。
+- id: ode_linear_answer_right_trigger_unclear
+  category: answer_right_trigger_unclear
+  scoring_path: manual_override
+  title: 答案对但题眼不清
+  question:
+    id: q_ode_linear_001
+    node_id: ode_first_order_linear
+    question_type: diagnostic
+    prompt: 求解 y' + y = e^x。
+  user_answer: 写出正确答案 y = 1/2 e^x + Ce^{-x}，但无法说明为什么用一阶线性方程方法。
+  expected_scores:
+    concept: 60
+    trigger: 25
+    method: 35
+    transformation: 55
+    process: 60
+    calculation: 85
+    final_answer: 95
+    expression: 80
+    migration: null
+  expected_errors:
+  - error_type: trigger_failure
+    weight: 0.8
+    related_dimensions:
+    - trigger
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 不能说明一阶线性标准形题眼。
+  - error_type: method_error
+    weight: 0.7
+    related_dimensions:
+    - method
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 方法选择缺少可解释证据。
+  expected_pass_state: false_pass
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_first_order_linear
+    should_not_strong_forward: true
+    explanation: final_answer 高但 trigger/method 低，属于假性通过。
+- id: ode_homogeneous_trigger_failure
+  category: trigger_failure
+  scoring_path: manual_override
+  title: 题眼识别失败
+  question:
+    id: q_ode_hom_001
+    node_id: ode_homogeneous_first_order
+    question_type: diagnostic
+    prompt: 求解 dy/dx = (x + y) / x。
+  user_answer: 尝试直接积分 dy = (1 + y/x) dx，没有识别 y/x 结构。
+  expected_scores:
+    concept: 55
+    trigger: 10
+    method: 25
+    transformation: 20
+    process: 35
+    calculation: 50
+    final_answer: 0
+    expression: 55
+    migration: null
+  expected_errors:
+  - error_type: trigger_failure
+    weight: 0.9
+    related_dimensions:
+    - trigger
+    - method
+    is_primary: true
+    suggested_rollback_level: r2_prerequisite
+    evidence: 未识别 F(y/x) 的一阶齐次题眼。
+  - error_type: transformation_error
+    weight: 0.7
+    related_dimensions:
+    - transformation
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 没有使用 y = vx 转化。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r2_prerequisite
+    forward_level: p0_none
+    target_nodes:
+    - ode_separable
+    should_not_return_all_prerequisites: true
+    explanation: 优先回到一阶齐次转化后连接的可分离方法。
+- id: ode_bernoulli_transformation_failure
+  category: transformation_failure
+  scoring_path: manual_override
+  title: 条件转化失败
+  question:
+    id: q_ode_bern_001
+    node_id: ode_bernoulli
+    question_type: diagnostic
+    prompt: 求解 y' + y = xy^2。
+  user_answer: 识别为伯努利方程，但令 z = y^2 后直接代入，导致转化错误。
+  expected_scores:
+    concept: 70
+    trigger: 82
+    method: 75
+    transformation: 15
+    process: 35
+    calculation: 45
+    final_answer: 0
+    expression: 60
+    migration: null
+  expected_errors:
+  - error_type: transformation_error
+    weight: 0.92
+    related_dimensions:
+    - transformation
+    - process
+    is_primary: true
+    suggested_rollback_level: r2_prerequisite
+    evidence: 伯努利替换方向错误，未转化为一阶线性方程。
+  - error_type: calculation_error
+    weight: 0.45
+    related_dimensions:
+    - calculation
+    is_primary: false
+    suggested_rollback_level: r1_internal
+    evidence: 后续计算受错误转化影响。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r2_prerequisite
+    forward_level: p0_none
+    target_nodes:
+    - ode_first_order_linear
+    should_not_return_all_prerequisites: true
+    explanation: 主错因是替换转化失败，应回到一阶线性转化连接。
+- id: ode_separable_method_error
+  category: method_error
+  scoring_path: manual_override
+  title: 方法选择错误
+  question:
+    id: q_ode_sep_003
+    node_id: ode_separable
+    question_type: diagnostic
+    prompt: 求解 dy/dx = x(1+y^2)。
+  user_answer: 误认为是一阶线性方程，尝试写成 y' + P(x)y = Q(x)。
+  expected_scores:
+    concept: 65
+    trigger: 45
+    method: 20
+    transformation: 30
+    process: 30
+    calculation: 60
+    final_answer: 0
+    expression: 60
+    migration: null
+  expected_errors:
+  - error_type: method_error
+    weight: 0.9
+    related_dimensions:
+    - method
+    is_primary: true
+    suggested_rollback_level: r2_prerequisite
+    evidence: 可分离方程误选为一阶线性方法。
+  - error_type: trigger_failure
+    weight: 0.55
+    related_dimensions:
+    - trigger
+    is_primary: false
+    suggested_rollback_level: r1_internal
+    evidence: 未抓住变量可分离题眼。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r2_prerequisite
+    forward_level: p0_none
+    target_nodes:
+    - ode_general_special_solution
+    should_not_return_all_prerequisites: true
+    explanation: 主错因是方法选择，应回到直接方法比较与前置概念。
+- id: ode_basic_expression_weak_but_meaning_right
+  category: expression_weakness
+  scoring_path: manual_override
+  title: 概念表达不严谨但大意正确
+  question:
+    id: q_ode_basic_001
+    node_id: ode_basic_concept
+    question_type: diagnostic
+    prompt: 说明什么是微分方程的通解。
+  user_answer: 大概就是很多答案放一起，里面有 C，但没有说明任意常数个数和满足方程。
+  expected_scores:
+    concept: 82
+    trigger: null
+    method: null
+    transformation: null
+    process: 65
+    calculation: null
+    final_answer: 82
+    expression: 35
+    migration: null
+  expected_errors:
+  - error_type: expression_weakness
+    weight: 0.75
+    related_dimensions:
+    - expression
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 大意接近但缺少严谨定义和条件。
+  expected_pass_state: partial_pass
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p1_partial
+    target_nodes:
+    - ode_basic_concept
+    should_not_return_all_prerequisites: true
+    explanation: 概念大意可保留，但表达需本节点修复。
+- id: ode_linear_formula_memory_error
+  category: formula_memory_error
+  scoring_path: manual_override
+  title: 公式记忆错误
+  question:
+    id: q_ode_linear_002
+    node_id: ode_integrating_factor
+    question_type: diagnostic
+    prompt: 对 y' + 2xy = x 求积分因子。
+  user_answer: 写成 mu(x)=e^{2x}，没有对 2x 积分为 x^2。
+  expected_scores:
+    concept: 65
+    trigger: 75
+    method: 70
+    transformation: 55
+    process: 60
+    calculation: 30
+    final_answer: 0
+    expression: 70
+    migration: null
+  expected_errors:
+  - error_type: formula_memory_error
+    weight: 0.85
+    related_dimensions:
+    - method
+    - transformation
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 积分因子公式记忆不完整。
+  - error_type: calculation_error
+    weight: 0.55
+    related_dimensions:
+    - calculation
+    is_primary: false
+    suggested_rollback_level: r1_internal
+    evidence: 对 P(x) 的积分错误。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_integrating_factor
+    should_not_return_all_prerequisites: true
+    explanation: 先修复积分因子公式和局部积分。
+- id: ode_ivp_condition_miss
+  category: condition_miss
+  scoring_path: manual_override
+  title: 审题遗漏
+  question:
+    id: q_ode_ivp_001
+    node_id: ode_general_special_solution
+    question_type: diagnostic
+    prompt: 求解 y' = 2x, y(0)=3。
+  user_answer: 积分得 y=x^2+C，但未代入 y(0)=3。
+  expected_scores:
+    concept: 78
+    trigger: 75
+    method: 82
+    transformation: 80
+    process: 68
+    calculation: 85
+    final_answer: 40
+    expression: 70
+    migration: null
+  expected_errors:
+  - error_type: condition_miss
+    weight: 0.82
+    related_dimensions:
+    - process
+    - final_answer
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 漏用初值条件，停在通解。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_general_special_solution
+    should_not_return_all_prerequisites: true
+    explanation: 方法正确但漏条件，回到本节点初值条件训练。
+- id: ode_homogeneous_linear_confusion
+  category: knowledge_confusion
+  scoring_path: manual_override
+  title: 知识点混淆
+  question:
+    id: q_ode_confusion_001
+    node_id: ode_homogeneous_first_order
+    question_type: diagnostic
+    prompt: 判断 dy/dx = y/x 应使用哪类方法。
+  user_answer: 说这是二阶常系数齐次线性方程，要写特征方程。
+  expected_scores:
+    concept: 35
+    trigger: 20
+    method: 10
+    transformation: 20
+    process: 25
+    calculation: null
+    final_answer: 0
+    expression: 55
+    migration: null
+  expected_errors:
+  - error_type: knowledge_confusion
+    weight: 0.95
+    related_dimensions:
+    - concept
+    - trigger
+    - method
+    is_primary: true
+    suggested_rollback_level: r4_chapter_framework
+    evidence: 混淆一阶齐次方程和二阶常系数齐次线性方程。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r4_chapter_framework
+    forward_level: p0_none
+    target_nodes:
+    - ode_separable
+    - ode_first_order_linear
+    should_not_return_all_prerequisites: false
+    explanation: 属于知识框架混淆，可做章节内类型对比回溯。
+- id: ode_particular_variant_migration_failure
+  category: migration_failure
+  scoring_path: manual_override
+  title: 变式迁移失败
+  question:
+    id: q_ode_variant_001
+    node_id: ode_particular_solution_form
+    question_type: variant
+    prompt: 已会处理 e^x 右端，现在判断右端 x e^x 时特解形式如何调整。
+  user_answer: 仍写 Ae^x，没有考虑多项式因子和待定系数形式变化。
+  expected_scores:
+    concept: 75
+    trigger: 70
+    method: 70
+    transformation: 50
+    process: 55
+    calculation: null
+    final_answer: 30
+    expression: 65
+    migration: 20
+  expected_errors:
+  - error_type: migration_failure
+    weight: 0.9
+    related_dimensions:
+    - migration
+    - transformation
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 标准题会做，但右端变式后不能调整特解形式。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_particular_solution_form
+    should_not_return_all_prerequisites: true
+    explanation: 进入本节点变式梯度训练。
+- id: ode_application_synthesis_failure
+  category: synthesis_failure
+  scoring_path: manual_override
+  title: 综合拆解失败
+  question:
+    id: q_ode_app_001
+    node_id: ode_application_modeling
+    question_type: diagnostic
+    prompt: 根据变化率与当前量成正比且有初值的文字条件建立并求解模型。
+  user_answer: 只写出一个零散公式，没有建立方程、代入初值或解释结果。
+  expected_scores:
+    concept: 40
+    trigger: 25
+    method: 20
+    transformation: 25
+    process: 15
+    calculation: 45
+    final_answer: 0
+    expression: 40
+    migration: 20
+  expected_errors:
+  - error_type: synthesis_failure
+    weight: 0.95
+    related_dimensions:
+    - trigger
+    - method
+    - process
+    is_primary: true
+    suggested_rollback_level: r4_chapter_framework
+    evidence: 无法把文字题拆成建模、求解、代入和解释。
+  - error_type: condition_miss
+    weight: 0.6
+    related_dimensions:
+    - process
+    is_primary: false
+    suggested_rollback_level: r1_internal
+    evidence: 初值条件没有进入求解链。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r4_chapter_framework
+    forward_level: p0_none
+    target_nodes:
+    - ode_general_special_solution
+    - ode_first_order_linear
+    should_not_return_all_prerequisites: false
+    explanation: 综合拆解失败允许章节框架级回溯。
+- id: ode_linear_correct_answer_unexplainable_method
+  category: correct_answer_unexplainable_method
+  scoring_path: manual_override
+  title: 看似答案正确但方法不可解释
+  question:
+    id: q_ode_linear_003
+    node_id: ode_first_order_linear
+    question_type: diagnostic
+    prompt: 求解 y' - y = 0。
+  user_answer: 答案 y=Ce^x 正确，但说不出这是分离变量还是一阶线性，也无法解释步骤。
+  expected_scores:
+    concept: 55
+    trigger: 30
+    method: 25
+    transformation: 50
+    process: 45
+    calculation: 80
+    final_answer: 95
+    expression: 75
+    migration: null
+  expected_errors:
+  - error_type: trigger_failure
+    weight: 0.8
+    related_dimensions:
+    - trigger
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 答案正确但无法解释题型识别。
+  - error_type: method_error
+    weight: 0.82
+    related_dimensions:
+    - method
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 方法路径不可解释。
+  expected_pass_state: false_pass
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_first_order_linear
+    should_not_strong_forward: true
+    explanation: 正确答案不能掩盖方法不可解释。
+- id: ode_method_right_initial_condition_miss
+  category: method_right_initial_condition_miss
+  scoring_path: manual_override
+  title: 方法对但漏初值条件
+  question:
+    id: q_ode_linear_ivp_001
+    node_id: ode_first_order_linear
+    question_type: diagnostic
+    prompt: 求解 y' + y = 0, y(0)=2。
+  user_answer: 正确得到通解 y=Ce^{-x}，但没有求出 C=2。
+  expected_scores:
+    concept: 80
+    trigger: 85
+    method: 88
+    transformation: 82
+    process: 65
+    calculation: 85
+    final_answer: 45
+    expression: 70
+    migration: null
+  expected_errors:
+  - error_type: condition_miss
+    weight: 0.85
+    related_dimensions:
+    - process
+    - final_answer
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: 求出通解后漏代初值条件。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_first_order_linear
+    should_not_return_all_prerequisites: true
+    explanation: 方法链正确，回到本节点条件处理。
+- id: ode_nonhom_particular_solution_form_wrong
+  category: particular_solution_form_error
+  scoring_path: manual_override
+  title: 非齐次特解形式设错
+  question:
+    id: q_ode_nonhom_001
+    node_id: ode_particular_solution_form
+    question_type: diagnostic
+    prompt: 对 y'' - y = e^x，判断待定特解形式。
+  user_answer: 直接设 yp=Ae^x，没有发现 e^x 已是齐次解的一部分。
+  expected_scores:
+    concept: 70
+    trigger: 65
+    method: 60
+    transformation: 20
+    process: 40
+    calculation: null
+    final_answer: 0
+    expression: 65
+    migration: 45
+  expected_errors:
+  - error_type: transformation_error
+    weight: 0.9
+    related_dimensions:
+    - transformation
+    - method
+    is_primary: true
+    suggested_rollback_level: r2_prerequisite
+    evidence: 未处理共振，特解形式少乘 x。
+  - error_type: formula_memory_error
+    weight: 0.65
+    related_dimensions:
+    - method
+    is_primary: false
+    suggested_rollback_level: r2_prerequisite
+    evidence: 非齐次特解设定规则记忆不稳。
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r2_prerequisite
+    forward_level: p0_none
+    target_nodes:
+    - ode_characteristic_equation
+    should_not_return_all_prerequisites: true
+    explanation: 回到特征根与共振判断后再练特解形式。
+- id: p1_concept_meaning_right_expression_weak
+  category: phase1_concept_expression_weak
+  scoring_path: rubric
+  title: Concept mostly right but expression is weak
+  question:
+    id: q_p1_concept_001
+    node_id: ode_basic_concept
+    question_type: diagnostic
+    prompt: Explain the general solution of an ordinary differential equation.
+    tested_dimensions:
+    - concept
+    - expression
+    rubric:
+      items:
+      - id: concept_solution_family
+        description: Mentions a family of solutions.
+        target_dimensions:
+        - concept
+        required_keywords:
+        - family
+        - solutions
+        weight: 1
+        evidence_on_hit: Mentions solution family.
+        evidence_on_miss: Does not describe solution family.
+      - id: expression_arbitrary_constants
+        description: States arbitrary constants and satisfaction.
+        target_dimensions:
+        - expression
+        required_keywords:
+        - arbitrary constant
+        - satisfies
+        weight: 1
+        evidence_on_hit: Rigorous expression present.
+        evidence_on_miss: Expression misses constants or satisfaction condition.
+  user_answer: It is a family of solutions.
+  expected_scores:
+    concept: 100
+    trigger: null
+    method: null
+    transformation: null
+    process: null
+    calculation: null
+    final_answer: null
+    expression: 0
+    migration: null
+  expected_errors:
+  - error_type: expression_weakness
+    weight: 0.9
+    related_dimensions:
+    - expression
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: Rubric misses rigorous expression requirements.
+  expected_pass_state: partial_pass
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p1_partial
+    target_nodes:
+    - ode_basic_concept
+    should_not_return_all_prerequisites: true
+    explanation: Concept signal exists but expression repair stays local.
+- id: p1_concept_wrong_object
+  category: phase1_concept_wrong_object
+  scoring_path: rubric
+  title: Concept definition uses the wrong object
+  question:
+    id: q_p1_concept_002
+    node_id: ode_basic_concept
+    question_type: diagnostic
+    prompt: Define an ordinary differential equation.
+    tested_dimensions:
+    - concept
+    - expression
+    rubric:
+      items:
+      - id: concept_unknown_function
+        description: Identifies unknown function and derivatives.
+        target_dimensions:
+        - concept
+        required_keywords:
+        - unknown function
+        - derivative
+        weight: 1
+        evidence_on_hit: Correct object identified.
+        evidence_on_miss: Definition does not identify unknown function and derivative
+          relation.
+      - id: expression_equation_relation
+        description: Expresses it as an equation relation.
+        target_dimensions:
+        - expression
+        required_keywords:
+        - equation
+        weight: 1
+        evidence_on_hit: Calls it an equation.
+        evidence_on_miss: Does not state equation relation.
+  user_answer: It is a number sequence formula.
+  expected_scores:
+    concept: 0
+    trigger: null
+    method: null
+    transformation: null
+    process: null
+    calculation: null
+    final_answer: null
+    expression: 0
+    migration: null
+  expected_errors:
+  - error_type: concept_gap
+    weight: 0.9
+    related_dimensions:
+    - concept
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: Definition targets the wrong mathematical object.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_basic_concept
+    should_not_return_all_prerequisites: true
+    explanation: Wrong object definition is local concept repair.
+- id: p1_trigger_method_named_without_condition
+  category: phase1_trigger_method_without_condition
+  scoring_path: rule_only_weak_signal
+  title: Says method name without trigger condition
+  question:
+    id: q_p1_trigger_001
+    node_id: ode_first_order_linear
+    question_type: diagnostic
+    prompt: Identify the trigger for y' + P(x)y = Q(x).
+    tested_dimensions:
+    - trigger
+    - method
+  user_answer: Use first-order linear.
+  expected_scores:
+    concept: null
+    trigger: 65
+    method: 65
+    transformation: null
+    process: null
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: trigger_failure
+    weight: 0.5
+    related_dimensions:
+    - trigger
+    is_primary: false
+    suggested_rollback_level: r1_internal
+    evidence: Rule-only keyword signal is weak and lacks trigger condition.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_first_order_linear
+    should_not_strong_forward: true
+    explanation: Rule-only weak signal cannot unlock successors.
+- id: p1_trigger_condition_right_method_name_wrong
+  category: phase1_trigger_right_method_wrong
+  scoring_path: rubric_plus_rule
+  title: Trigger condition right but method name wrong
+  question:
+    id: q_p1_trigger_002
+    node_id: ode_separable
+    question_type: diagnostic
+    prompt: Identify the method for dy/dx = f(x)g(y).
+    tested_dimensions:
+    - trigger
+    - method
+    rubric:
+      items:
+      - id: trigger_product_form
+        description: Recognizes product separability.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - product
+        - separate variables
+        weight: 1
+        evidence_on_hit: Recognizes product form and separation trigger.
+        evidence_on_miss: Misses separable trigger.
+      - id: method_separable
+        description: Names separable method.
+        target_dimensions:
+        - method
+        required_keywords:
+        - separable
+        weight: 1
+        evidence_on_hit: Names separable method.
+        evidence_on_miss: Does not name separable method.
+  user_answer: It has product form and we can separate variables, so use first-order
+    linear.
+  expected_scores:
+    concept: null
+    trigger: 86
+    method: 26
+    transformation: null
+    process: null
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: method_error
+    weight: 0.9
+    related_dimensions:
+    - method
+    is_primary: true
+    suggested_rollback_level: r2_prerequisite
+    evidence: Trigger is explained but method name is wrong.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r2_prerequisite
+    forward_level: p0_none
+    target_nodes:
+    - ode_general_special_solution
+    should_not_return_all_prerequisites: true
+    explanation: Method selection error should not reset all prerequisites.
+- id: p1_method_correct_reason_insufficient
+  category: phase1_method_correct_reason_insufficient
+  scoring_path: rubric_plus_rule
+  title: Method correct but reason insufficient
+  question:
+    id: q_p1_method_001
+    node_id: ode_separable
+    question_type: diagnostic
+    prompt: Explain why dy/dx = x(1+y^2) is solved by a separable method.
+    tested_dimensions:
+    - trigger
+    - method
+    rubric:
+      items:
+      - id: trigger_separation_reason
+        description: Explains x and y factors can be separated.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - x factor
+        - y factor
+        - separate
+        weight: 1
+        evidence_on_hit: Explains separation trigger.
+        evidence_on_miss: Does not explain why variables separate.
+      - id: method_separable_name
+        description: Names separable method.
+        target_dimensions:
+        - method
+        required_keywords:
+        - separable
+        weight: 1
+        evidence_on_hit: Names separable method.
+        evidence_on_miss: Does not name method.
+  user_answer: This is separable.
+  expected_scores:
+    concept: null
+    trigger: 26
+    method: 86
+    transformation: null
+    process: null
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: trigger_failure
+    weight: 0.9
+    related_dimensions:
+    - trigger
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: Method name appears but reason is missing.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_separable
+    should_not_return_all_prerequisites: true
+    explanation: Trigger explanation remains missing despite method keyword.
+- id: p1_bernoulli_wrong_substitution_direction
+  category: phase1_bernoulli_wrong_substitution
+  scoring_path: rubric
+  title: Bernoulli substitution direction is wrong
+  question:
+    id: q_p1_bern_001
+    node_id: ode_bernoulli
+    question_type: diagnostic
+    prompt: State the substitution for y' + P(x)y = Q(x)y^n.
+    tested_dimensions:
+    - trigger
+    - method
+    - transformation
+    rubric:
+      items:
+      - id: trigger_bernoulli_form
+        description: Recognizes Bernoulli form.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - bernoulli
+        weight: 1
+        evidence_on_hit: Recognizes Bernoulli form.
+        evidence_on_miss: Does not recognize Bernoulli form.
+      - id: method_reduce_linear
+        description: States reduction to first-order linear equation.
+        target_dimensions:
+        - method
+        required_keywords:
+        - linear
+        weight: 1
+        evidence_on_hit: States reduction to linear equation.
+        evidence_on_miss: Does not state target method.
+      - id: transformation_correct_power
+        description: Uses z = y^(1-n).
+        target_dimensions:
+        - transformation
+        required_keywords:
+        - y^(1-n)
+        weight: 1
+        evidence_on_hit: Uses correct Bernoulli power substitution.
+        evidence_on_miss: Uses wrong substitution direction.
+  user_answer: It is Bernoulli and should reduce to a linear equation, but set z =
+    y^n.
+  expected_scores:
+    concept: null
+    trigger: 100
+    method: 100
+    transformation: 0
+    process: null
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: transformation_error
+    weight: 0.9
+    related_dimensions:
+    - transformation
+    is_primary: true
+    suggested_rollback_level: r2_prerequisite
+    evidence: Wrong Bernoulli substitution direction.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r2_prerequisite
+    forward_level: p0_none
+    target_nodes:
+    - ode_first_order_linear
+    should_not_return_all_prerequisites: true
+    explanation: Transformation failure should go to prerequisite method link.
+- id: p1_reducible_order_incomplete_pdpdy
+  category: phase1_reducible_order_incomplete
+  scoring_path: rubric_plus_rule
+  title: y'' = p dp/dy explanation incomplete
+  question:
+    id: q_p1_reduce_001
+    node_id: ode_y_missing_x
+    question_type: diagnostic
+    prompt: Explain the transformation for an equation not explicitly containing x.
+    tested_dimensions:
+    - trigger
+    - transformation
+    - process
+    rubric:
+      items:
+      - id: trigger_missing_x
+        description: Identifies missing x trigger.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - not contain x
+        weight: 1
+        evidence_on_hit: Identifies missing-x trigger.
+        evidence_on_miss: Misses missing-x trigger.
+      - id: transform_pdpdy
+        description: Explains p(y)=y' and y''=p dp/dy.
+        target_dimensions:
+        - transformation
+        - process
+        required_keywords:
+        - p(y)
+        - p dp/dy
+        weight: 1
+        evidence_on_hit: Explains p(y) reduction.
+        evidence_on_miss: Does not complete y''=p dp/dy.
+  user_answer: It does not contain x, so use p = y'.
+  expected_scores:
+    concept: null
+    trigger: 86
+    method: null
+    transformation: 26
+    process: 0
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: transformation_error
+    weight: 0.9
+    related_dimensions:
+    - transformation
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: Missing y''=p dp/dy explanation.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_y_missing_x
+    should_not_return_all_prerequisites: true
+    explanation: Incomplete transformation is local to this node.
+- id: p1_equivalent_final_answer_form
+  category: phase1_equivalent_final_answer
+  scoring_path: rubric_plus_math_validator
+  title: Equivalent final answer form
+  question:
+    id: q_p1_calc_001
+    node_id: ode_separable
+    question_type: diagnostic
+    prompt: Solve dy/dx = 2xy and give the general solution.
+    expected_answer: y=Ce^x^2
+    tested_dimensions:
+    - trigger
+    - method
+    - transformation
+    - calculation
+    - final_answer
+    metadata:
+      expected_answer_aliases:
+      - y=Cexp(x^2)
+      requires_constant: true
+    rubric:
+      items:
+      - id: trigger_separable
+        description: Recognizes separable form.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - separable
+        weight: 1
+        evidence_on_hit: Recognizes separable form.
+        evidence_on_miss: Misses separable form.
+      - id: method_separate_integrate
+        description: Separates variables and integrates.
+        target_dimensions:
+        - method
+        - transformation
+        required_keywords:
+        - separate
+        - integrate
+        weight: 1
+        evidence_on_hit: Separates and integrates.
+        evidence_on_miss: Missing separation or integration.
+  user_answer: It is separable; separate and integrate to get y = C exp(x^2).
+  expected_scores:
+    concept: null
+    trigger: 86
+    method: 86
+    transformation: 100
+    process: null
+    calculation: 85
+    final_answer: 95
+    expression: null
+    migration: null
+  expected_errors: []
+  expected_pass_state: pass
+  expected_rollback_behavior:
+    rollback_level: null
+    forward_level: p2_normal
+    target_nodes: []
+    should_not_return_all_prerequisites: true
+    explanation: Equivalent answer form accepted by lightweight validator.
+- id: p1_process_right_missing_constant_c
+  category: phase1_missing_constant_c
+  scoring_path: rubric_plus_math_validator
+  title: Process right but missing constant C
+  question:
+    id: q_p1_calc_002
+    node_id: ode_separable
+    question_type: diagnostic
+    prompt: Solve dy/dx = 2xy and give the general solution.
+    expected_answer: y=Ce^x^2
+    tested_dimensions:
+    - trigger
+    - method
+    - transformation
+    - calculation
+    - final_answer
+    metadata:
+      requires_constant: true
+    rubric:
+      items:
+      - id: trigger_separable
+        description: Recognizes separable form.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - separable
+        weight: 1
+        evidence_on_hit: Recognizes separable form.
+        evidence_on_miss: Misses separable form.
+      - id: method_process
+        description: Separates and integrates.
+        target_dimensions:
+        - method
+        - transformation
+        required_keywords:
+        - separate
+        - integrate
+        weight: 1
+        evidence_on_hit: Correct process.
+        evidence_on_miss: Process incomplete.
+  user_answer: It is separable; separate and integrate to get y = exp(x^2).
+  expected_scores:
+    concept: null
+    trigger: 86
+    method: 86
+    transformation: 100
+    process: null
+    calculation: 60
+    final_answer: 35
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: calculation_error
+    weight: 0.5
+    related_dimensions:
+    - calculation
+    is_primary: false
+    suggested_rollback_level: r1_internal
+    evidence: Missing C limits calculation completeness.
+  expected_pass_state: partial_pass
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p1_partial
+    target_nodes:
+    - ode_separable
+    should_not_return_all_prerequisites: true
+    explanation: Missing C blocks normal progression.
+- id: p1_general_solution_but_missing_initial_value
+  category: phase1_missing_initial_value
+  scoring_path: rubric_plus_math_validator
+  title: General solution correct but initial value missing
+  question:
+    id: q_p1_ivp_001
+    node_id: ode_first_order_linear
+    question_type: diagnostic
+    prompt: Solve y' + y = 0, y(0)=2.
+    expected_answer: y=2e^(-x)
+    tested_dimensions:
+    - trigger
+    - method
+    - process
+    - final_answer
+    metadata:
+      requires_initial_condition: true
+    rubric:
+      items:
+      - id: trigger_linear
+        description: Identifies first-order linear or separable structure.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - first-order linear
+        weight: 1
+        evidence_on_hit: Identifies equation family.
+        evidence_on_miss: Does not identify equation family.
+      - id: method_general_solution
+        description: Solves homogeneous first-order equation.
+        target_dimensions:
+        - method
+        required_keywords:
+        - general solution
+        weight: 1
+        evidence_on_hit: Finds general solution.
+        evidence_on_miss: Does not find general solution.
+      - id: process_initial_value
+        description: Applies the initial condition.
+        target_dimensions:
+        - process
+        required_keywords:
+        - c=2
+        weight: 1
+        evidence_on_hit: Applies initial condition.
+        evidence_on_miss: Stops before applying initial condition.
+  user_answer: It is first-order linear. The general solution is y = C e^(-x).
+  expected_scores:
+    concept: null
+    trigger: 86
+    method: 86
+    transformation: null
+    process: 0
+    calculation: null
+    final_answer: 40
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: condition_miss
+    weight: 0.85
+    related_dimensions:
+    - process
+    - final_answer
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: Initial condition was not applied.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_first_order_linear
+    should_not_return_all_prerequisites: true
+    explanation: Stop at general solution is a local condition miss.
+- id: p1_nonhom_no_resonance_judgement
+  category: phase1_nonhom_no_resonance_judgement
+  scoring_path: rubric
+  title: Nonhomogeneous particular form without resonance judgement
+  question:
+    id: q_p1_nonhom_001
+    node_id: ode_particular_solution_form
+    question_type: diagnostic
+    prompt: For y'' - y = e^x, explain the particular solution form.
+    tested_dimensions:
+    - trigger
+    - method
+    - transformation
+    rubric:
+      items:
+      - id: trigger_forcing
+        description: Identifies exponential forcing.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - exponential forcing
+        weight: 1
+        evidence_on_hit: Identifies forcing type.
+        evidence_on_miss: Misses forcing type.
+      - id: method_resonance_check
+        description: Checks resonance against homogeneous solution.
+        target_dimensions:
+        - method
+        - transformation
+        required_keywords:
+        - resonance
+        weight: 1
+        evidence_on_hit: Checks resonance.
+        evidence_on_miss: Does not check resonance.
+  user_answer: It has exponential forcing, so try Ae^x.
+  expected_scores:
+    concept: null
+    trigger: 100
+    method: 0
+    transformation: 0
+    process: null
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: method_error
+    weight: 0.9
+    related_dimensions:
+    - method
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: Resonance check is missing.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r2_prerequisite
+    forward_level: p0_none
+    target_nodes:
+    - ode_characteristic_equation
+    should_not_return_all_prerequisites: true
+    explanation: Missing resonance judgement is local form-setting repair.
+- id: p1_nonhom_resonance_right_form_wrong
+  category: phase1_resonance_right_form_wrong
+  scoring_path: rubric_plus_rule
+  title: Resonance judged correctly but form still wrong
+  question:
+    id: q_p1_nonhom_002
+    node_id: ode_particular_solution_form
+    question_type: diagnostic
+    prompt: For y'' - y = e^x, state the adjusted particular form.
+    tested_dimensions:
+    - trigger
+    - method
+    - transformation
+    rubric:
+      items:
+      - id: trigger_resonance
+        description: Recognizes resonance.
+        target_dimensions:
+        - trigger
+        - method
+        required_keywords:
+        - resonance
+        weight: 1
+        evidence_on_hit: Recognizes resonance.
+        evidence_on_miss: Does not recognize resonance.
+      - id: transform_multiply_x
+        description: Multiplies by x in the particular form.
+        target_dimensions:
+        - transformation
+        required_keywords:
+        - xAe^x
+        weight: 1
+        evidence_on_hit: Uses xAe^x.
+        evidence_on_miss: Does not multiply by x correctly.
+  user_answer: There is resonance, but I still set yp = Ae^x.
+  expected_scores:
+    concept: null
+    trigger: 86
+    method: 100
+    transformation: 26
+    process: null
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: transformation_error
+    weight: 0.9
+    related_dimensions:
+    - transformation
+    is_primary: true
+    suggested_rollback_level: r2_prerequisite
+    evidence: Resonance is noticed but form is not adjusted.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r2_prerequisite
+    forward_level: p0_none
+    target_nodes:
+    - ode_characteristic_equation
+    should_not_return_all_prerequisites: true
+    explanation: Form error should revisit characteristic/resonance connection.
+- id: p1_application_equation_right_no_interpretation
+  category: phase1_application_no_interpretation
+  scoring_path: rubric
+  title: Modeling equation right but result interpretation missing
+  question:
+    id: q_p1_app_001
+    node_id: ode_application_modeling
+    question_type: diagnostic
+    prompt: Model exponential decay and explain the result.
+    tested_dimensions:
+    - trigger
+    - method
+    - process
+    - expression
+    - migration
+    rubric:
+      items:
+      - id: trigger_rate_relation
+        description: Extracts rate proportional to amount.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - rate proportional
+        weight: 1
+        evidence_on_hit: Extracts rate relation.
+        evidence_on_miss: Misses rate relation.
+      - id: method_equation
+        description: Builds y'=ky.
+        target_dimensions:
+        - method
+        - process
+        required_keywords:
+        - y'=ky
+        weight: 1
+        evidence_on_hit: Builds correct model equation.
+        evidence_on_miss: Does not build model equation.
+      - id: expression_interpretation
+        description: Interprets result in context.
+        target_dimensions:
+        - expression
+        - migration
+        required_keywords:
+        - interpret
+        weight: 1
+        evidence_on_hit: Interprets result.
+        evidence_on_miss: Missing result interpretation.
+  user_answer: The rate proportional relation gives y'=ky.
+  expected_scores:
+    concept: null
+    trigger: 100
+    method: 100
+    transformation: null
+    process: 100
+    calculation: null
+    final_answer: null
+    expression: 0
+    migration: 0
+  expected_errors:
+  - error_type: expression_weakness
+    weight: 0.9
+    related_dimensions:
+    - expression
+    is_primary: true
+    suggested_rollback_level: r1_internal
+    evidence: Missing contextual interpretation.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r1_internal
+    forward_level: p0_none
+    target_nodes:
+    - ode_application_modeling
+    should_not_return_all_prerequisites: true
+    explanation: Equation construction is right but interpretation is missing.
+- id: p1_application_condition_extraction_wrong
+  category: phase1_application_condition_wrong
+  scoring_path: rubric
+  title: Application modeling text condition extracted incorrectly
+  question:
+    id: q_p1_app_002
+    node_id: ode_application_modeling
+    question_type: diagnostic
+    prompt: Extract conditions from a rate model with initial value.
+    tested_dimensions:
+    - trigger
+    - method
+    - process
+    rubric:
+      items:
+      - id: trigger_rate_condition
+        description: Extracts rate condition.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - rate proportional
+        weight: 1
+        evidence_on_hit: Extracts rate condition.
+        evidence_on_miss: Fails to extract rate condition.
+      - id: method_model_equation
+        description: Builds correct differential equation.
+        target_dimensions:
+        - method
+        required_keywords:
+        - y'=ky
+        weight: 1
+        evidence_on_hit: Builds model equation.
+        evidence_on_miss: Builds wrong model equation.
+      - id: process_initial
+        description: Carries initial condition into solving.
+        target_dimensions:
+        - process
+        required_keywords:
+        - initial
+        weight: 1
+        evidence_on_hit: Uses initial condition.
+        evidence_on_miss: Does not use initial condition.
+  user_answer: I use y'=k without the current amount.
+  expected_scores:
+    concept: null
+    trigger: 0
+    method: 0
+    transformation: null
+    process: 0
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: synthesis_failure
+    weight: 0.95
+    related_dimensions:
+    - trigger
+    - method
+    - process
+    is_primary: true
+    suggested_rollback_level: r4_chapter_framework
+    evidence: Text conditions are not decomposed into model components.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r4_chapter_framework
+    forward_level: p0_none
+    target_nodes:
+    - ode_general_special_solution
+    - ode_first_order_linear
+    should_not_return_all_prerequisites: false
+    explanation: Modeling extraction failure is a framework-level repair.
+- id: p1_mixed_ode_type_confusion
+  category: phase1_mixed_type_confusion
+  scoring_path: rubric
+  title: Mixed recognition confusion among separable, linear, and homogeneous
+  question:
+    id: q_p1_mixed_001
+    node_id: ode_homogeneous_first_order
+    question_type: diagnostic
+    prompt: Classify dy/dx = (x+y)/x.
+    tested_dimensions:
+    - concept
+    - trigger
+    - method
+    rubric:
+      items:
+      - id: concept_first_order_homogeneous
+        description: Knows this is first-order homogeneous.
+        target_dimensions:
+        - concept
+        required_keywords:
+        - first-order homogeneous
+        weight: 1
+        evidence_on_hit: Correct ODE family.
+        evidence_on_miss: Confuses ODE family.
+      - id: trigger_y_over_x
+        description: Identifies y/x trigger.
+        target_dimensions:
+        - trigger
+        required_keywords:
+        - y/x
+        weight: 1
+        evidence_on_hit: Identifies y/x trigger.
+        evidence_on_miss: Misses y/x trigger.
+      - id: method_y_vx
+        description: Chooses y=vx transformation.
+        target_dimensions:
+        - method
+        required_keywords:
+        - y=vx
+        weight: 1
+        evidence_on_hit: Chooses y=vx.
+        evidence_on_miss: Chooses wrong method.
+  user_answer: This is a second-order constant coefficient problem, so use characteristic
+    equation.
+  expected_scores:
+    concept: 0
+    trigger: 0
+    method: 0
+    transformation: null
+    process: null
+    calculation: null
+    final_answer: null
+    expression: null
+    migration: null
+  expected_errors:
+  - error_type: knowledge_confusion
+    weight: 0.95
+    related_dimensions:
+    - concept
+    - trigger
+    - method
+    is_primary: true
+    suggested_rollback_level: r4_chapter_framework
+    evidence: Confuses nearby ODE types.
+  expected_pass_state: fail
+  expected_rollback_behavior:
+    rollback_level: r4_chapter_framework
+    forward_level: p0_none
+    target_nodes:
+    - ode_separable
+    - ode_first_order_linear
+    should_not_return_all_prerequisites: false
+    explanation: Type confusion is a legal chapter-framework rollback.
