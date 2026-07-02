@@ -1354,6 +1354,7 @@ function renderCoach(payload) {
       <h3>${escapeHtml(payload.status_label || statusText(passState))}</h3>
       <p>${escapeHtml(payload.coach_summary || payload.learner_explanation || "已收到本次作答。")}</p>
     </section>
+    ${renderDiagnosticVerdict(payload)}
     ${renderAbilityState(payload)}
     ${renderLogicInsight(payload.logic_insight)}
     <section class="coach-block">
@@ -1370,6 +1371,43 @@ function renderCoach(payload) {
       ${renderList(payload.evidence_gaps || [])}
     </section>
   `;
+}
+
+function renderDiagnosticVerdict(payload) {
+  const attempt = payload.challenge_attempt || {};
+  const insight = payload.logic_insight || {};
+  const root = attempt.root_cause || payload.root_cause;
+  const repairTarget = insight.primary_target_node_id || attempt.repair_target_node_id || payload.repair_target_node_id;
+  const hasPlan = payload.progression_advice || payload.next_action_hint || payload.next_step_plan;
+  if (!root && !repairTarget && !hasPlan) return "";
+  const rootLabel = root ? (errorLabels[root] || root) : "证据不足";
+  const repairTitle = publicRepairTargetTitle(payload.challenge, repairTarget);
+  const repairHtml = repairTitle
+    ? `<span class="repair-target-beacon">修复目标：${escapeHtml(repairTitle)}</span>`
+    : `<span class="repair-target-beacon muted">等待更多证据</span>`;
+  const nextPlan = Array.isArray(payload.next_step_plan)
+    ? payload.next_step_plan[0]
+    : payload.next_step_plan;
+  return `
+    <section class="coach-block diagnostic-verdict">
+      <div class="diagnostic-verdict-head">
+        <strong>根因裁决：${escapeHtml(rootLabel)}</strong>
+        ${repairHtml}
+      </div>
+      <p>${escapeHtml(payload.progression_advice || payload.next_action_hint || "系统会优先收集足够证据，再决定是否推进。")}</p>
+      <p>${escapeHtml(nextPlan || "补充步骤和自我说明，可以让诊断更可靠。")}</p>
+    </section>
+  `;
+}
+
+function publicRepairTargetTitle(challenge, nodeId) {
+  if (!challenge || !nodeId) return "";
+  return networkNodeById(challenge, nodeId, "micro_nodes")?.title
+    || networkNodeById(challenge, nodeId, "macro_nodes")?.title
+    || networkNodeById(challenge, nodeId, "macro_challenges")?.title
+    || networkNodeById(challenge, nodeId, "compare_nodes")?.title
+    || networkNodeById(challenge, nodeId, "guide_nodes")?.title
+    || "";
 }
 
 function renderAbilityState(payload) {

@@ -1934,6 +1934,41 @@ h3 {
   background: var(--soft-red);
 }
 
+.diagnostic-verdict {
+  border-color: rgba(255, 210, 122, 0.28);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 210, 122, 0.14), transparent 42%),
+    rgba(255, 210, 122, 0.06);
+}
+
+.diagnostic-verdict-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.repair-target-beacon {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  max-width: 100%;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 124, 134, 0.34);
+  border-radius: 999px;
+  background: rgba(255, 124, 134, 0.1);
+  color: rgba(255, 226, 230, 0.96);
+  box-shadow: 0 0 22px rgba(255, 124, 134, 0.12);
+}
+
+.repair-target-beacon.muted {
+  border-color: rgba(210, 231, 255, 0.16);
+  background: rgba(210, 231, 255, 0.06);
+  color: rgba(226, 238, 255, 0.7);
+  box-shadow: none;
+}
+
 .logic-block {
   border-color: rgba(151, 133, 255, 0.26);
   background:

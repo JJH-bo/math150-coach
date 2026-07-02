@@ -63,6 +63,17 @@ def test_frontend_uses_cosmic_visual_language_hooks() -> None:
     assert "repair-beam" in styles
 
 
+def test_frontend_renders_diagnostic_verdict_and_repair_beacon() -> None:
+    app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
+
+    assert "renderDiagnosticVerdict" in app_js
+    assert "diagnostic-verdict" in app_js
+    assert "repair-target-beacon" in app_js
+    assert ".diagnostic-verdict" in styles
+    assert ".repair-target-beacon" in styles
+
+
 def _function_body(source: str, name: str) -> str:
     match = re.search(rf"function {name}\([^)]*\) \{{", source)
     assert match is not None
