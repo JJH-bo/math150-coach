@@ -349,7 +349,7 @@ h3 {
   left: 16px;
   right: 16px;
   display: grid;
-  grid-template-columns: minmax(250px, 360px) max-content max-content;
+  grid-template-columns: minmax(250px, 360px) max-content minmax(190px, 230px) max-content;
   gap: 12px;
   align-items: start;
   justify-content: space-between;
@@ -377,6 +377,47 @@ h3 {
   display: grid;
   grid-template-columns: repeat(4, 98px);
   gap: 0;
+}
+
+.quality-summary {
+  min-height: 40px;
+  min-width: 190px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid rgba(210, 231, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(8, 13, 24, 0.66);
+  color: rgba(232, 243, 255, 0.84);
+  pointer-events: auto;
+  white-space: nowrap;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.quality-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(141, 154, 172, 0.8);
+  box-shadow: 0 0 16px rgba(141, 154, 172, 0.24);
+}
+
+.quality-dot.pass {
+  background: var(--green);
+  box-shadow: 0 0 18px rgba(104, 224, 180, 0.36);
+}
+
+.quality-dot.warn {
+  background: var(--gold);
+  box-shadow: 0 0 18px rgba(255, 210, 122, 0.36);
+}
+
+.quality-dot.fail {
+  background: var(--red);
+  box-shadow: 0 0 18px rgba(255, 124, 134, 0.36);
 }
 
 .stat {

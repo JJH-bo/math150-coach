@@ -78,6 +78,7 @@ const selectedNodeView = document.querySelector("#selectedNodeView");
 const taskCard = document.querySelector("#taskCard");
 const coachView = document.querySelector("#coachView");
 const overallStats = document.querySelector("#overallStats");
+const qualitySummary = document.querySelector("#qualitySummary");
 const toast = document.querySelector("#toast");
 const atlasLayer = document.querySelector("#atlasLayer");
 const startAtlas = document.querySelector("#startAtlas");
@@ -95,6 +96,7 @@ const importReport = document.querySelector("#importReport");
 
 let lastPayload = null;
 let atlasPayload = null;
+let qualityPayload = null;
 let selectedNodeId = null;
 let currentChapterId = localStorage.getItem("math150-current-chapter-id") || "ode_network_mvp";
 let panelCloseTimer = null;
@@ -514,6 +516,13 @@ function render(payload, options = {}) {
   if (options.enterWorld) showGraphMode();
   hudSession.textContent = currentSessionId();
   renderStats(challenge);
+  const chapterId = challenge.network?.chapter_id || currentChapterId;
+  if (qualityPayload?.chapter_id === chapterId) {
+    renderQualitySummary(qualityPayload);
+  } else {
+    renderQualitySummary(null, { loading: true });
+    loadRuntimeQuality(chapterId).catch(() => renderQualitySummary(null));
+  }
   renderGraph(challenge, { focusCurrent: options.focusCurrent });
   renderNodePanel(challenge, payload);
 }
@@ -575,6 +584,44 @@ function renderStats(challenge) {
     statBlock(`${Math.round(averageMastery)}`, "平均掌握度"),
     statBlock(repairCount ? `${repairCount} 个` : "无", "需要修复"),
   ].join("");
+}
+
+async function loadRuntimeQuality(chapterId) {
+  if (!chapterId) return null;
+  const payload = await request(`/quality/${encodeURIComponent(chapterId)}`);
+  qualityPayload = payload;
+  renderQualitySummary(payload);
+  return payload;
+}
+
+function renderQualitySummary(payload, options = {}) {
+  if (!qualitySummary) return;
+  if (options.loading) {
+    qualitySummary.innerHTML = `
+      <span class="quality-dot unknown"></span>
+      <span>${escapeHtml("图谱质量检测中")}</span>
+    `;
+    return;
+  }
+  if (!payload?.report) {
+    qualitySummary.innerHTML = `
+      <span class="quality-dot unknown"></span>
+      <span>${escapeHtml("图谱质量暂不可用")}</span>
+    `;
+    return;
+  }
+  const report = payload.report;
+  const passed = Boolean(report.passed);
+  const warnings = Number(report.warning_count || 0);
+  const errors = Number(report.error_count || 0);
+  const tone = passed ? (warnings ? "warn" : "pass") : "fail";
+  const label = passed
+    ? (warnings ? `${warnings} 个质量提示` : "图谱质量通过")
+    : `${errors} 个阻断问题`;
+  qualitySummary.innerHTML = `
+    <span class="quality-dot ${tone}"></span>
+    <span>${escapeHtml(label)}</span>
+  `;
 }
 
 function renderGraph(challenge, options = {}) {

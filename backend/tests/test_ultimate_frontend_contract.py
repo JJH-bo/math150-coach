@@ -39,6 +39,18 @@ def test_styles_pause_motion_when_node_sheet_is_open() -> None:
     assert re.search(r"\.node-modal\.is-open\s*\{[^}]*backdrop-filter:\s*none", styles, re.DOTALL)
 
 
+def test_frontend_fetches_and_renders_runtime_quality_summary() -> None:
+    index_html = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+    app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
+
+    assert 'id="qualitySummary"' in index_html
+    assert "/quality/" in app_js
+    assert "loadRuntimeQuality" in app_js
+    assert "renderQualitySummary" in app_js
+    assert ".quality-summary" in styles
+
+
 def _function_body(source: str, name: str) -> str:
     match = re.search(rf"function {name}\([^)]*\) \{{", source)
     assert match is not None
