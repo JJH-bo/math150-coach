@@ -36,6 +36,12 @@ class ChallengeAtlasBuilder:
                     "region_kind": "chapter_galaxy",
                     "status": "available",
                     "position": {"x": x, "y": y},
+                    "visual_role": {
+                        "celestial_role": "chapter_nebula",
+                        "primary_tone": self._tone_for_index(index),
+                        "density": self._density_label(macro_count, micro_count),
+                        "detail_entry": "lazy_drilldown",
+                    },
                     "summary": {
                         "macro_count": macro_count,
                         "micro_count": micro_count,
@@ -63,6 +69,13 @@ class ChallengeAtlasBuilder:
         return {
             "atlas_version": "course_atlas_v1",
             "title": "Math150 Coach 课程星图",
+            "visual_grammar": {
+                "subject_role": "subject_galaxy",
+                "chapter_role": "chapter_nebula",
+                "detail_role": "knowledge_constellation",
+                "edge_role": "light_language",
+                "pod_role": "diagnostic_dock",
+            },
             "render_policy": {
                 "default_layer": "chapter_summary",
                 "detail_loading": "lazy",
@@ -90,6 +103,18 @@ class ChallengeAtlasBuilder:
             if challenge.macro_node_id == macro_id:
                 return challenge.id
         return None
+
+    @staticmethod
+    def _tone_for_index(index: int) -> str:
+        return ["cyan", "gold", "green"][index % 3]
+
+    @staticmethod
+    def _density_label(macro_count: int, micro_count: int) -> str:
+        if macro_count >= 6 or micro_count >= 36:
+            return "dense"
+        if macro_count >= 3 or micro_count >= 18:
+            return "medium"
+        return "light"
 
     @staticmethod
     def _bridges(regions: list[dict[str, Any]]) -> list[dict[str, Any]]:
