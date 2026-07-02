@@ -57,6 +57,8 @@ title: 章节导入验收样例
 | e3 | boss_checks | import_demo.synthesis.boss | import_demo.macro.macro_challenge | Boss 检查综合拆解 |
 | e4 | transfers_to | import_demo.transfer.variant | import_demo.macro.method | 迁移回方法节点 |
 
+| e5 | contrasts_with | import_demo.compare.concept_method | import_demo.macro.method | Compare guard links concept and method |
+
 ## ErrorRepairMap
 | root_cause | repair_target_node_id |
 | --- | --- |
@@ -93,6 +95,24 @@ def test_structured_markdown_chapter_import_returns_draft_preview() -> None:
     assert payload["draft"]["logic_graph_draft"]["abilities"]
 
 
+def test_structured_markdown_chapter_import_returns_authoring_readiness() -> None:
+    payload = validate_chapter_markdown(VALID_CHAPTER_MARKDOWN)
+
+    assert payload["workflow_stage"] == "draft_preview"
+    readiness = payload["readiness"]
+    assert readiness["status"] == "review_ready"
+    assert readiness["publish_allowed"] is False
+    assert readiness["blocking_error_count"] == 0
+    assert readiness["warning_count"] == 0
+    assert readiness["next_action"] == "human_review"
+    checks = {check["code"]: check for check in readiness["checks"]}
+    assert checks["graph_valid"]["state"] == "pass"
+    assert checks["visible_budget"]["state"] == "pass"
+    assert checks["repair_targets"]["state"] == "pass"
+    assert checks["human_review_required"]["state"] == "locked"
+    assert checks["formal_publish_locked"]["state"] == "locked"
+
+
 def test_chapter_import_rejects_missing_hidden_evidence_and_repair_target() -> None:
     markdown = VALID_CHAPTER_MARKDOWN.replace("rubric,self_explanation", "").replace(
         "只有关键词 | import_demo.macro.concept |",
@@ -107,6 +127,25 @@ def test_chapter_import_rejects_missing_hidden_evidence_and_repair_target() -> N
     assert "repair_target_node_id" in messages
 
 
+def test_structured_markdown_chapter_import_blocks_readiness_when_validation_fails() -> None:
+    markdown = VALID_CHAPTER_MARKDOWN.replace(
+        "| method_error | import_demo.macro.method |",
+        "| method_error | unknown.node |",
+    )
+
+    payload = validate_chapter_markdown(markdown)
+
+    assert payload["workflow_stage"] == "draft_preview"
+    readiness = payload["readiness"]
+    assert readiness["status"] == "blocked"
+    assert readiness["publish_allowed"] is False
+    assert readiness["blocking_error_count"] > 0
+    assert readiness["next_action"] == "fix_validation_errors"
+    checks = {check["code"]: check for check in readiness["checks"]}
+    assert checks["graph_valid"]["state"] == "fail"
+    assert checks["formal_publish_locked"]["state"] == "locked"
+
+
 def test_chapter_draft_validate_api_never_publishes_formal_chapter() -> None:
     client = TestClient(create_app("mixed"))
 
@@ -118,4 +157,6 @@ def test_chapter_draft_validate_api_never_publishes_formal_chapter() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["publish_state"] == "draft_only"
+    assert payload["workflow_stage"] == "draft_preview"
+    assert payload["readiness"]["publish_allowed"] is False
     assert payload["report"]["passed"] is True

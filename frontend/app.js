@@ -471,6 +471,7 @@ async function validateChapterDraft() {
       body: { markdown: chapterDraftInput.value },
     });
     renderImportReport(payload);
+    injectAuthoringReadiness(payload.readiness);
   } finally {
     validateDraftBtn.disabled = false;
   }
@@ -496,6 +497,41 @@ function renderImportReport(payload) {
     ${renderIssueList("必须修正", report.errors || [])}
     ${renderIssueList("建议优化", report.warnings || [])}
     <p class="draft-note">当前状态：${escapeHtml(payload.publish_state || "draft_only")}。草稿不会自动发布到正式训练库。</p>
+  `;
+}
+
+function injectAuthoringReadiness(readiness) {
+  const readinessHtml = renderAuthoringReadiness(readiness);
+  if (!readinessHtml) return;
+  importReport.querySelector(".draft-counts")?.insertAdjacentHTML("afterend", readinessHtml);
+}
+
+function renderAuthoringReadiness(readiness) {
+  if (!readiness) return "";
+  const statusLabel = {
+    review_ready: "Ready for human review",
+    blocked: "Draft needs fixes",
+  }[readiness.status] || "Draft readiness unknown";
+  const nextLabel = {
+    human_review: "Next: human review",
+    fix_validation_errors: "Next: fix blocking issues",
+  }[readiness.next_action] || "Next: keep refining draft";
+  const checks = readiness.checks || [];
+  return `
+    <div class="authoring-readiness ${escapeHtml(readiness.status || "unknown")}">
+      <div class="authoring-readiness-head">
+        <strong>${escapeHtml(statusLabel)}</strong>
+        <span>${escapeHtml(nextLabel)}</span>
+      </div>
+      <div class="quality-gate-list">
+        ${checks.map((check) => `
+          <span class="quality-gate ${escapeHtml(check.state || "unknown")}">
+            <strong>${escapeHtml(check.label || check.code || "gate")}</strong>
+            <em>${escapeHtml(check.summary || "")}</em>
+          </span>
+        `).join("")}
+      </div>
+    </div>
   `;
 }
 

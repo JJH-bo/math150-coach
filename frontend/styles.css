@@ -2799,6 +2799,82 @@ body::after {
   font-size: 12px;
 }
 
+.authoring-readiness {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(104, 224, 180, 0.24);
+  background: rgba(104, 224, 180, 0.065);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.authoring-readiness.blocked {
+  border-color: rgba(255, 124, 134, 0.3);
+  background: rgba(255, 124, 134, 0.07);
+}
+
+.authoring-readiness-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.authoring-readiness-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.quality-gate-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.quality-gate {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  min-height: 68px;
+  border: 1px solid rgba(210, 231, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 9px;
+}
+
+.quality-gate strong,
+.quality-gate em {
+  overflow-wrap: anywhere;
+}
+
+.quality-gate em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.quality-gate.pass {
+  border-color: rgba(104, 224, 180, 0.36);
+  background: var(--soft-green);
+}
+
+.quality-gate.warn {
+  border-color: rgba(255, 210, 122, 0.38);
+  background: var(--soft-gold);
+}
+
+.quality-gate.fail {
+  border-color: rgba(255, 124, 134, 0.38);
+  background: var(--soft-red);
+}
+
+.quality-gate.locked {
+  border-color: rgba(210, 231, 255, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+  opacity: 0.84;
+}
+
 .issue-list ul {
   display: grid;
   gap: 6px;

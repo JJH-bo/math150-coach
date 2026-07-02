@@ -51,9 +51,11 @@ class ChapterDraftImporter:
         return {
             "mode": "structured_markdown_draft",
             "publish_state": "draft_only",
+            "workflow_stage": "draft_preview",
             "report": report,
             "draft": draft,
             "preview": preview,
+            "readiness": self._readiness(draft, report, preview),
             "template": self.template(),
         }
 
@@ -425,6 +427,91 @@ title: 一阶微分方程扩展示例
                 "logic_edges": len(draft.get("logic_edges", [])),
             },
         }
+
+    def _readiness(
+        self,
+        draft: dict[str, Any],
+        report: dict[str, Any],
+        preview: dict[str, Any],
+    ) -> dict[str, Any]:
+        error_count = int(report.get("error_count", 0) or 0)
+        warning_count = int(report.get("warning_count", 0) or 0)
+        max_micro_per_macro = self._max_micro_per_macro(draft)
+        repair_errors = [
+            error
+            for error in report.get("errors", [])
+            if "repair" in error.get("message", "") or "repair_target" in error.get("message", "")
+        ]
+        has_repair_map = bool(draft.get("error_repair_map"))
+
+        visible_budget_state = "pass"
+        if max_micro_per_macro > 12:
+            visible_budget_state = "fail"
+        elif max_micro_per_macro > 8:
+            visible_budget_state = "warn"
+
+        repair_targets_state = "pass"
+        if repair_errors or not has_repair_map:
+            repair_targets_state = "fail"
+
+        return {
+            "status": "blocked" if error_count else "review_ready",
+            "publish_allowed": False,
+            "blocking_error_count": error_count,
+            "warning_count": warning_count,
+            "next_action": "fix_validation_errors" if error_count else "human_review",
+            "counts": dict(preview.get("counts", {})),
+            "visible_budget": {
+                "max_micro_per_macro": max_micro_per_macro,
+                "recommended_max": 8,
+                "hard_max": 12,
+            },
+            "checks": [
+                {
+                    "code": "graph_valid",
+                    "label": "Graph validation",
+                    "state": "fail" if error_count else "pass",
+                    "summary": f"{error_count} blocking errors" if error_count else "No blocking validation errors",
+                },
+                {
+                    "code": "visible_budget",
+                    "label": "Visible node budget",
+                    "state": visible_budget_state,
+                    "summary": f"Max {max_micro_per_macro} visible MicroNodes per MacroNode",
+                },
+                {
+                    "code": "repair_targets",
+                    "label": "Repair targets",
+                    "state": repair_targets_state,
+                    "summary": (
+                        "Repair targets mapped to visible MicroNodes"
+                        if repair_targets_state == "pass"
+                        else "Repair target coverage needs fixes"
+                    ),
+                },
+                {
+                    "code": "human_review_required",
+                    "label": "Human review",
+                    "state": "locked",
+                    "summary": "Human review is required before candidate build",
+                },
+                {
+                    "code": "formal_publish_locked",
+                    "label": "Formal publish",
+                    "state": "locked",
+                    "summary": "Formal publish is not available from draft preview",
+                },
+            ],
+        }
+
+    @staticmethod
+    def _max_micro_per_macro(draft: dict[str, Any]) -> int:
+        counts = Counter(
+            micro.get("macro_node_id", "")
+            for micro in draft.get("micro_nodes", [])
+            if micro.get("macro_node_id")
+        )
+        return max(counts.values(), default=0)
 
     @staticmethod
     def _split_list(value: str) -> list[str]:

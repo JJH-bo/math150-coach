@@ -74,6 +74,17 @@ def test_frontend_renders_diagnostic_verdict_and_repair_beacon() -> None:
     assert ".repair-target-beacon" in styles
 
 
+def test_frontend_renders_authoring_readiness_projection() -> None:
+    app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
+
+    assert "renderAuthoringReadiness" in app_js
+    assert "authoring-readiness" in app_js
+    assert "quality-gate-list" in app_js
+    assert ".authoring-readiness" in styles
+    assert ".quality-gate-list" in styles
+
+
 def _function_body(source: str, name: str) -> str:
     match = re.search(rf"function {name}\([^)]*\) \{{", source)
     assert match is not None
