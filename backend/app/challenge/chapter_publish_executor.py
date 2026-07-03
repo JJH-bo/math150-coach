@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -9,6 +10,7 @@ from app.challenge.chapter_publish_plan import build_chapter_publish_plan_dry_ru
 
 CONTROLLED_PUBLISH_SCHEMA_VERSION = "chapter_controlled_publish_v1"
 APPROVAL_PHRASE = "I_APPROVE_CHAPTER_CONTROLLED_PUBLISH"
+EXECUTION_RECORD_FILENAME = "publish_execution_manifest.json"
 
 ExecutionStatus = Literal["blocked", "dry_run_ready", "published", "rolled_back"]
 
@@ -43,17 +45,6 @@ def execute_chapter_controlled_publish(
     approval_phrase: str | None = None,
     expected_publish_plan_hash: str | None = None,
 ) -> dict[str, Any]:
-    """Execute the controlled publish phase, defaulting to non-writing dry-run.
-
-    This is the first real publish-capable layer, but it is deliberately gated:
-    - candidate build must pass;
-    - candidate quality must pass;
-    - publish plan must be ready;
-    - writes require explicit approval phrase;
-    - writes require the caller to pin the expected publish plan hash;
-    - planned files use create-only semantics and refuse to overwrite existing files.
-    """
-
     root = (target_root or Path.cwd()).resolve()
     plan = build_chapter_publish_plan_dry_run(
         markdown,
@@ -85,7 +76,7 @@ def execute_chapter_controlled_publish(
     if expected_publish_plan_hash != plan_hash:
         return _result("blocked", plan, operations, ["expected_publish_plan_hash_required_for_write"])
 
-    return _write_plan_files(plan, root, operations)
+    return _write_plan_files(plan, root)
 
 
 def _planned_operations(plan: dict[str, Any], root: Path) -> tuple[list[PublishFileOperation], list[str]]:
@@ -106,14 +97,20 @@ def _planned_operations(plan: dict[str, Any], root: Path) -> tuple[list[PublishF
             operations.append(_operation(planned, "exists", "create_only_target_exists"))
         else:
             operations.append(_operation(planned, "ready", None))
+    record_path = _execution_record_relative_path(plan)
+    if record_path:
+        record_target = (root / record_path).resolve()
+        if record_target.exists():
+            operations.append(PublishFileOperation(record_path, "pending", "create", "exists", "create_only_target_exists"))
+        else:
+            operations.append(PublishFileOperation(record_path, "pending", "create", "ready"))
     if not operations:
         errors.append("no_planned_files")
     return operations, errors
 
 
-def _write_plan_files(plan: dict[str, Any], root: Path, operations: list[PublishFileOperation]) -> dict[str, Any]:
+def _write_plan_files(plan: dict[str, Any], root: Path) -> dict[str, Any]:
     written: list[Path] = []
-    operation_by_path = {operation.path: operation for operation in operations}
     final_operations: list[PublishFileOperation] = []
     try:
         for planned in plan.get("planned_files", []):
@@ -124,40 +121,27 @@ def _write_plan_files(plan: dict[str, Any], root: Path, operations: list[Publish
             with target.open("x", encoding="utf-8") as file:
                 file.write(content)
             written.append(target)
-            final_operations.append(
-                PublishFileOperation(
-                    path=relative_path,
-                    content_hash=str(planned.get("content_hash") or ""),
-                    action="create",
-                    status="written",
-                )
-            )
-        return _result("published", plan, final_operations, [])
-    except Exception as exc:  # pragma: no cover - defensive rollback path
+            final_operations.append(PublishFileOperation(relative_path, str(planned.get("content_hash") or ""), "create", "written"))
+        execution_record = _execution_manifest("published", plan, final_operations, [])
+        record_path = _execution_record_relative_path(plan)
+        if record_path:
+            record_target = (root / record_path).resolve()
+            record_target.parent.mkdir(parents=True, exist_ok=True)
+            record_text = json.dumps(execution_record, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+            with record_target.open("x", encoding="utf-8") as file:
+                file.write(record_text)
+            written.append(record_target)
+            final_operations.append(PublishFileOperation(record_path, deterministic_content_hash(execution_record), "create", "written"))
+        return _result("published", plan, final_operations, [], execution_manifest=execution_record)
+    except Exception as exc:  # pragma: no cover
         rollback_operations: list[PublishFileOperation] = []
         for path in reversed(written):
             relative = str(path.relative_to(root))
             try:
                 path.unlink()
-                rollback_operations.append(
-                    PublishFileOperation(
-                        path=relative,
-                        content_hash=operation_by_path.get(relative, PublishFileOperation(relative, "", "create", "blocked")).content_hash,
-                        action="create",
-                        status="rolled_back",
-                        reason="write_failure_rollback",
-                    )
-                )
+                rollback_operations.append(PublishFileOperation(relative, "", "create", "rolled_back", "write_failure_rollback"))
             except Exception:
-                rollback_operations.append(
-                    PublishFileOperation(
-                        path=relative,
-                        content_hash="",
-                        action="create",
-                        status="blocked",
-                        reason="rollback_failed",
-                    )
-                )
+                rollback_operations.append(PublishFileOperation(relative, "", "create", "blocked", "rollback_failed"))
         return _result("rolled_back", plan, rollback_operations, [f"write_failed:{type(exc).__name__}"])
 
 
@@ -166,6 +150,8 @@ def _result(
     plan: dict[str, Any],
     operations: list[PublishFileOperation],
     blocking_reasons: list[str],
+    *,
+    execution_manifest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "mode": "chapter_controlled_publish",
@@ -178,7 +164,7 @@ def _result(
         "publish_plan_hash": plan.get("publish_plan_hash"),
         "candidate_content_hash": plan.get("content_hash"),
         "file_operations": [operation.to_dict() for operation in operations],
-        "publish_manifest": _execution_manifest(status, plan, operations, blocking_reasons),
+        "publish_manifest": execution_manifest or _execution_manifest(status, plan, operations, blocking_reasons),
     }
 
 
@@ -196,26 +182,27 @@ def _execution_manifest(
         "candidate_content_hash": plan.get("content_hash"),
         "blocking_reasons": sorted(set(blocking_reasons)),
         "file_operations": [operation.to_dict() for operation in operations],
+        "rollback_policy": "delete_created_files_on_mid_write_failure",
     }
     manifest["execution_manifest_hash"] = deterministic_content_hash(manifest)
     return manifest
 
 
+def _execution_record_relative_path(plan: dict[str, Any]) -> str | None:
+    chapter_id = plan.get("chapter_id")
+    if not chapter_id:
+        return None
+    return f"backend/challenge_data/{chapter_id}/{EXECUTION_RECORD_FILENAME}"
+
+
 def _operation(planned: dict[str, Any], status: Literal["ready", "exists", "blocked"], reason: str | None) -> PublishFileOperation:
-    return PublishFileOperation(
-        path=str(planned.get("path") or ""),
-        content_hash=str(planned.get("content_hash") or ""),
-        action="create",
-        status=status,
-        reason=reason,
-    )
+    return PublishFileOperation(str(planned.get("path") or ""), str(planned.get("content_hash") or ""), "create", status, reason)
 
 
 def _is_safe_relative_path(path: str) -> bool:
     if not path or path.startswith("/") or "\x00" in path:
         return False
-    parts = Path(path).parts
-    return ".." not in parts
+    return ".." not in Path(path).parts
 
 
 def _is_relative_to(path: Path, root: Path) -> bool:
