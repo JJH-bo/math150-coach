@@ -11,6 +11,7 @@ from app.api.challenge.v1.schemas import (
     ChallengeResetRequest,
     ChallengeStartRequest,
     ChallengeSubmitRequest,
+    ChapterDraftCandidateDryRunRequest,
     ChapterDraftHumanReviewRequest,
     ChapterDraftValidateRequest,
     parse_request,
@@ -18,6 +19,7 @@ from app.api.challenge.v1.schemas import (
 from app.api.v1.schemas import api_error
 from app.challenge.atlas import ChallengeAtlasBuilder
 from app.challenge.engine import ChallengeEngine, ChallengeEngineError
+from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run
 from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
 from app.challenge.progress_store import ChallengeProgressError
 from app.challenge.repository import ChallengeRepository, ChallengeRepositoryError
@@ -100,6 +102,23 @@ async def record_chapter_draft_human_review(request: Request) -> dict[str, Any]:
         )
     except ValueError as exc:
         raise api_error(400, "chapter_human_review_invalid", str(exc))
+
+
+@router.post("/authoring/chapter-draft/candidate-dry-run")
+async def chapter_draft_candidate_dry_run(request: Request) -> dict[str, Any]:
+    payload = await request.json()
+    parsed = parse_request(ChapterDraftCandidateDryRunRequest, payload)
+    assert isinstance(parsed, ChapterDraftCandidateDryRunRequest)
+    try:
+        return build_chapter_candidate_dry_run(
+            parsed.markdown,
+            reviewer=parsed.reviewer,
+            decision=parsed.decision,
+            checklist=parsed.checklist,
+            notes=parsed.notes,
+        )
+    except ValueError as exc:
+        raise api_error(400, "chapter_candidate_dry_run_invalid", str(exc))
 
 
 @router.post("/start")
