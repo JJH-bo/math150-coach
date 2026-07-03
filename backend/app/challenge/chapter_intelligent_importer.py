@@ -5,6 +5,7 @@ from typing import Any
 
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run, deterministic_content_hash
 from app.challenge.chapter_draft_importer import validate_chapter_markdown
+from app.training.session_log import TRUSTED_FIELD_DENYLIST
 
 REVIEW_CHECKS = {
     "math_scope_checked",
@@ -91,10 +92,10 @@ def build_intelligent_chapter_draft(
         "title": final_title,
         "profile": {"code": profile_code, "title": profile["title"], "matched_keywords": matched, "confidence": _confidence(matched)},
         "source_hash": deterministic_content_hash(source),
-        "knowledge_network": network,
+        "knowledge_network": _public_payload(network),
         "generated_markdown": markdown,
-        "draft_validation": validation,
-        "candidate_preview": candidate,
+        "draft_validation": _public_payload(validation),
+        "candidate_preview": _public_payload(candidate),
         "human_review_required": True,
         "precision_report": _precision_report(source, matched, candidate),
     }
@@ -203,3 +204,15 @@ def _precision_report(source: str, matched: list[str], candidate: dict[str, Any]
     if not matched:
         gaps.append("profile_uncertain")
     return {"precision_level": "publish_candidate" if not gaps else "review_required", "gaps": gaps, "candidate_quality_grade": (candidate or {}).get("candidate_quality", {}).get("grade")}
+
+
+def _public_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _public_payload(child)
+            for key, child in value.items()
+            if key not in TRUSTED_FIELD_DENYLIST
+        }
+    if isinstance(value, list):
+        return [_public_payload(item) for item in value]
+    return value

@@ -21,12 +21,16 @@ def test_node_selection_does_not_rerender_whole_graph() -> None:
 def test_frontend_has_atlas_and_chapter_import_entrypoints() -> None:
     index_html = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
     app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
 
     assert 'id="atlasLayer"' in index_html
     assert 'id="importModal"' in index_html
     assert "/atlas" in app_js
     assert "/authoring/chapter-draft/validate" in app_js
     assert "publish_state" in app_js
+    assert "atlasRegionCanStart" in app_js
+    assert "atlasRegionDisabledAttrs" in app_js
+    assert ".atlas-region:disabled" in styles
 
 
 def test_styles_pause_motion_when_node_sheet_is_open() -> None:

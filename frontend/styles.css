@@ -2598,6 +2598,21 @@ body::after {
   opacity: 0.38;
 }
 
+.atlas-region:disabled,
+.atlas-mini-region:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.atlas-region:disabled .atlas-region-core {
+  animation-play-state: paused;
+  opacity: 0.42;
+}
+
+.atlas-region:disabled .atlas-region-ring {
+  opacity: 0.22;
+}
+
 .atlas-region-title,
 .atlas-region-meta {
   position: relative;

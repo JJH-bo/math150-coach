@@ -155,6 +155,37 @@ Known current limits:
 - Figma has not been used to write a design file yet because a target Figma file URL or plan key is still needed.
 - Full Mathematics I and 408 content are not expanded yet.
 
+## Latest Progress Addendum: 2026-07-03
+
+The chapter import pipeline now has a runtime chapter registry boundary.
+
+Implemented:
+
+- New registry module: `backend/app/challenge/chapter_registry.py`.
+- New endpoint: `GET /api/challenge/v1/chapters/registry`.
+- Atlas now marks whether each chapter region can actually start training through `runtime.can_start`.
+- `ChallengeEngine` blocks `start/status/submit/reset` for chapters that are not registered as trainable.
+- Frontend Atlas regions with `can_start=false` are disabled instead of launching the training cabin.
+
+Important correction:
+
+```text
+chapter files exist != runnable chapter training package
+```
+
+A chapter is trainable only when it has:
+
+- valid `challenge_graph.yaml`;
+- valid `questions.yaml`;
+- question coverage for every MicroNode;
+- question coverage for every MacroChallenge / Boss.
+
+Current remaining gap:
+
+- The controlled publish pipeline can produce graph assets.
+- It still does not automatically generate complete scoreable/diagnosable `questions.yaml`.
+- Therefore the next major content-production block is deterministic training-question package generation with rubrics, error repair maps, variants, and Boss coverage.
+
 ## Core Knowledge Graph Design
 
 Important correction:

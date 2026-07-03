@@ -71,3 +71,23 @@ A draft may warn when:
 - `warnings`
 
 Each region represents one chapter galaxy and includes only summary counts and a lazy-load hint. Clicking a chapter region should call the existing challenge start endpoint with that `chapter_id`.
+
+## Runtime Chapter Registry
+
+`GET /api/challenge/v1/chapters/registry` returns the runtime readiness registry.
+
+A chapter directory is not enough to make a runnable training package. The registry classifies chapters as:
+
+- `trainable`: graph and question bank are valid, with complete MicroNode and Boss question coverage.
+- `content_pending`: graph exists, but questions or coverage are missing.
+- `invalid`: graph cannot be loaded.
+
+Atlas must use this registry:
+
+- `runtime.can_start=true` means the chapter can enter the training cabin.
+- `runtime.can_start=false` means the region can be shown as an authored/published asset, but must not be started.
+- The challenge `start/status/submit/reset` flow must reject non-trainable chapters even if a caller bypasses Atlas.
+
+When `publish_manifest.json` exists, it is part of the runtime gate: the manifest must be readable and must report `candidate_quality_grade: pass`.
+
+Current controlled publish can produce graph assets. A final runnable chapter package still requires generated `questions.yaml` with trainable, scoreable, diagnosable questions and full Boss coverage.

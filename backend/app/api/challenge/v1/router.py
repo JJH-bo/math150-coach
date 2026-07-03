@@ -20,6 +20,7 @@ from app.api.challenge.v1.schemas import (
 )
 from app.api.v1.schemas import api_error
 from app.challenge.atlas import ChallengeAtlasBuilder
+from app.challenge.chapter_registry import ChapterRuntimeRegistry, ChapterRuntimeRegistryError
 from app.challenge.engine import ChallengeEngine, ChallengeEngineError
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run
 from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
@@ -47,6 +48,11 @@ def challenge_atlas() -> dict[str, Any]:
         return ChallengeAtlasBuilder().build()
     except ChallengeRepositoryError as exc:
         raise api_error(400, "challenge_error", str(exc))
+
+
+@router.get("/chapters/registry")
+def challenge_chapter_registry() -> dict[str, Any]:
+    return ChapterRuntimeRegistry().build()
 
 
 @router.get("/quality/{chapter_id}")
@@ -203,7 +209,7 @@ async def start_challenge(request: Request) -> dict[str, Any]:
             session_id=parsed.session_id,
             session_root=_session_root(),
         )
-    except (ChallengeEngineError, ChallengeProgressError, ChallengeRepositoryError, SessionLogError) as exc:
+    except (ChallengeEngineError, ChapterRuntimeRegistryError, ChallengeProgressError, ChallengeRepositoryError, SessionLogError) as exc:
         raise api_error(400, "challenge_error", str(exc))
 
 
@@ -212,7 +218,7 @@ def challenge_status(session_id: str) -> dict[str, Any]:
     try:
         safe_session_id = validate_session_id(session_id)
         return ChallengeEngine().status(session_id=safe_session_id, session_root=_session_root())
-    except (ChallengeEngineError, ChallengeProgressError, ChallengeRepositoryError, SessionLogError) as exc:
+    except (ChallengeEngineError, ChapterRuntimeRegistryError, ChallengeProgressError, ChallengeRepositoryError, SessionLogError) as exc:
         raise api_error(400, "challenge_error", str(exc))
 
 
@@ -229,7 +235,7 @@ async def submit_challenge(request: Request) -> dict[str, Any]:
             explanation=parsed.explanation,
             session_root=_session_root(),
         )
-    except (ChallengeEngineError, ChallengeProgressError, ChallengeRepositoryError, SessionLogError) as exc:
+    except (ChallengeEngineError, ChapterRuntimeRegistryError, ChallengeProgressError, ChallengeRepositoryError, SessionLogError) as exc:
         raise api_error(400, "challenge_error", str(exc))
 
 
@@ -245,7 +251,7 @@ async def reset_challenge(request: Request) -> dict[str, Any]:
             reset_all=parsed.reset_all,
             session_root=_session_root(),
         )
-    except (ChallengeEngineError, ChallengeProgressError, ChallengeRepositoryError, SessionLogError) as exc:
+    except (ChallengeEngineError, ChapterRuntimeRegistryError, ChallengeProgressError, ChallengeRepositoryError, SessionLogError) as exc:
         raise api_error(400, "challenge_error", str(exc))
 
 

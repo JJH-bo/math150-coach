@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.challenge.chapter_registry import ChapterRuntimeRegistry
 from app.challenge.repository import ChallengeRepository, ChallengeRepositoryError
 
 
@@ -12,17 +13,22 @@ class ChallengeAtlasBuilder:
 
     def __init__(self, repository: ChallengeRepository | None = None) -> None:
         self.repository = repository or ChallengeRepository()
+        self.registry = ChapterRuntimeRegistry(self.repository)
 
     def build(self) -> dict[str, Any]:
-        chapter_ids = self._discover_chapter_ids()
+        registry = self.registry.build()
+        chapter_entries = registry["chapters"]
         regions: list[dict[str, Any]] = []
-        warnings: list[str] = []
-        for index, chapter_id in enumerate(chapter_ids):
+        warnings: list[str] = list(registry.get("warnings", []))
+        for index, chapter_entry in enumerate(chapter_entries):
+            chapter_id = chapter_entry["chapter_id"]
             try:
                 graph = self.repository.load_graph(chapter_id)
             except ChallengeRepositoryError as exc:
                 warnings.append(str(exc))
                 continue
+            can_start = chapter_entry.get("can_start") is True
+            runtime_status = chapter_entry.get("runtime_status", "content_pending")
             macro_count = len(graph.macro_nodes)
             micro_count = len(graph.micro_nodes)
             boss_count = len(graph.macro_challenges)
@@ -36,7 +42,7 @@ class ChallengeAtlasBuilder:
                     "id": graph.chapter_id,
                     "title": graph.title,
                     "region_kind": "chapter_galaxy",
-                    "status": "available",
+                    "status": "available" if can_start else runtime_status,
                     "publish_status": publish_metadata["publish_status"],
                     "position": {"x": x, "y": y},
                     "visual_role": {
@@ -63,9 +69,16 @@ class ChallengeAtlasBuilder:
                         }
                         for macro in graph.macro_nodes
                     ],
+                    "runtime": {
+                        "can_start": can_start,
+                        "runtime_status": runtime_status,
+                        "source": chapter_entry.get("source"),
+                        "files": dict(chapter_entry.get("files", {})),
+                        "blocking_reasons": list(chapter_entry.get("blocking_reasons", [])),
+                    },
                     "detail": {
-                        "load_policy": "lazy_on_chapter_click",
-                        "start_endpoint": "/api/challenge/v1/start",
+                        "load_policy": "lazy_on_chapter_click" if can_start else "blocked_until_trainable_package",
+                        "start_endpoint": "/api/challenge/v1/start" if can_start else None,
                         "quality_endpoint": f"/api/challenge/v1/quality/{graph.chapter_id}",
                         "chapter_id": graph.chapter_id,
                     },
@@ -74,7 +87,7 @@ class ChallengeAtlasBuilder:
 
         return {
             "atlas_version": "course_atlas_v1",
-            "title": "Math150 Coach 课程星图",
+            "title": "Math150 Coach 璇剧▼鏄熷浘",
             "catalog_summary": self._catalog_summary(regions),
             "visual_grammar": {
                 "subject_role": "subject_galaxy",
@@ -87,22 +100,12 @@ class ChallengeAtlasBuilder:
                 "default_layer": "chapter_summary",
                 "detail_loading": "lazy",
                 "do_not_embed_detail_graph": True,
+                "start_requires_runtime_registry": True,
             },
             "regions": regions,
             "bridges": self._bridges(regions),
             "warnings": warnings,
         }
-
-    def _discover_chapter_ids(self) -> list[str]:
-        root = Path(self.repository.data_root)
-        if not root.exists():
-            return []
-        chapter_ids = [
-            path.name
-            for path in root.iterdir()
-            if path.is_dir() and (path / "challenge_graph.yaml").exists()
-        ]
-        return sorted(chapter_ids, key=lambda chapter_id: (chapter_id != "ode_network_mvp", chapter_id))
 
     def _publish_metadata(self, chapter_id: str) -> dict[str, Any]:
         chapter_root = Path(self.repository.data_root) / chapter_id
@@ -159,10 +162,16 @@ class ChallengeAtlasBuilder:
     def _catalog_summary(regions: list[dict[str, Any]]) -> dict[str, int]:
         controlled = sum(1 for region in regions if region.get("publish_status") == "controlled_published")
         legacy = sum(1 for region in regions if region.get("publish_status") == "legacy_runtime")
+        trainable = sum(1 for region in regions if region.get("runtime", {}).get("can_start") is True)
+        content_pending = sum(1 for region in regions if region.get("runtime", {}).get("runtime_status") == "content_pending")
+        invalid = sum(1 for region in regions if region.get("runtime", {}).get("runtime_status") == "invalid")
         return {
             "chapter_count": len(regions),
             "controlled_published_count": controlled,
             "legacy_runtime_count": legacy,
+            "trainable_count": trainable,
+            "content_pending_count": content_pending,
+            "invalid_count": invalid,
         }
 
     @staticmethod
@@ -194,7 +203,7 @@ class ChallengeAtlasBuilder:
                 "source_id": regions[index]["id"],
                 "target_id": regions[index + 1]["id"],
                 "edge_type": "course_prerequisite",
-                "label": "章节前后承接",
+                "label": "绔犺妭鍓嶅悗鎵挎帴",
                 "visible": True,
             }
             for index in range(len(regions) - 1)

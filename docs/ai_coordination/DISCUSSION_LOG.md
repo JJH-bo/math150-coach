@@ -245,3 +245,33 @@ Verification after hardening:
 - real-attempt lab remains release-blocked by design: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
 
 Codex recorded details in `CODEX_REVIEW_CHATGPT_IMPORT_PIPELINE_2026_07_03.md`.
+
+## 2026-07-03 - Codex Runtime Registry Boundary For Chapter Packages
+
+Codex implemented the next runtime boundary after controlled publish.
+
+Decision:
+
+- A chapter directory or graph-only controlled publish output is not enough to enter the training cabin.
+- A chapter is `trainable` only when it has a valid runtime graph, valid `questions.yaml`, and full question coverage for every MicroNode and MacroChallenge/Boss.
+- Graph-only controlled publish output is now classified as `content_pending`, not `available`.
+
+Implemented:
+
+- `ChapterRuntimeRegistry` in `backend/app/challenge/chapter_registry.py`;
+- read-only `GET /api/challenge/v1/chapters/registry`;
+- Atlas runtime metadata: `can_start`, `runtime_status`, file presence, and blocking reasons;
+- `ChallengeEngine` blocks `start/status/submit/reset` for non-trainable chapters;
+- frontend Atlas buttons disable regions with `can_start=false`.
+
+Verification:
+
+- focused runtime registry and chapter import tests: `32 passed`.
+
+Remaining final-version gap:
+
+- automatic generation of `questions.yaml` with scoreable questions, rubrics, error repair maps, variants, and Boss coverage is still not implemented. This is the next required block before arbitrary uploaded chapters become complete runnable training packages.
+
+Integration note:
+
+- While rebasing over ChatGPT's intelligent chapter generation push, Codex found that the public intelligent-generate payload leaked `evidence_sources` keys under `knowledge_network` / validation projections. Codex kept the internal generation data intact but added a public payload projection that strips trusted-field denylist keys before returning API payloads.

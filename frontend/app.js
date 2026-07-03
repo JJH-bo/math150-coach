@@ -216,7 +216,7 @@ function renderAtlas(payload) {
     </div>
     <div class="atlas-mini-list">
       ${regions.map((region) => `
-        <button type="button" class="atlas-mini-region" data-chapter-id="${escapeHtml(region.id)}" onclick="startAtlasChapter('${escapeHtml(region.id)}')">
+        <button type="button" class="atlas-mini-region" data-chapter-id="${escapeHtml(region.id)}" ${atlasRegionDisabledAttrs(region)} onclick="startAtlasChapter('${escapeHtml(region.id)}')">
           <strong>${escapeHtml(region.title)}</strong>
           <span>${escapeHtml(atlasRegionMeta(region))}</span>
         </button>
@@ -250,6 +250,7 @@ function renderAtlasRegion(region) {
       style="left:${x}%;top:${y}%"
       data-chapter-id="${escapeHtml(region.id)}"
       data-celestial-role="${escapeHtml(region.visual_role?.celestial_role || "chapter_nebula")}"
+      ${atlasRegionDisabledAttrs(region)}
       onclick="startAtlasChapter('${escapeHtml(region.id)}')"
     >
       <span class="atlas-region-core"></span>
@@ -272,7 +273,20 @@ function visualClassForRegion(region) {
   return `tone-${tone} density-${density}`;
 }
 
+function atlasRegionCanStart(region) {
+  return region?.runtime?.can_start !== false;
+}
+
+function atlasRegionDisabledAttrs(region) {
+  return atlasRegionCanStart(region) ? "" : 'disabled aria-disabled="true"';
+}
+
 function startAtlasChapter(chapterId) {
+  const region = (atlasPayload?.regions || []).find((item) => item.id === chapterId);
+  if (region && !atlasRegionCanStart(region)) {
+    renderUnavailableTask("This chapter package is not trainable yet.");
+    return;
+  }
   currentChapterId = chapterId || currentChapterId;
   localStorage.setItem("math150-current-chapter-id", currentChapterId);
   startChallenge(currentChapterId);
