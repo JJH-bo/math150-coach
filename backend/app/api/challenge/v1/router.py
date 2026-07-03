@@ -11,6 +11,7 @@ from app.api.challenge.v1.schemas import (
     ChallengeResetRequest,
     ChallengeStartRequest,
     ChallengeSubmitRequest,
+    ChapterControlledPublishRequest,
     ChapterDraftCandidateDryRunRequest,
     ChapterDraftHumanReviewRequest,
     ChapterDraftValidateRequest,
@@ -21,6 +22,7 @@ from app.challenge.atlas import ChallengeAtlasBuilder
 from app.challenge.engine import ChallengeEngine, ChallengeEngineError
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run
 from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
+from app.challenge.chapter_publish_executor import execute_chapter_controlled_publish
 from app.challenge.chapter_publish_plan import build_chapter_publish_plan_dry_run
 from app.challenge.progress_store import ChallengeProgressError
 from app.challenge.repository import ChallengeRepository, ChallengeRepositoryError
@@ -146,6 +148,26 @@ async def chapter_draft_publish_plan_dry_run(request: Request) -> dict[str, Any]
         )
     except ValueError as exc:
         raise api_error(400, "chapter_publish_plan_dry_run_invalid", str(exc))
+
+
+@router.post("/authoring/chapter-draft/controlled-publish")
+async def chapter_draft_controlled_publish(request: Request) -> dict[str, Any]:
+    payload = await request.json()
+    parsed = parse_request(ChapterControlledPublishRequest, payload)
+    assert isinstance(parsed, ChapterControlledPublishRequest)
+    try:
+        return execute_chapter_controlled_publish(
+            parsed.markdown,
+            reviewer=parsed.reviewer,
+            decision=parsed.decision,
+            checklist=parsed.checklist,
+            notes=parsed.notes,
+            allow_write=parsed.allow_write,
+            approval_phrase=parsed.approval_phrase,
+            expected_publish_plan_hash=parsed.expected_publish_plan_hash,
+        )
+    except ValueError as exc:
+        raise api_error(400, "chapter_controlled_publish_invalid", str(exc))
 
 
 @router.post("/start")
