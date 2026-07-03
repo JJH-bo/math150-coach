@@ -15,6 +15,7 @@ from app.api.challenge.v1.schemas import (
     ChapterDraftCandidateDryRunRequest,
     ChapterDraftHumanReviewRequest,
     ChapterDraftValidateRequest,
+    ChapterIntelligentGenerateRequest,
     parse_request,
 )
 from app.api.v1.schemas import api_error
@@ -22,6 +23,7 @@ from app.challenge.atlas import ChallengeAtlasBuilder
 from app.challenge.engine import ChallengeEngine, ChallengeEngineError
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run
 from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
+from app.challenge.chapter_intelligent_importer import build_intelligent_chapter_draft
 from app.challenge.chapter_publish_executor import execute_chapter_controlled_publish
 from app.challenge.chapter_publish_plan import build_chapter_publish_plan_dry_run
 from app.challenge.progress_store import ChallengeProgressError
@@ -88,6 +90,19 @@ async def validate_chapter_draft(request: Request) -> dict[str, Any]:
     parsed = parse_request(ChapterDraftValidateRequest, payload)
     assert isinstance(parsed, ChapterDraftValidateRequest)
     return validate_chapter_markdown(parsed.markdown)
+
+
+@router.post("/authoring/chapter-draft/intelligent-generate")
+async def intelligent_generate_chapter_draft(request: Request) -> dict[str, Any]:
+    payload = await request.json()
+    parsed = parse_request(ChapterIntelligentGenerateRequest, payload)
+    assert isinstance(parsed, ChapterIntelligentGenerateRequest)
+    return build_intelligent_chapter_draft(
+        parsed.source_text,
+        chapter_id=parsed.chapter_id,
+        title=parsed.title,
+        build_candidate=parsed.build_candidate,
+    )
 
 
 @router.post("/authoring/chapter-draft/human-review")
