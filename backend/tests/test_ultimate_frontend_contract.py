@@ -98,6 +98,21 @@ def test_frontend_renders_draft_preview_graph() -> None:
     assert ".draft-preview-edge" in styles
 
 
+def test_frontend_links_authoring_gates_and_issues_to_draft_preview_graph() -> None:
+    app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
+
+    assert "handleImportReportClick" in app_js
+    assert "focusDraftPreviewGraph" in app_js
+    assert "data-gate-code" in app_js
+    assert "data-focus-targets" in app_js
+    assert "data-source-id" in app_js
+    assert "data-target-id" in app_js
+    assert ".draft-preview-node.focused" in styles
+    assert ".draft-preview-edge.focused" in styles
+    assert ".draft-preview-graph.has-focus" in styles
+
+
 def _function_body(source: str, name: str) -> str:
     match = re.search(rf"function {name}\([^)]*\) \{{", source)
     assert match is not None

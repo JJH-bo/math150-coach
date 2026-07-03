@@ -28,7 +28,7 @@
 **Files:**
 - Modify: `backend/tests/test_ultimate_frontend_contract.py`
 
-- [ ] **Step 1: Add failing contract test**
+- [x] **Step 1: Add failing contract test**
 
 Add this test after `test_frontend_renders_draft_preview_graph`:
 
@@ -48,7 +48,7 @@ def test_frontend_links_authoring_gates_and_issues_to_draft_preview_graph() -> N
     assert ".draft-preview-graph.has-focus" in styles
 ```
 
-- [ ] **Step 2: Run focused test and verify RED**
+- [x] **Step 2: Run focused test and verify RED**
 
 Run:
 
@@ -63,7 +63,7 @@ Expected: FAIL because U2C hooks do not exist yet.
 **Files:**
 - Modify: `frontend/app.js`
 
-- [ ] **Step 1: Add import-report click delegation**
+- [x] **Step 1: Add import-report click delegation**
 
 In the initialization block where existing import buttons are registered, add:
 
@@ -71,7 +71,7 @@ In the initialization block where existing import buttons are registered, add:
 importReport?.addEventListener("click", handleImportReportClick);
 ```
 
-- [ ] **Step 2: Pass full payload into readiness injection**
+- [x] **Step 2: Pass full payload into readiness injection**
 
 Change:
 
@@ -95,7 +95,7 @@ function injectAuthoringReadiness(payload) {
 }
 ```
 
-- [ ] **Step 3: Render quality gates as focusable buttons**
+- [x] **Step 3: Render quality gates as focusable buttons**
 
 Replace the gate item in `renderAuthoringReadiness` with this shape:
 
@@ -116,7 +116,7 @@ ${checks.map((check) => {
 }).join("")}
 ```
 
-- [ ] **Step 4: Render issue targets as focus controls**
+- [x] **Step 4: Render issue targets as focus controls**
 
 Change `renderIssueList` item rendering to:
 
@@ -134,7 +134,7 @@ ${issues.map((issue) => {
 }).join("")}
 ```
 
-- [ ] **Step 5: Add gate target helper**
+- [x] **Step 5: Add gate target helper**
 
 Add this function near `renderAuthoringReadiness`:
 
@@ -157,7 +157,7 @@ function focusTargetsForGate(check, report) {
 }
 ```
 
-- [ ] **Step 6: Add shared unique helper**
+- [x] **Step 6: Add shared unique helper**
 
 Add:
 
@@ -172,7 +172,7 @@ function uniqueStrings(values) {
 **Files:**
 - Modify: `frontend/app.js`
 
-- [ ] **Step 1: Add data attributes to graph edges**
+- [x] **Step 1: Add data attributes to graph edges**
 
 In `renderDraftPreviewGraph`, add these attributes to every `<line>`:
 
@@ -182,7 +182,7 @@ data-source-id="${escapeHtml(edge.source_id || "")}"
 data-target-id="${escapeHtml(edge.target_id || "")}"
 ```
 
-- [ ] **Step 2: Add data attributes to graph nodes**
+- [x] **Step 2: Add data attributes to graph nodes**
 
 In the node `<span>`, add:
 
@@ -190,7 +190,7 @@ In the node `<span>`, add:
 data-node-id="${escapeHtml(node.id)}"
 ```
 
-- [ ] **Step 3: Implement click handler**
+- [x] **Step 3: Implement click handler**
 
 Add:
 
@@ -206,7 +206,7 @@ function handleImportReportClick(event) {
 }
 ```
 
-- [ ] **Step 4: Implement graph focus**
+- [x] **Step 4: Implement graph focus**
 
 Add:
 
@@ -240,7 +240,7 @@ function focusDraftPreviewGraph(targets, activeControl) {
 **Files:**
 - Modify: `frontend/styles.css`
 
-- [ ] **Step 1: Make gates and issue targets interactive**
+- [x] **Step 1: Make gates and issue targets interactive**
 
 Add:
 
@@ -272,7 +272,7 @@ Add:
 }
 ```
 
-- [ ] **Step 2: Add graph focus states**
+- [x] **Step 2: Add graph focus states**
 
 Add:
 
@@ -303,7 +303,7 @@ Add:
 **Files:**
 - Create: `docs/phase_u2c_implementation_report.md`
 
-- [ ] **Step 1: Run focused checks**
+- [x] **Step 1: Run focused checks**
 
 Run:
 
@@ -319,7 +319,7 @@ frontend and atlas/import tests pass
 node syntax check exits 0
 ```
 
-- [ ] **Step 2: Browser verify**
+- [x] **Step 2: Browser verify**
 
 Open:
 
@@ -336,7 +336,7 @@ Validate a draft in the import panel, then verify:
 - unrelated nodes receive `.dimmed`.
 - related edges receive `.focused`.
 
-- [ ] **Step 3: Run full checks**
+- [x] **Step 3: Run full checks**
 
 Run:
 
@@ -354,11 +354,11 @@ all tests and evals pass
 diff check exits 0
 ```
 
-- [ ] **Step 4: Write implementation report**
+- [x] **Step 4: Write implementation report**
 
 Create `docs/phase_u2c_implementation_report.md` with scope, delivered items, and verification output.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 Run:
 

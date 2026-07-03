@@ -151,6 +151,7 @@ function init() {
   closeImportBtn?.addEventListener("click", closeImportPanel);
   loadTemplateBtn?.addEventListener("click", loadDraftTemplate);
   validateDraftBtn?.addEventListener("click", validateChapterDraft);
+  importReport?.addEventListener("click", handleImportReportClick);
   closeNodePanelBtn.addEventListener("click", closeNodePanel);
   graphView.addEventListener("click", handleGraphClick);
   setupMapCamera();
@@ -471,7 +472,7 @@ async function validateChapterDraft() {
       body: { markdown: chapterDraftInput.value },
     });
     renderImportReport(payload);
-    injectAuthoringReadiness(payload.readiness);
+    injectAuthoringReadiness(payload);
     injectDraftPreviewGraph(payload.preview);
   } finally {
     validateDraftBtn.disabled = false;
@@ -501,13 +502,13 @@ function renderImportReport(payload) {
   `;
 }
 
-function injectAuthoringReadiness(readiness) {
-  const readinessHtml = renderAuthoringReadiness(readiness);
+function injectAuthoringReadiness(payload) {
+  const readinessHtml = renderAuthoringReadiness(payload?.readiness, payload?.report);
   if (!readinessHtml) return;
   importReport.querySelector(".draft-counts")?.insertAdjacentHTML("afterend", readinessHtml);
 }
 
-function renderAuthoringReadiness(readiness) {
+function renderAuthoringReadiness(readiness, report) {
   if (!readiness) return "";
   const statusLabel = {
     review_ready: "Ready for human review",
@@ -525,15 +526,44 @@ function renderAuthoringReadiness(readiness) {
         <span>${escapeHtml(nextLabel)}</span>
       </div>
       <div class="quality-gate-list">
-        ${checks.map((check) => `
-          <span class="quality-gate ${escapeHtml(check.state || "unknown")}">
-            <strong>${escapeHtml(check.label || check.code || "gate")}</strong>
-            <em>${escapeHtml(check.summary || "")}</em>
-          </span>
-        `).join("")}
+        ${checks.map((check) => {
+          const targets = focusTargetsForGate(check, report);
+          return `
+            <button
+              type="button"
+              class="quality-gate ${escapeHtml(check.state || "unknown")}"
+              data-gate-code="${escapeHtml(check.code || "gate")}"
+              data-focus-targets="${escapeHtml(targets.join(","))}"
+            >
+              <strong>${escapeHtml(check.label || check.code || "gate")}</strong>
+              <em>${escapeHtml(check.summary || "")}</em>
+            </button>
+          `;
+        }).join("")}
       </div>
     </div>
   `;
+}
+
+function focusTargetsForGate(check, report) {
+  const issues = [...(report?.errors || []), ...(report?.warnings || [])];
+  if (check.code === "formal_publish_locked" || check.code === "human_review_required") return [];
+  if (check.code === "graph_valid") return uniqueStrings((report?.errors || []).map((issue) => issue.target));
+  if (check.code === "visible_budget") {
+    return uniqueStrings(issues
+      .filter((issue) => /MicroNode|visible|MacroNode/i.test(issue.message || ""))
+      .map((issue) => issue.target));
+  }
+  if (check.code === "repair_targets") {
+    return uniqueStrings(issues
+      .filter((issue) => /repair|root_cause/i.test(`${issue.target || ""} ${issue.message || ""}`))
+      .map((issue) => issue.target));
+  }
+  return [];
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.filter(Boolean).map(String))];
 }
 
 function injectDraftPreviewGraph(preview) {
@@ -560,6 +590,9 @@ function renderDraftPreviewGraph(preview) {
           return `
             <line
               class="draft-preview-edge ${cssToken(edge.edge_type || "link")}"
+              data-edge-id="${escapeHtml(edge.id || "")}"
+              data-source-id="${escapeHtml(edge.source_id || "")}"
+              data-target-id="${escapeHtml(edge.target_id || "")}"
               x1="${source.x}"
               y1="${source.y}"
               x2="${target.x}"
@@ -573,6 +606,7 @@ function renderDraftPreviewGraph(preview) {
         return `
           <span
             class="draft-preview-node ${draftPreviewNodeClass(node)}"
+            data-node-id="${escapeHtml(node.id)}"
             style="--x: ${point.x}; --y: ${point.y};"
             title="${escapeHtml(node.title || node.id)}"
           >
@@ -641,13 +675,56 @@ function cssToken(value) {
   return String(value || "unknown").toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
 }
 
+function handleImportReportClick(event) {
+  const focusControl = event.target.closest("[data-focus-targets]");
+  if (!focusControl || !importReport.contains(focusControl)) return;
+  const targets = (focusControl.getAttribute("data-focus-targets") || "")
+    .split(",")
+    .map((target) => target.trim())
+    .filter(Boolean);
+  focusDraftPreviewGraph(targets, focusControl);
+}
+
+function focusDraftPreviewGraph(targets, activeControl) {
+  const targetSet = new Set(targets);
+  const graph = importReport.querySelector(".draft-preview-graph");
+  if (!graph) return;
+  const hasFocus = targetSet.size > 0;
+  graph.classList.toggle("has-focus", hasFocus);
+  importReport.querySelectorAll(".quality-gate, .issue-focus").forEach((control) => {
+    control.classList.toggle("active", control === activeControl && hasFocus);
+  });
+  graph.querySelectorAll(".draft-preview-node").forEach((node) => {
+    const nodeId = node.getAttribute("data-node-id") || "";
+    node.classList.toggle("focused", targetSet.has(nodeId));
+    node.classList.toggle("dimmed", hasFocus && !targetSet.has(nodeId));
+  });
+  graph.querySelectorAll(".draft-preview-edge").forEach((edge) => {
+    const sourceId = edge.getAttribute("data-source-id") || "";
+    const targetId = edge.getAttribute("data-target-id") || "";
+    const focused = targetSet.has(sourceId) || targetSet.has(targetId);
+    edge.classList.toggle("focused", focused);
+    edge.classList.toggle("dimmed", hasFocus && !focused);
+  });
+}
+
 function renderIssueList(title, issues) {
   if (!issues.length) return "";
   return `
     <div class="issue-list">
       <strong>${escapeHtml(title)}</strong>
       <ul>
-        ${issues.map((issue) => `<li><span>${escapeHtml(issue.target || "draft")}</span>${escapeHtml(issue.message || "")}</li>`).join("")}
+        ${issues.map((issue) => {
+          const target = issue.target || "draft";
+          return `
+            <li>
+              <button type="button" class="issue-focus" data-focus-targets="${escapeHtml(target)}">
+                ${escapeHtml(target)}
+              </button>
+              ${escapeHtml(issue.message || "")}
+            </li>
+          `;
+        }).join("")}
       </ul>
     </div>
   `;
