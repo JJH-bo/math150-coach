@@ -63,6 +63,16 @@ class ChapterDraftHumanReviewRequest(BaseModel):
     notes: str | None = None
 
 
+class ChapterDraftCandidateDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    markdown: str = Field(min_length=1)
+    reviewer: str = Field(min_length=1, max_length=80)
+    decision: Literal["request_changes", "approve_for_candidate"]
+    checklist: dict[str, bool] = Field(default_factory=dict)
+    notes: str | None = None
+
+
 def parse_request(model: type[BaseModel], payload: dict[str, Any]) -> BaseModel:
     try:
         return model.model_validate(payload)
