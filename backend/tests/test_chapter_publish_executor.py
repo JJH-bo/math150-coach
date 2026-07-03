@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
 from app.challenge.chapter_publish_executor import APPROVAL_PHRASE, execute_chapter_controlled_publish
 from app.challenge.chapter_publish_plan import build_chapter_publish_plan_dry_run
+from app.main import create_app
 
 REQUIRED_REVIEW_CHECKS = {
     "math_scope_checked",
@@ -141,3 +144,45 @@ def test_controlled_publish_creates_files_with_phrase_and_hash(tmp_path: Path) -
     assert (chapter_dir / "challenge_graph.yaml").exists()
     assert (chapter_dir / "logic_graph.yaml").exists()
     assert (chapter_dir / "publish_manifest.json").exists()
+
+
+def test_controlled_publish_api_defaults_to_non_writing_dry_run() -> None:
+    client = TestClient(create_app("mixed"))
+
+    response = client.post(
+        "/api/challenge/v1/authoring/chapter-draft/controlled-publish",
+        json={
+            "markdown": MARKDOWN,
+            "reviewer": "reviewer-a",
+            "decision": "approve_for_candidate",
+            "checklist": _checklist(),
+            "notes": "ready",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "dry_run_ready"
+    assert payload["dry_run_only"] is True
+    assert payload["formal_publish_executed"] is False
+
+
+def test_controlled_publish_api_blocks_write_by_default() -> None:
+    client = TestClient(create_app("mixed"))
+
+    response = client.post(
+        "/api/challenge/v1/authoring/chapter-draft/controlled-publish",
+        json={
+            "markdown": MARKDOWN,
+            "reviewer": "reviewer-a",
+            "decision": "approve_for_candidate",
+            "checklist": _checklist(),
+            "notes": "ready",
+            "allow_write": True,
+            "approval_phrase": APPROVAL_PHRASE,
+            "expected_publish_plan_hash": _plan_hash(),
+        },
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"]["error_code"] == "chapter_controlled_publish_write_disabled"

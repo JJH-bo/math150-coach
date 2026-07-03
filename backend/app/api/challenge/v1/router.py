@@ -155,6 +155,12 @@ async def chapter_draft_controlled_publish(request: Request) -> dict[str, Any]:
     payload = await request.json()
     parsed = parse_request(ChapterControlledPublishRequest, payload)
     assert isinstance(parsed, ChapterControlledPublishRequest)
+    if parsed.allow_write and not _controlled_publish_api_writes_enabled():
+        raise api_error(
+            403,
+            "chapter_controlled_publish_write_disabled",
+            "Controlled publish writes through the HTTP API are disabled by default.",
+        )
     try:
         return execute_chapter_controlled_publish(
             parsed.markdown,
@@ -162,6 +168,7 @@ async def chapter_draft_controlled_publish(request: Request) -> dict[str, Any]:
             decision=parsed.decision,
             checklist=parsed.checklist,
             notes=parsed.notes,
+            target_root=_controlled_publish_target_root(),
             allow_write=parsed.allow_write,
             approval_phrase=parsed.approval_phrase,
             expected_publish_plan_hash=parsed.expected_publish_plan_hash,
@@ -232,3 +239,14 @@ def _session_root() -> Path:
     if configured:
         return Path(configured)
     return Path.cwd() / "training_sessions" / "challenge_api"
+
+
+def _controlled_publish_api_writes_enabled() -> bool:
+    return os.getenv("CHAPTER_CONTROLLED_PUBLISH_API_WRITES", "").strip().lower() in {"1", "true", "yes"}
+
+
+def _controlled_publish_target_root() -> Path | None:
+    configured = os.getenv("CHAPTER_CONTROLLED_PUBLISH_TARGET_ROOT")
+    if configured:
+        return Path(configured)
+    return None

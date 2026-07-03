@@ -81,6 +81,22 @@ def test_candidate_quality_fails_when_repair_target_is_invalid() -> None:
     assert "repair_target_invalid" in report["candidate_publish_gate"]["blocking_codes"]
 
 
+def test_candidate_quality_warns_when_core_error_mapping_is_incomplete() -> None:
+    candidate = deepcopy(_candidate())
+    del candidate["challenge_graph"]["error_to_micro_mapping"]["expression_weakness"]
+
+    report = evaluate_chapter_candidate_quality(
+        candidate,
+        content_hash="sha256:" + "d" * 64,
+        runtime_validation={"passed": True, "errors": [], "warnings": []},
+        formal_publish_allowed=False,
+    )
+
+    assert report["grade"] == "warn"
+    assert report["candidate_publish_gate"]["candidate_quality_passed"] is False
+    assert report["candidate_publish_gate"]["blocking_codes"] == []
+
+
 def test_candidate_quality_blocks_trusted_field_leaks() -> None:
     candidate = deepcopy(_candidate())
     candidate["challenge_graph"]["expected_answer"] = "answer"

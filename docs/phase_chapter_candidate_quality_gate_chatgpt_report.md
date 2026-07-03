@@ -103,3 +103,17 @@ This step does not add:
 - The existing candidate builder was modified by Codex after ChatGPT's first implementation, including `sha256:` hash prefix and trusted-field filtering. This quality gate was adjusted to accept `sha256:` prefixes.
 - Codex should verify import order, route startup, and whether existing candidate dry-run tests still pass.
 - If the quality grade is `warn` for sparse authoring samples, that is acceptable evidence: the gate is identifying that the candidate is not yet full-strength for final-system publishing.
+
+## 9. Codex hardening addendum
+
+Codex verified that warnings must not be hidden by a high aggregate score.
+
+Change made:
+
+- any candidate quality warning now produces overall `grade: "warn"` unless a hard error makes it `fail`;
+- publish plan dry-run still requires `grade: "pass"` before it returns `publish_plan_grade: "ready"`;
+- tests now lock the case where an incomplete core error repair mapping becomes `warn`, not `pass`.
+
+Rationale:
+
+The quality gate is a publish gate, not a loose scorecard. A candidate with warnings can remain useful for review, but it should not proceed into a ready publish plan.

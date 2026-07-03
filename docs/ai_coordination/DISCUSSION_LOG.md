@@ -210,3 +210,38 @@ Important evidence:
 Next judgment:
 
 - The real-attempt lab failures should drive the next diagnosis improvement work. They should not be hidden or softened.
+
+## 2026-07-03 - Codex Review Of ChatGPT Chapter Import Pipeline Push
+
+Codex reviewed ChatGPT's GitHub push at `0e1d69d`.
+
+Decision:
+
+- The push satisfies the user's hard handoff gate.
+- ChatGPT delivered concrete code, tests, and reports.
+- The work upgrades the chapter import pipeline from candidate dry-run toward a controlled publish-capable local/dev pipeline.
+
+Codex accepted these implemented blocks:
+
+- candidate quality gate;
+- publish plan dry-run;
+- controlled publish executor;
+- API schemas and routes;
+- focused tests and reports.
+
+Codex hardening:
+
+- Candidate quality warnings now force overall `grade: "warn"` instead of being hidden by aggregate score.
+- Publish plan dry-run remains blocked unless candidate quality is exactly `pass`.
+- HTTP controlled-publish writes are disabled by default and require `CHAPTER_CONTROLLED_PUBLISH_API_WRITES=1`.
+- API write target root is controlled only by `CHAPTER_CONTROLLED_PUBLISH_TARGET_ROOT`, not request JSON.
+
+Verification after hardening:
+
+- focused chapter import tests: `28 passed`;
+- full backend tests: `573 passed`;
+- golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`;
+- synthetic diagnosis lab: `16/16`;
+- real-attempt lab remains release-blocked by design: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
+
+Codex recorded details in `CODEX_REVIEW_CHATGPT_IMPORT_PIPELINE_2026_07_03.md`.

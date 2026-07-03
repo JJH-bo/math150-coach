@@ -124,7 +124,22 @@ Risks for Codex to inspect:
 - Whether file writes should include a separate audit log file in the future.
 - Whether rollback behavior should become stronger for multi-file writes.
 
-## 8. Next final-version blocks after this
+## 8. Codex hardening addendum
+
+Codex decided that the write-capable function is acceptable, but HTTP API writes must not be enabled by request body alone.
+
+Change made:
+
+- `/api/challenge/v1/authoring/chapter-draft/controlled-publish` remains available for non-writing dry-run checks;
+- API requests with `allow_write: true` are rejected by default with `chapter_controlled_publish_write_disabled`;
+- API writes require the environment flag `CHAPTER_CONTROLLED_PUBLISH_API_WRITES=1`;
+- API write target root can be supplied only through `CHAPTER_CONTROLLED_PUBLISH_TARGET_ROOT`, not through request JSON.
+
+Rationale:
+
+The executor is a local/dev publish capability. The browser-facing API must preserve a stricter boundary so a request payload cannot directly turn a candidate into files without an operator-controlled environment switch.
+
+## 9. Next final-version blocks after this
 
 After Codex verifies controlled publish, the remaining chapter-import final-version blocks are:
 

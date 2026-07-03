@@ -123,7 +123,7 @@ def _report(
     issues = [issue for dimension in dimensions for issue in dimension.issues]
     error_count = sum(1 for issue in issues if issue.severity == "error")
     warning_count = sum(1 for issue in issues if issue.severity == "warning")
-    grade = _grade(score, max_score, error_count)
+    grade = _grade(score, max_score, error_count, warning_count)
     blocking_codes = [issue.code for issue in issues if issue.severity == "error"]
     return {
         "mode": "chapter_candidate_quality_gate",
@@ -302,9 +302,11 @@ def _dimension(code: str, issues: list[CandidateQualityIssue]) -> CandidateQuali
     return CandidateQualityDimension(code, max_score, max_score, "pass", issues)
 
 
-def _grade(score: int, max_score: int, error_count: int) -> CandidateQualityGrade:
+def _grade(score: int, max_score: int, error_count: int, warning_count: int) -> CandidateQualityGrade:
     if max_score <= 0 or error_count:
         return "fail"
+    if warning_count:
+        return "warn"
     percentage = score / max_score * 100
     if percentage >= 85:
         return "pass"
