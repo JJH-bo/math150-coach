@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -139,11 +140,19 @@ def test_controlled_publish_creates_files_with_phrase_and_hash(tmp_path: Path) -
     )
 
     chapter_dir = tmp_path / "backend" / "challenge_data" / "controlled_demo"
+    record_path = chapter_dir / "publish_execution_manifest.json"
     assert payload["status"] == "published"
     assert payload["formal_publish_executed"] is True
     assert (chapter_dir / "challenge_graph.yaml").exists()
     assert (chapter_dir / "logic_graph.yaml").exists()
     assert (chapter_dir / "publish_manifest.json").exists()
+    assert record_path.exists()
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    assert record["status"] == "published"
+    assert record["rollback_policy"] == "delete_created_files_on_mid_write_failure"
+    assert record["execution_manifest_hash"].startswith("sha256:")
+    operation_paths = {operation["path"] for operation in payload["file_operations"]}
+    assert "backend/challenge_data/controlled_demo/publish_execution_manifest.json" in operation_paths
 
 
 def test_controlled_publish_api_defaults_to_non_writing_dry_run() -> None:
