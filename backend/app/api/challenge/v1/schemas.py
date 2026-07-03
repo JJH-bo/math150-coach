@@ -73,6 +73,12 @@ class ChapterDraftCandidateDryRunRequest(BaseModel):
     notes: str | None = None
 
 
+class ChapterControlledPublishRequest(ChapterDraftCandidateDryRunRequest):
+    allow_write: bool = False
+    approval_phrase: str | None = None
+    expected_publish_plan_hash: str | None = None
+
+
 def parse_request(model: type[BaseModel], payload: dict[str, Any]) -> BaseModel:
     try:
         return model.model_validate(payload)
