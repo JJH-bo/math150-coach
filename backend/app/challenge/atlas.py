@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,7 @@ class ChallengeAtlasBuilder:
             boss_count = len(graph.macro_challenges)
             guide_count = len(graph.guide_nodes)
             compare_count = len(graph.compare_nodes)
+            publish_metadata = self._publish_metadata(chapter_id)
             x = 22 + (index % 3) * 28
             y = 34 + (index // 3) * 24
             regions.append(
@@ -35,6 +37,7 @@ class ChallengeAtlasBuilder:
                     "title": graph.title,
                     "region_kind": "chapter_galaxy",
                     "status": "available",
+                    "publish_status": publish_metadata["publish_status"],
                     "position": {"x": x, "y": y},
                     "visual_role": {
                         "celestial_role": "chapter_nebula",
@@ -48,7 +51,9 @@ class ChallengeAtlasBuilder:
                         "boss_count": boss_count,
                         "guide_count": guide_count,
                         "compare_count": compare_count,
+                        "candidate_content_hash": publish_metadata.get("candidate_content_hash"),
                     },
+                    "publish_metadata": publish_metadata,
                     "macro_regions": [
                         {
                             "id": macro.id,
@@ -61,6 +66,7 @@ class ChallengeAtlasBuilder:
                     "detail": {
                         "load_policy": "lazy_on_chapter_click",
                         "start_endpoint": "/api/challenge/v1/start",
+                        "quality_endpoint": f"/api/challenge/v1/quality/{graph.chapter_id}",
                         "chapter_id": graph.chapter_id,
                     },
                 }
@@ -69,6 +75,7 @@ class ChallengeAtlasBuilder:
         return {
             "atlas_version": "course_atlas_v1",
             "title": "Math150 Coach 课程星图",
+            "catalog_summary": self._catalog_summary(regions),
             "visual_grammar": {
                 "subject_role": "subject_galaxy",
                 "chapter_role": "chapter_nebula",
@@ -96,6 +103,67 @@ class ChallengeAtlasBuilder:
             if path.is_dir() and (path / "challenge_graph.yaml").exists()
         ]
         return sorted(chapter_ids, key=lambda chapter_id: (chapter_id != "ode_network_mvp", chapter_id))
+
+    def _publish_metadata(self, chapter_id: str) -> dict[str, Any]:
+        chapter_root = Path(self.repository.data_root) / chapter_id
+        manifest_path = chapter_root / "publish_manifest.json"
+        execution_manifest_path = chapter_root / "publish_execution_manifest.json"
+        metadata: dict[str, Any] = {
+            "publish_status": "legacy_runtime",
+            "manifest_path": None,
+            "execution_manifest_path": None,
+            "candidate_content_hash": None,
+            "publish_plan_schema_version": None,
+            "controlled_publish_schema_version": None,
+            "execution_manifest_hash": None,
+        }
+        manifest = self._load_json_if_present(manifest_path)
+        if manifest:
+            metadata.update(
+                {
+                    "publish_status": "controlled_published",
+                    "manifest_path": self._relative_path(manifest_path),
+                    "candidate_content_hash": manifest.get("candidate_content_hash"),
+                    "publish_plan_schema_version": manifest.get("publish_plan_schema_version"),
+                }
+            )
+        execution_manifest = self._load_json_if_present(execution_manifest_path)
+        if execution_manifest:
+            metadata.update(
+                {
+                    "execution_manifest_path": self._relative_path(execution_manifest_path),
+                    "controlled_publish_schema_version": execution_manifest.get("controlled_publish_schema_version"),
+                    "execution_manifest_hash": execution_manifest.get("execution_manifest_hash"),
+                }
+            )
+        return metadata
+
+    def _relative_path(self, path: Path) -> str:
+        try:
+            return str(path.relative_to(self.repository.data_root))
+        except ValueError:
+            return str(path)
+
+    @staticmethod
+    def _load_json_if_present(path: Path) -> dict[str, Any]:
+        if not path.exists():
+            return {}
+        try:
+            with path.open("r", encoding="utf-8") as file:
+                data = json.load(file)
+        except (OSError, json.JSONDecodeError):
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    @staticmethod
+    def _catalog_summary(regions: list[dict[str, Any]]) -> dict[str, int]:
+        controlled = sum(1 for region in regions if region.get("publish_status") == "controlled_published")
+        legacy = sum(1 for region in regions if region.get("publish_status") == "legacy_runtime")
+        return {
+            "chapter_count": len(regions),
+            "controlled_published_count": controlled,
+            "legacy_runtime_count": legacy,
+        }
 
     @staticmethod
     def _boss_id_for_macro(graph, macro_id: str) -> str | None:
