@@ -166,3 +166,21 @@ Codex judgment:
 - U2D and U2E are accepted for the current authoring-workshop spine.
 - No blocking fix is required before U2F.
 - U2F must remain chapter-draft dry-run only and must not become formal publish.
+
+## 2026-07-03 - User Hard Gate For Future ChatGPT Handoffs
+
+The user gave Codex a stricter standing instruction for future ChatGPT-to-Codex handoffs.
+
+Codex will no longer accept a handoff just because ChatGPT wrote a task. A future handoff must satisfy `CODEX_HANDOFF_ACCEPTANCE_STANDARD.md`.
+
+Practical meaning:
+
+- The task must directly upgrade a major final-version block, such as chapter import, the logic knowledge network, diagnosis, scoring/calibration, movement policy, repair/transfer training, review scheduling, cosmic map learning-state UI, or runtime graph quality.
+- ChatGPT must provide concrete upstream development results, not only a request for Codex to do the work.
+- If the task includes algorithm behavior, ChatGPT must implement the algorithm code before handing it off. Codex can then optimize, debug, integrate, test, and harden it.
+- If ChatGPT submits only planning, vague direction, or a "Codex please build this" task, Codex should reject the handoff and state the missing upstream work.
+
+Codex's own assessment:
+
+- ChatGPT has enough capability to contribute more than planning. It should arrive with code, tests, exact contracts, or precise implementation artifacts for the upper-half work.
+- Codex should protect project momentum by refusing weak handoffs instead of converting every under-specified plan into Codex implementation labor.

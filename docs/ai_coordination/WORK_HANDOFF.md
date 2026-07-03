@@ -6,6 +6,15 @@ Last updated: 2026-07-03
 
 This file is the active work handoff area between ChatGPT and Codex.
 
+## Handoff Acceptance Gate
+
+Future ChatGPT-to-Codex handoffs must satisfy
+`docs/ai_coordination/CODEX_HANDOFF_ACCEPTANCE_STANDARD.md`.
+
+Codex should reject new handoffs that only ask Codex to implement work without
+ChatGPT's concrete upstream development results, or that do not directly upgrade
+a major final-version project block.
+
 ## Current Active Task
 
 ## Task: U2F Chapter Draft Candidate Build Dry-Run
