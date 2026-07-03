@@ -125,6 +125,20 @@ def test_frontend_renders_structured_authoring_issues() -> None:
     assert "issue-focus" in app_js
 
 
+def test_frontend_renders_human_review_panel() -> None:
+    app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
+
+    assert "/authoring/chapter-draft/human-review" in app_js
+    assert "renderHumanReviewPanel" in app_js
+    assert "submitHumanReviewRecord" in app_js
+    assert "human-review-panel" in app_js
+    assert "review-check" in app_js
+    assert "candidate_build_allowed" in app_js
+    assert ".human-review-panel" in styles
+    assert ".review-check" in styles
+
+
 def _function_body(source: str, name: str) -> str:
     match = re.search(rf"function {name}\([^)]*\) \{{", source)
     assert match is not None

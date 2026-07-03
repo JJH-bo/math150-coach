@@ -33,11 +33,38 @@ ERROR_TYPES = {
     "migration_failure",
     "synthesis_failure",
 }
+HUMAN_REVIEW_CHECKS = (
+    ("math_scope_checked", "确认章节仍属于当前数学范围。"),
+    ("macro_micro_structure_checked", "确认 MacroNode 与 MicroNode 拆分清晰。"),
+    ("repair_targets_checked", "确认每个错因都能回到明确修复节点。"),
+    ("hidden_abilities_checked", "确认隐藏能力有存在理由和证据来源。"),
+    ("semantic_edges_checked", "确认语义边表达真实依赖、对比或修复关系。"),
+    ("boss_coverage_checked", "确认 Boss 覆盖关键 MicroNode。"),
+    ("learner_surface_safe", "确认草稿不会向学习者暴露可信答案或内部调试信息。"),
+)
 
 
 def validate_chapter_markdown(markdown: str) -> dict[str, Any]:
     importer = ChapterDraftImporter()
     return importer.validate(markdown)
+
+
+def record_chapter_human_review(
+    markdown: str,
+    *,
+    reviewer: str,
+    decision: str,
+    checklist: dict[str, bool] | None = None,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    importer = ChapterDraftImporter()
+    return importer.record_human_review(
+        markdown,
+        reviewer=reviewer,
+        decision=decision,
+        checklist=checklist or {},
+        notes=notes,
+    )
 
 
 class ChapterDraftImporter:
@@ -48,6 +75,7 @@ class ChapterDraftImporter:
         draft = self._build_draft(metadata, sections)
         report = self._validate_draft(draft)
         preview = self._preview(draft)
+        readiness = self._readiness(draft, report, preview)
         return {
             "mode": "structured_markdown_draft",
             "publish_state": "draft_only",
@@ -55,8 +83,66 @@ class ChapterDraftImporter:
             "report": report,
             "draft": draft,
             "preview": preview,
-            "readiness": self._readiness(draft, report, preview),
+            "readiness": readiness,
+            "human_review": self._human_review_packet(report),
             "template": self.template(),
+        }
+
+    def record_human_review(
+        self,
+        markdown: str,
+        *,
+        reviewer: str,
+        decision: str,
+        checklist: dict[str, bool],
+        notes: str | None,
+    ) -> dict[str, Any]:
+        if decision not in {"request_changes", "approve_for_candidate"}:
+            raise ValueError("human review decision must be request_changes or approve_for_candidate")
+
+        validation = self.validate(markdown)
+        report = validation["report"]
+        checklist_items = self._review_checklist_items(checklist)
+        missing_checklist_codes = [item["code"] for item in checklist_items if not item["checked"]]
+        blocking_issue_count = int(report.get("error_count", 0) or 0)
+
+        if blocking_issue_count:
+            status = "blocked_by_validation"
+        elif decision == "request_changes":
+            status = "changes_requested"
+        elif missing_checklist_codes:
+            status = "review_incomplete"
+        else:
+            status = "approved_for_candidate"
+
+        candidate_build_allowed = status == "approved_for_candidate"
+        chapter_id = validation.get("draft", {}).get("chapter_id") or "chapter_draft"
+        reviewer_name = reviewer.strip()
+        record = {
+            "record_id": f"{chapter_id}.human_review.{self._safe_record_token(reviewer_name)}",
+            "chapter_id": chapter_id,
+            "reviewer": reviewer_name,
+            "decision": decision,
+            "status": status,
+            "notes": notes,
+            "checklist": checklist_items,
+            "missing_checklist_codes": missing_checklist_codes,
+            "blocking_issue_count": blocking_issue_count,
+            "warning_issue_count": int(report.get("warning_count", 0) or 0),
+            "issue_snapshot": validation["human_review"]["issue_snapshot"],
+        }
+        return {
+            "mode": "chapter_draft_human_review",
+            "workflow_stage": "human_review",
+            "publish_state": "draft_only",
+            "candidate_build_allowed": candidate_build_allowed,
+            "formal_publish_allowed": False,
+            "review_record": record,
+            "validation": {
+                "report": report,
+                "readiness": validation["readiness"],
+                "human_review": validation["human_review"],
+            },
         }
 
     @staticmethod
@@ -533,6 +619,54 @@ title: 一阶微分方程扩展示例
             if micro.get("macro_node_id")
         )
         return max(counts.values(), default=0)
+
+    def _human_review_packet(self, report: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "required": True,
+            "status": "blocked_by_validation" if report.get("error_count", 0) else "pending",
+            "candidate_build_allowed": False,
+            "formal_publish_allowed": False,
+            "required_checklist": [
+                {
+                    "code": code,
+                    "label": label,
+                    "required": True,
+                    "checked": False,
+                }
+                for code, label in HUMAN_REVIEW_CHECKS
+            ],
+            "issue_snapshot": self._issue_snapshot(report),
+        }
+
+    @staticmethod
+    def _review_checklist_items(checklist: dict[str, bool]) -> list[dict[str, Any]]:
+        return [
+            {
+                "code": code,
+                "label": label,
+                "required": True,
+                "checked": bool(checklist.get(code, False)),
+            }
+            for code, label in HUMAN_REVIEW_CHECKS
+        ]
+
+    @staticmethod
+    def _safe_record_token(value: str) -> str:
+        token = re.sub(r"[^a-zA-Z0-9_.-]+", "_", value.strip()).strip("._-")
+        return token or "reviewer"
+
+    @staticmethod
+    def _issue_snapshot(report: dict[str, Any]) -> list[dict[str, str]]:
+        issues = [*report.get("errors", []), *report.get("warnings", [])]
+        return [
+            {
+                "code": issue.get("code", "draft_issue"),
+                "severity": issue.get("severity", "issue"),
+                "target": issue.get("target", "draft"),
+                "target_kind": issue.get("target_kind", "draft"),
+            }
+            for issue in issues
+        ]
 
     @staticmethod
     def _split_list(value: str) -> list[str]:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -51,6 +51,16 @@ class ChapterDraftValidateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     markdown: str = Field(min_length=1)
+
+
+class ChapterDraftHumanReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    markdown: str = Field(min_length=1)
+    reviewer: str = Field(min_length=1, max_length=80)
+    decision: Literal["request_changes", "approve_for_candidate"]
+    checklist: dict[str, bool] = Field(default_factory=dict)
+    notes: str | None = None
 
 
 def parse_request(model: type[BaseModel], payload: dict[str, Any]) -> BaseModel:

@@ -9,6 +9,17 @@ from app.main import create_app
 from app.training.session_log import ensure_no_trusted_fields
 
 
+REQUIRED_REVIEW_CHECKS = {
+    "math_scope_checked",
+    "macro_micro_structure_checked",
+    "repair_targets_checked",
+    "hidden_abilities_checked",
+    "semantic_edges_checked",
+    "boss_coverage_checked",
+    "learner_surface_safe",
+}
+
+
 VALID_CHAPTER_MARKDOWN = """# 章节导入验收样例
 chapter_id: import_demo
 title: 章节导入验收样例
@@ -213,3 +224,94 @@ def test_chapter_draft_validate_api_never_publishes_formal_chapter() -> None:
     assert payload["workflow_stage"] == "draft_preview"
     assert payload["readiness"]["publish_allowed"] is False
     assert payload["report"]["passed"] is True
+
+
+def test_chapter_draft_validation_returns_human_review_packet() -> None:
+    payload = validate_chapter_markdown(VALID_CHAPTER_MARKDOWN)
+
+    review = payload["human_review"]
+    assert review["required"] is True
+    assert review["status"] == "pending"
+    assert review["candidate_build_allowed"] is False
+    assert review["formal_publish_allowed"] is False
+    assert {item["code"] for item in review["required_checklist"]} == REQUIRED_REVIEW_CHECKS
+
+
+def test_chapter_human_review_blocks_candidate_when_validation_has_errors() -> None:
+    from app.challenge.chapter_draft_importer import record_chapter_human_review
+
+    markdown = VALID_CHAPTER_MARKDOWN.replace(
+        "| method_error | import_demo.macro.method |",
+        "| method_error | unknown.node |",
+    )
+
+    payload = record_chapter_human_review(
+        markdown,
+        reviewer="reviewer-a",
+        decision="approve_for_candidate",
+        checklist=_complete_review_checklist(),
+        notes="looks ready",
+    )
+
+    assert payload["workflow_stage"] == "human_review"
+    assert payload["candidate_build_allowed"] is False
+    assert payload["formal_publish_allowed"] is False
+    assert payload["review_record"]["status"] == "blocked_by_validation"
+    assert payload["review_record"]["blocking_issue_count"] > 0
+
+
+def test_chapter_human_review_allows_candidate_after_complete_review_only() -> None:
+    from app.challenge.chapter_draft_importer import record_chapter_human_review
+
+    incomplete = _complete_review_checklist()
+    incomplete["semantic_edges_checked"] = False
+
+    incomplete_payload = record_chapter_human_review(
+        VALID_CHAPTER_MARKDOWN,
+        reviewer="reviewer-a",
+        decision="approve_for_candidate",
+        checklist=incomplete,
+        notes="missing edge review",
+    )
+    assert incomplete_payload["candidate_build_allowed"] is False
+    assert incomplete_payload["review_record"]["status"] == "review_incomplete"
+
+    approved_payload = record_chapter_human_review(
+        VALID_CHAPTER_MARKDOWN,
+        reviewer="reviewer-a",
+        decision="approve_for_candidate",
+        checklist=_complete_review_checklist(),
+        notes="ready for candidate dry-run",
+    )
+    assert approved_payload["candidate_build_allowed"] is True
+    assert approved_payload["formal_publish_allowed"] is False
+    assert approved_payload["review_record"]["status"] == "approved_for_candidate"
+    assert approved_payload["review_record"]["decision"] == "approve_for_candidate"
+
+
+def test_chapter_human_review_api_records_review_without_publishing() -> None:
+    client = TestClient(create_app("mixed"))
+
+    response = client.post(
+        "/api/challenge/v1/authoring/chapter-draft/human-review",
+        json={
+            "markdown": VALID_CHAPTER_MARKDOWN,
+            "reviewer": "reviewer-a",
+            "decision": "approve_for_candidate",
+            "checklist": _complete_review_checklist(),
+            "notes": "ready for candidate dry-run",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["mode"] == "chapter_draft_human_review"
+    assert payload["workflow_stage"] == "human_review"
+    assert payload["publish_state"] == "draft_only"
+    assert payload["candidate_build_allowed"] is True
+    assert payload["formal_publish_allowed"] is False
+    assert payload["review_record"]["reviewer"] == "reviewer-a"
+
+
+def _complete_review_checklist() -> dict[str, bool]:
+    return {code: True for code in REQUIRED_REVIEW_CHECKS}

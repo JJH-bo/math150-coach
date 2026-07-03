@@ -11,13 +11,14 @@ from app.api.challenge.v1.schemas import (
     ChallengeResetRequest,
     ChallengeStartRequest,
     ChallengeSubmitRequest,
+    ChapterDraftHumanReviewRequest,
     ChapterDraftValidateRequest,
     parse_request,
 )
 from app.api.v1.schemas import api_error
 from app.challenge.atlas import ChallengeAtlasBuilder
 from app.challenge.engine import ChallengeEngine, ChallengeEngineError
-from app.challenge.chapter_draft_importer import validate_chapter_markdown
+from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
 from app.challenge.progress_store import ChallengeProgressError
 from app.challenge.repository import ChallengeRepository, ChallengeRepositoryError
 from app.logic_graph.quality_validator import KnowledgeGraphQualityValidator
@@ -82,6 +83,23 @@ async def validate_chapter_draft(request: Request) -> dict[str, Any]:
     parsed = parse_request(ChapterDraftValidateRequest, payload)
     assert isinstance(parsed, ChapterDraftValidateRequest)
     return validate_chapter_markdown(parsed.markdown)
+
+
+@router.post("/authoring/chapter-draft/human-review")
+async def record_chapter_draft_human_review(request: Request) -> dict[str, Any]:
+    payload = await request.json()
+    parsed = parse_request(ChapterDraftHumanReviewRequest, payload)
+    assert isinstance(parsed, ChapterDraftHumanReviewRequest)
+    try:
+        return record_chapter_human_review(
+            parsed.markdown,
+            reviewer=parsed.reviewer,
+            decision=parsed.decision,
+            checklist=parsed.checklist,
+            notes=parsed.notes,
+        )
+    except ValueError as exc:
+        raise api_error(400, "chapter_human_review_invalid", str(exc))
 
 
 @router.post("/start")

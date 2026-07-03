@@ -474,6 +474,7 @@ async function validateChapterDraft() {
     renderImportReport(payload);
     injectAuthoringReadiness(payload);
     injectDraftPreviewGraph(payload.preview);
+    injectHumanReviewPanel(payload);
   } finally {
     validateDraftBtn.disabled = false;
   }
@@ -572,6 +573,51 @@ function injectDraftPreviewGraph(preview) {
   const anchor = importReport.querySelector(".authoring-readiness")
     || importReport.querySelector(".draft-counts");
   anchor?.insertAdjacentHTML("afterend", graphHtml);
+}
+
+function injectHumanReviewPanel(payload) {
+  const reviewHtml = renderHumanReviewPanel(payload?.human_review, payload?.report);
+  if (!reviewHtml) return;
+  importReport.insertAdjacentHTML("beforeend", reviewHtml);
+}
+
+function renderHumanReviewPanel(humanReview, report) {
+  if (!humanReview) return "";
+  const checks = humanReview.required_checklist || [];
+  const approveDisabled = report?.passed ? "" : "disabled";
+  const statusLabel = {
+    pending: "Pending review",
+    blocked_by_validation: "Blocked by validation",
+  }[humanReview.status] || "Review required";
+  return `
+    <div class="human-review-panel">
+      <div class="human-review-head">
+        <strong>${escapeHtml(statusLabel)}</strong>
+        <span>${humanReview.candidate_build_allowed ? "Candidate dry-run unlocked" : "Candidate dry-run locked"}</span>
+      </div>
+      <label class="review-field">
+        <span>Reviewer</span>
+        <input id="humanReviewReviewer" type="text" value="human-reviewer" autocomplete="off">
+      </label>
+      <div class="review-check-list">
+        ${checks.map((check) => `
+          <label class="review-check">
+            <input type="checkbox" data-review-check="${escapeHtml(check.code)}">
+            <span>${escapeHtml(check.label || check.code)}</span>
+          </label>
+        `).join("")}
+      </div>
+      <label class="review-field">
+        <span>Notes</span>
+        <textarea id="humanReviewNotes" rows="3" placeholder="Review notes"></textarea>
+      </label>
+      <div class="review-actions">
+        <button type="button" class="ghost-button" data-review-decision="request_changes">Request changes</button>
+        <button type="button" data-review-decision="approve_for_candidate" ${approveDisabled}>Approve candidate</button>
+      </div>
+      <div class="human-review-result" aria-live="polite"></div>
+    </div>
+  `;
 }
 
 function renderDraftPreviewGraph(preview) {
@@ -676,6 +722,11 @@ function cssToken(value) {
 }
 
 function handleImportReportClick(event) {
+  const reviewControl = event.target.closest("[data-review-decision]");
+  if (reviewControl && importReport.contains(reviewControl)) {
+    submitHumanReviewRecord(reviewControl.getAttribute("data-review-decision"));
+    return;
+  }
   const focusControl = event.target.closest("[data-focus-targets]");
   if (!focusControl || !importReport.contains(focusControl)) return;
   const targets = (focusControl.getAttribute("data-focus-targets") || "")
@@ -706,6 +757,52 @@ function focusDraftPreviewGraph(targets, activeControl) {
     edge.classList.toggle("focused", focused);
     edge.classList.toggle("dimmed", hasFocus && !focused);
   });
+}
+
+async function submitHumanReviewRecord(decision) {
+  if (!decision || !chapterDraftInput?.value.trim()) return;
+  const panel = importReport.querySelector(".human-review-panel");
+  const result = panel?.querySelector(".human-review-result");
+  const buttons = panel?.querySelectorAll("[data-review-decision]") || [];
+  const checklist = {};
+  panel?.querySelectorAll("[data-review-check]").forEach((control) => {
+    checklist[control.getAttribute("data-review-check")] = control.checked;
+  });
+  buttons.forEach((button) => {
+    button.disabled = true;
+  });
+  if (result) result.textContent = "Recording review...";
+  try {
+    const payload = await request("/authoring/chapter-draft/human-review", {
+      method: "POST",
+      body: {
+        markdown: chapterDraftInput.value,
+        reviewer: panel?.querySelector("#humanReviewReviewer")?.value.trim() || "human-reviewer",
+        decision,
+        checklist,
+        notes: panel?.querySelector("#humanReviewNotes")?.value.trim() || null,
+      },
+    });
+    if (result) result.innerHTML = renderHumanReviewResult(payload);
+  } catch (error) {
+    if (result) result.textContent = error.message;
+  } finally {
+    buttons.forEach((button) => {
+      button.disabled = false;
+    });
+  }
+}
+
+function renderHumanReviewResult(payload) {
+  const record = payload.review_record || {};
+  const candidateLabel = payload.candidate_build_allowed
+    ? "Candidate dry-run allowed"
+    : "Candidate dry-run locked";
+  return `
+    <strong>${escapeHtml(record.status || "review_recorded")}</strong>
+    <span>${escapeHtml(candidateLabel)}</span>
+    <em>Formal publish locked</em>
+  `;
 }
 
 function renderIssueList(title, issues) {
