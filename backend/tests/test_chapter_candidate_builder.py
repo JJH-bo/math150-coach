@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run
 from app.main import create_app
+from app.training.session_log import ensure_no_trusted_fields
 
 REQUIRED_REVIEW_CHECKS = {
     "math_scope_checked",
@@ -98,15 +99,18 @@ def test_candidate_dry_run_builds_runtime_payload_and_stable_hash() -> None:
     assert payload["dry_run_only"] is True
     assert payload["formal_publish_allowed"] is False
     assert payload["runtime_validation"]["passed"] is True
-    assert len(payload["content_hash"]) == 64
+    assert payload["content_hash"].startswith("sha256:")
+    assert len(payload["content_hash"]) == len("sha256:") + 64
     assert payload["content_hash"] == same_content_payload["content_hash"]
     assert payload["candidate"]["challenge_graph"]["contains"]["candidate_demo.macro"] == [
         "candidate_demo.macro.concept",
         "candidate_demo.macro.method",
     ]
+    ensure_no_trusted_fields(payload["candidate"])
     serialized_candidate = json.dumps(payload["candidate"], ensure_ascii=False)
     assert "reviewer-a" not in serialized_candidate
     assert "ready" not in serialized_candidate
+    assert "evidence_sources" not in serialized_candidate
 
 
 def test_candidate_dry_run_blocks_when_review_is_incomplete() -> None:
@@ -131,21 +135,25 @@ def test_candidate_dry_run_blocks_when_review_is_incomplete() -> None:
 def test_candidate_dry_run_api_returns_candidate_preview_only() -> None:
     client = TestClient(create_app("mixed"))
 
-    response = client.post(
+    for path in [
         "/api/challenge/v1/authoring/chapter-draft/candidate-dry-run",
-        json={
-            "markdown": MARKDOWN,
-            "reviewer": "reviewer-a",
-            "decision": "approve_for_candidate",
-            "checklist": _checklist(),
-            "notes": "ready",
-        },
-    )
+        "/api/challenge/v1/authoring/chapter-draft/candidate-build-dry-run",
+    ]:
+        response = client.post(
+            path,
+            json={
+                "markdown": MARKDOWN,
+                "reviewer": "reviewer-a",
+                "decision": "approve_for_candidate",
+                "checklist": _checklist(),
+                "notes": "ready",
+            },
+        )
 
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["mode"] == "chapter_candidate_build_dry_run"
-    assert payload["publish_state"] == "candidate_preview_only"
-    assert payload["candidate_build_allowed"] is True
-    assert payload["formal_publish_allowed"] is False
-    assert payload["content_hash"]
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["mode"] == "chapter_candidate_build_dry_run"
+        assert payload["publish_state"] == "candidate_preview_only"
+        assert payload["candidate_build_allowed"] is True
+        assert payload["formal_publish_allowed"] is False
+        assert payload["content_hash"].startswith("sha256:")

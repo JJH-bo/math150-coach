@@ -86,10 +86,16 @@ The candidate is validated through `ChallengeGraph.model_validate` before being 
 The hash is:
 
 ```text
-sha256(json.dumps(canonical_candidate, sort_keys=True, separators=(",", ":")))
+sha256:<64 lowercase hex chars>
 ```
 
-The canonical candidate recursively sorts dictionary keys and sorts ID-based lists by `id`. The hash deliberately excludes reviewer identity, review notes, timestamps, and UI state.
+The digest is computed from:
+
+```text
+json.dumps(canonical_candidate, sort_keys=True, separators=(",", ":"))
+```
+
+The canonical candidate recursively sorts dictionary keys and sorts ID-based lists by `id`. The hash deliberately excludes reviewer identity, review notes, timestamps, UI state, and trusted/internal fields such as `evidence_sources`.
 
 ## 5. Verification commands for Codex
 
@@ -136,3 +142,14 @@ This was written through GitHub without local execution. Codex should check:
 - whether the router update and schema update are compatible with existing tests.
 
 If local tests fail, Codex should fix integration and preserve the candidate dry-run algorithm and boundaries.
+
+## 8. Codex verification and hardening addendum
+
+Codex accepted this as a valid ChatGPT upstream implementation because it includes a major authoring-pipeline upgrade, concrete algorithm code, API wiring, tests, and a report.
+
+Codex then hardened the implementation:
+
+- content hashes now use the project-wide `sha256:<64 lowercase hex chars>` format;
+- candidate payloads recursively remove trusted/internal fields before hashing or returning the candidate preview;
+- `/authoring/chapter-draft/candidate-build-dry-run` is available as an alias for the original `/candidate-dry-run` endpoint;
+- tests now assert the hash format, trusted-field boundary, and both endpoint paths.

@@ -184,3 +184,29 @@ Codex's own assessment:
 
 - ChatGPT has enough capability to contribute more than planning. It should arrive with code, tests, exact contracts, or precise implementation artifacts for the upper-half work.
 - Codex should protect project momentum by refusing weak handoffs instead of converting every under-specified plan into Codex implementation labor.
+
+## 2026-07-03 - Codex Review Of ChatGPT Concrete Push
+
+Codex reviewed ChatGPT's latest GitHub push at `626d2e8`.
+
+Decision:
+
+- The push satisfies the user's hard handoff gate.
+- ChatGPT delivered concrete code, tests, and reports.
+- The work upgrades two major project blocks: real-attempt diagnosis calibration and chapter authoring candidate dry-run.
+
+Codex action:
+
+- Accepted the real-attempt lab as a valid calibration spine upgrade.
+- Accepted the chapter candidate dry-run builder as valid upstream work, then hardened hash format, trusted-field filtering, and endpoint compatibility.
+- Recorded details in `CODEX_REVIEW_CHATGPT_PUSH_2026_07_03.md`.
+
+Important evidence:
+
+- ChatGPT-focused tests passed: `7 passed`.
+- Full backend tests passed on ChatGPT's remote head before Codex changes: `561 passed`.
+- Real attempt strict lab currently fails by design-quality evidence, not runtime failure: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
+
+Next judgment:
+
+- The real-attempt lab failures should drive the next diagnosis improvement work. They should not be hidden or softened.

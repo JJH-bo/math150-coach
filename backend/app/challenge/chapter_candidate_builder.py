@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
 from app.challenge.models import ChallengeGraph
+from app.training.session_log import TRUSTED_FIELD_DENYLIST
 
 CONTENT_SCHEMA_VERSION = "chapter_candidate_v1"
 
@@ -112,7 +113,7 @@ def build_chapter_candidate_dry_run(
 def deterministic_content_hash(candidate: dict[str, Any]) -> str:
     canonical = canonical_content(candidate)
     encoded = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+    return f"sha256:{hashlib.sha256(encoded.encode('utf-8')).hexdigest()}"
 
 
 def canonical_content(value: Any) -> Any:
@@ -182,16 +183,27 @@ def _blocked_payload(
 def _candidate_payload_from_draft(draft: dict[str, Any]) -> dict[str, Any]:
     challenge_graph = _runtime_challenge_graph_from_draft(draft)
     logic_graph = _logic_graph_from_draft(draft)
-    return canonical_content(
-        {
-            "content_schema_version": CONTENT_SCHEMA_VERSION,
-            "chapter_id": draft["chapter_id"],
-            "title": draft["title"],
-            "challenge_graph": challenge_graph,
-            "logic_graph": logic_graph,
-            "error_repair_map": _error_repair_mapping(draft),
+    candidate = {
+        "content_schema_version": CONTENT_SCHEMA_VERSION,
+        "chapter_id": draft["chapter_id"],
+        "title": draft["title"],
+        "challenge_graph": challenge_graph,
+        "logic_graph": logic_graph,
+        "error_repair_map": _error_repair_mapping(draft),
+    }
+    return canonical_content(_candidate_safe_content(candidate))
+
+
+def _candidate_safe_content(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _candidate_safe_content(child)
+            for key, child in value.items()
+            if key not in TRUSTED_FIELD_DENYLIST
         }
-    )
+    if isinstance(value, list):
+        return [_candidate_safe_content(item) for item in value]
+    return value
 
 
 def _runtime_challenge_graph_from_draft(draft: dict[str, Any]) -> dict[str, Any]:

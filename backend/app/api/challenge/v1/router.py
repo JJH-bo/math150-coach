@@ -106,6 +106,15 @@ async def record_chapter_draft_human_review(request: Request) -> dict[str, Any]:
 
 @router.post("/authoring/chapter-draft/candidate-dry-run")
 async def chapter_draft_candidate_dry_run(request: Request) -> dict[str, Any]:
+    return await _chapter_draft_candidate_dry_run_payload(request)
+
+
+@router.post("/authoring/chapter-draft/candidate-build-dry-run")
+async def chapter_draft_candidate_build_dry_run(request: Request) -> dict[str, Any]:
+    return await _chapter_draft_candidate_dry_run_payload(request)
+
+
+async def _chapter_draft_candidate_dry_run_payload(request: Request) -> dict[str, Any]:
     payload = await request.json()
     parsed = parse_request(ChapterDraftCandidateDryRunRequest, payload)
     assert isinstance(parsed, ChapterDraftCandidateDryRunRequest)
