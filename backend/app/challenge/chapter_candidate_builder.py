@@ -7,6 +7,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from app.challenge.chapter_candidate_quality import evaluate_chapter_candidate_quality
 from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
 from app.challenge.models import ChallengeGraph
 from app.training.session_log import TRUSTED_FIELD_DENYLIST
@@ -77,6 +78,12 @@ def build_chapter_candidate_dry_run(
         return _blocked_payload(validation, review, gate, runtime_report=runtime_report)
 
     content_hash = deterministic_content_hash(candidate)
+    candidate_quality = evaluate_chapter_candidate_quality(
+        candidate,
+        content_hash=content_hash,
+        runtime_validation=runtime_report,
+        formal_publish_allowed=False,
+    )
     return {
         "mode": "chapter_candidate_build_dry_run",
         "workflow_stage": "candidate_dry_run",
@@ -86,6 +93,7 @@ def build_chapter_candidate_dry_run(
         "formal_publish_allowed": False,
         "candidate_build_allowed": True,
         "candidate_gate": gate,
+        "candidate_quality": candidate_quality,
         "content_schema_version": CONTENT_SCHEMA_VERSION,
         "content_hash": content_hash,
         "hash_algorithm": "sha256",
@@ -154,6 +162,7 @@ def _blocked_payload(
     runtime_report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     draft = validation.get("draft", {})
+    runtime_validation = runtime_report or {"passed": False, "errors": [], "warnings": []}
     return {
         "mode": "chapter_candidate_build_dry_run",
         "workflow_stage": "candidate_dry_run",
@@ -163,11 +172,17 @@ def _blocked_payload(
         "formal_publish_allowed": False,
         "candidate_build_allowed": False,
         "candidate_gate": gate,
+        "candidate_quality": evaluate_chapter_candidate_quality(
+            None,
+            content_hash=None,
+            runtime_validation=runtime_validation,
+            formal_publish_allowed=False,
+        ),
         "content_schema_version": CONTENT_SCHEMA_VERSION,
         "content_hash": None,
         "hash_algorithm": "sha256",
         "candidate": None,
-        "runtime_validation": runtime_report or {"passed": False, "errors": [], "warnings": []},
+        "runtime_validation": runtime_validation,
         "validation": {
             "report": validation.get("report"),
             "readiness": validation.get("readiness"),
