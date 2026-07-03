@@ -53,6 +53,15 @@ class ChapterDraftValidateRequest(BaseModel):
     markdown: str = Field(min_length=1)
 
 
+class ChapterIntelligentGenerateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_text: str = Field(min_length=1)
+    chapter_id: str | None = None
+    title: str | None = None
+    build_candidate: bool = True
+
+
 class ChapterDraftHumanReviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
