@@ -146,6 +146,59 @@ def test_structured_markdown_chapter_import_blocks_readiness_when_validation_fai
     assert checks["formal_publish_locked"]["state"] == "locked"
 
 
+def test_markdown_chapter_import_returns_structured_error_issues() -> None:
+    markdown = VALID_CHAPTER_MARKDOWN.replace(
+        "| method_error | import_demo.macro.method |",
+        "| method_error | import_demo.unknown_method |",
+    )
+
+    payload = validate_chapter_markdown(markdown)
+
+    issues_by_code = {issue["code"]: issue for issue in payload["report"]["errors"]}
+    issue = issues_by_code["invalid_repair_target"]
+    assert issue["target"] == "method_error"
+    assert issue["severity"] == "error"
+    assert issue["target_kind"] == "error_repair_map"
+    assert issue["message"]
+    assert issue["suggested_fix"]
+
+
+def test_markdown_chapter_import_returns_structured_warning_issues() -> None:
+    markdown = VALID_CHAPTER_MARKDOWN.replace(
+        "| e5 | contrasts_with | import_demo.compare.concept_method | import_demo.macro.method | Compare guard links concept and method |",
+        "",
+    )
+
+    payload = validate_chapter_markdown(markdown)
+
+    issue = payload["report"]["warnings"][0]
+    assert issue["severity"] == "warning"
+    assert issue["code"] == "orphan_logic_node"
+    assert issue["target_kind"] == "logic_edges"
+    assert issue["target"] == "logic_edges"
+    assert issue["suggested_fix"]
+
+
+def test_markdown_chapter_import_marks_visible_budget_warning_as_macro_target() -> None:
+    method_row = next(
+        line for line in VALID_CHAPTER_MARKDOWN.splitlines() if line.startswith("| import_demo.macro.method |")
+    )
+    extra_micro_rows = "\n".join(
+        f"| import_demo.macro.extra_{index} | import_demo.macro | concept | Extra {index} | Extra node |"
+        for index in range(1, 8)
+    )
+    markdown = VALID_CHAPTER_MARKDOWN.replace(method_row, f"{method_row}\n{extra_micro_rows}")
+
+    payload = validate_chapter_markdown(markdown)
+
+    issues_by_code = {issue["code"]: issue for issue in payload["report"]["warnings"]}
+    issue = issues_by_code["visible_node_budget_warning"]
+    assert issue["target"] == "import_demo.macro"
+    assert issue["severity"] == "warning"
+    assert issue["target_kind"] == "macro_nodes"
+    assert issue["suggested_fix"]
+
+
 def test_chapter_draft_validate_api_never_publishes_formal_chapter() -> None:
     client = TestClient(create_app("mixed"))
 

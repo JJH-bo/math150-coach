@@ -716,12 +716,24 @@ function renderIssueList(title, issues) {
       <ul>
         ${issues.map((issue) => {
           const target = issue.target || "draft";
+          const code = issue.code || "draft_issue";
+          const severity = issue.severity || "issue";
+          const targetKind = issue.target_kind || "draft";
+          const suggestedFix = issue.suggested_fix || "";
           return `
-            <li>
+            <li class="issue-item ${escapeHtml(cssToken(severity))}">
               <button type="button" class="issue-focus" data-focus-targets="${escapeHtml(target)}">
                 ${escapeHtml(target)}
               </button>
-              ${escapeHtml(issue.message || "")}
+              <div class="issue-copy">
+                <div class="issue-meta">
+                  <span class="issue-severity">${escapeHtml(severity)}</span>
+                  <span class="issue-code">${escapeHtml(code)}</span>
+                  <span class="issue-kind">${escapeHtml(targetKind)}</span>
+                </div>
+                <p>${escapeHtml(issue.message || "")}</p>
+                ${suggestedFix ? `<em class="suggested-fix">${escapeHtml(suggestedFix)}</em>` : ""}
+              </div>
             </li>
           `;
         }).join("")}

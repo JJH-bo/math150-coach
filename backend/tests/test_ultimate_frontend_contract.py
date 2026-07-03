@@ -113,6 +113,18 @@ def test_frontend_links_authoring_gates_and_issues_to_draft_preview_graph() -> N
     assert ".draft-preview-graph.has-focus" in styles
 
 
+def test_frontend_renders_structured_authoring_issues() -> None:
+    app_js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+    styles = (ROOT / "frontend" / "styles.css").read_text(encoding="utf-8")
+
+    assert "issue-code" in app_js
+    assert "issue-severity" in app_js
+    assert "issue-kind" in app_js
+    assert "suggested_fix" in app_js
+    assert "suggested-fix" in styles
+    assert "issue-focus" in app_js
+
+
 def _function_body(source: str, name: str) -> str:
     match = re.search(rf"function {name}\([^)]*\) \{{", source)
     assert match is not None

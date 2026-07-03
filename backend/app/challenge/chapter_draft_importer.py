@@ -347,7 +347,13 @@ title: 一阶微分方程扩展示例
                 if edge.get(field) not in known_ids:
                     errors.append(self._issue(edge.get("id", "logic_edges"), f"{field} 引用了不存在的节点：{edge.get(field)}。"))
             if not edge.get("reason"):
-                warnings.append(self._issue(edge.get("id", "logic_edges"), "语义边缺少 reason，后续解释力会变弱。"))
+                warnings.append(
+                    self._issue(
+                        edge.get("id", "logic_edges"),
+                        "语义边缺少 reason，后续解释力会变弱。",
+                        severity="warning",
+                    )
+                )
 
     def _quality_checks(
         self,
@@ -364,7 +370,13 @@ title: 一阶微分方程扩展示例
             if count > 12:
                 errors.append(self._issue(macro_id, "单个 MacroNode 可见 MicroNode 超过 12 个，地图会膨胀。"))
             elif count > 8:
-                warnings.append(self._issue(macro_id, "单个 MacroNode 可见 MicroNode 超过 8 个，建议合并或转为 HiddenAbility。"))
+                warnings.append(
+                    self._issue(
+                        macro_id,
+                        "单个 MacroNode 可见 MicroNode 超过 8 个，建议合并或转为 HiddenAbility。",
+                        severity="warning",
+                    )
+                )
 
         for logic in draft.get("logic_nodes", []):
             if logic.get("node_kind") == "compare_guard":
@@ -397,7 +409,13 @@ title: 一阶微分方程扩展示例
         }
         orphan_logic = sorted(logic_ids - edge_connected_logic)
         if orphan_logic:
-            warnings.append(self._issue("logic_edges", f"存在未被语义边连接的逻辑节点：{', '.join(orphan_logic)}。"))
+            warnings.append(
+                self._issue(
+                    "logic_edges",
+                    f"存在未被语义边连接的逻辑节点：{', '.join(orphan_logic)}。",
+                    severity="warning",
+                )
+            )
 
     @staticmethod
     def _preview(draft: dict[str, Any]) -> dict[str, Any]:
@@ -437,10 +455,13 @@ title: 一阶微分方程扩展示例
         error_count = int(report.get("error_count", 0) or 0)
         warning_count = int(report.get("warning_count", 0) or 0)
         max_micro_per_macro = self._max_micro_per_macro(draft)
+        repair_blocking_codes = {"invalid_repair_target", "invalid_root_cause", "missing_repair_map"}
         repair_errors = [
             error
             for error in report.get("errors", [])
-            if "repair" in error.get("message", "") or "repair_target" in error.get("message", "")
+            if error.get("code") in repair_blocking_codes
+            or "repair" in error.get("message", "")
+            or "repair_target" in error.get("message", "")
         ]
         has_repair_map = bool(draft.get("error_repair_map"))
 
@@ -519,6 +540,140 @@ title: 一阶微分方程扩展示例
             return []
         return [item.strip() for item in re.split(r"[,，;；]", value) if item.strip()]
 
+    @classmethod
+    def _issue(
+        cls,
+        target: str,
+        message: str,
+        *,
+        severity: str = "error",
+        code: str | None = None,
+        target_kind: str | None = None,
+        suggested_fix: str | None = None,
+    ) -> dict[str, str]:
+        profile = cls._issue_profile(target, message, severity)
+        return {
+            "target": target,
+            "message": message,
+            "code": code or profile["code"],
+            "severity": severity,
+            "target_kind": target_kind or profile["target_kind"],
+            "suggested_fix": suggested_fix or profile["suggested_fix"],
+        }
+
+    @classmethod
+    def _issue_profile(cls, target: str, message: str, severity: str) -> dict[str, str]:
+        text = f"{target} {message}".lower()
+        target_kind = cls._issue_target_kind(target)
+
+        code = "draft_validation_warning" if severity == "warning" else "draft_validation_error"
+        suggested_fix = "根据提示修正这个草稿条目后重新校验。"
+
+        if target == "chapter_id":
+            code = "invalid_chapter_id"
+            target_kind = "chapter"
+            suggested_fix = "填写只包含字母、数字、下划线、点或短横线的 chapter_id。"
+        elif "缺少 id" in message:
+            code = "missing_item_id"
+            suggested_fix = "为该表格中的每个条目补充唯一 id。"
+        elif "重复" in message and "id" in text:
+            code = "duplicate_item_id"
+            suggested_fix = "保留一个 id，并把重复条目改成新的唯一 id。"
+        elif "micronode" in text and "12" in text:
+            code = "visible_node_budget_exceeded"
+            target_kind = "macro_nodes"
+            suggested_fix = "减少该 MacroNode 下的可见 MicroNode，或迁移为 HiddenAbility。"
+        elif "micronode" in text and "8" in text:
+            code = "visible_node_budget_warning"
+            target_kind = "macro_nodes"
+            suggested_fix = "考虑合并相近 MicroNode，或把细粒度能力转为 HiddenAbility。"
+        elif "macrochallenge" in text and "macronode" in text:
+            code = "invalid_macro_challenge_macro"
+            suggested_fix = "把 MacroChallenge 绑定到已存在的 MacroNode。"
+        elif "boss" in text and "micronode" in text:
+            code = "invalid_macro_challenge_coverage"
+            suggested_fix = "只在 covers_micro_nodes 中填写已存在的 MicroNode。"
+        elif "micronode" in text and "macronode" in text:
+            code = "invalid_micro_macro"
+            suggested_fix = "把 MicroNode 的 macro_node_id 改为已存在的 MacroNode。"
+        elif "micronode type" in text:
+            code = "invalid_micro_type"
+            suggested_fix = "把 MicroNode type 改为允许集合中的一种。"
+        elif "compareguard" in text and "contrast" in text:
+            code = "missing_compare_contrast"
+            target_kind = "logic_nodes"
+            suggested_fix = "补充 CompareGuard 的 contrast，写清两个节点容易混淆的题眼差异。"
+        elif "compareguard" in text:
+            code = "invalid_compare_guard"
+            target_kind = "logic_nodes"
+            suggested_fix = "让 CompareGuard 至少连接两个已存在且容易混淆的节点。"
+        elif "owner_node_id" in text:
+            code = "invalid_logic_owner"
+            target_kind = "logic_nodes"
+            suggested_fix = "把 owner_node_id 改为已存在的可见节点、Boss 或逻辑节点。"
+        elif target == "error_repair_map" and "root cause" in text:
+            code = "missing_repair_map"
+            target_kind = "error_repair_map"
+            suggested_fix = "至少补充一个 root_cause 到 MicroNode repair target 的映射。"
+        elif "root_cause" in text and "repair target" not in text:
+            code = "invalid_root_cause"
+            target_kind = "error_repair_map"
+            suggested_fix = "把 root_cause 改为系统已知错因集合中的一种。"
+        elif "repair target" in text or "repair_target_node_id" in text:
+            code = "invalid_repair_target"
+            suggested_fix = "把修复目标改为已存在的 MicroNode id。"
+        elif "edge_type" in text:
+            code = "invalid_edge_type"
+            target_kind = "logic_edges"
+            suggested_fix = "把 edge_type 改为允许的语义边类型。"
+        elif "自连" in message:
+            code = "self_loop_edge"
+            target_kind = "logic_edges"
+            suggested_fix = "把这条边改成连接两个不同节点。"
+        elif "source_id" in text or "target_id" in text:
+            code = "invalid_edge_endpoint"
+            target_kind = "logic_edges"
+            suggested_fix = "把边的 source_id 和 target_id 都改为已存在节点。"
+        elif "reason" in text and severity == "warning":
+            code = "missing_edge_reason"
+            target_kind = "logic_edges"
+            suggested_fix = "补一句这条语义边存在的原因。"
+        elif "why_exists" in text:
+            code = "missing_why_exists"
+            target_kind = "logic_nodes"
+            suggested_fix = "补充该隐藏、迁移或综合能力为什么必须存在。"
+        elif "evidence_sources" in text:
+            code = "missing_evidence_sources"
+            target_kind = "logic_nodes"
+            suggested_fix = "为 HiddenAbility 补充 rubric、self_explanation 或 response_steps 等证据来源。"
+        elif target == "logic_edges" and severity == "warning":
+            code = "orphan_logic_node"
+            target_kind = "logic_edges"
+            suggested_fix = "为这些逻辑节点补充 supports、checks、contrasts 或 repairs 等语义边。"
+
+        return {
+            "code": code,
+            "target_kind": target_kind,
+            "suggested_fix": suggested_fix,
+        }
+
     @staticmethod
-    def _issue(target: str, message: str) -> dict[str, str]:
-        return {"target": target, "message": message}
+    def _issue_target_kind(target: str) -> str:
+        if target == "chapter_id":
+            return "chapter"
+        if target in {"macro_nodes", "micro_nodes", "macro_challenges", "logic_nodes", "logic_edges"}:
+            return target
+        if target == "error_repair_map" or target in ERROR_TYPES:
+            return "error_repair_map"
+        if target == "compare_guard":
+            return "logic_nodes"
+        lowered = target.lower()
+        if re.fullmatch(r"e\d+", lowered):
+            return "logic_edges"
+        if ".macro_challenge" in lowered:
+            return "macro_challenges"
+        if ".hidden." in lowered or ".transfer." in lowered or ".synthesis." in lowered or ".compare." in lowered:
+            return "logic_nodes"
+        if ".macro." in lowered:
+            return "micro_nodes"
+        return "draft_item"
