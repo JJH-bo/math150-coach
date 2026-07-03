@@ -275,3 +275,37 @@ Remaining final-version gap:
 Integration note:
 
 - While rebasing over ChatGPT's intelligent chapter generation push, Codex found that the public intelligent-generate payload leaked `evidence_sources` keys under `knowledge_network` / validation projections. Codex kept the internal generation data intact but added a public payload projection that strips trusted-field denylist keys before returning API payloads.
+
+## 2026-07-03 - Codex Training Question Package Generation
+
+Codex implemented the next content-production boundary after runtime registry gating.
+
+Decision:
+
+- Controlled publish must not produce graph-only maturity.
+- A generated chapter package is publish-plan ready only when the training question package has exact `pass` quality.
+- Question package warnings are blocked at publish-plan time because the runtime registry also blocks non-pass manifests.
+
+Implemented:
+
+- deterministic `questions.yaml` generator in `backend/app/challenge/chapter_training_question_builder.py`;
+- MicroNode questions for concept, trigger, method, transformation, calculation, and expression abilities;
+- diagnostic/advisory questions for compare guards, transfer variants, and synthesis decomposition when those graph assets exist;
+- Boss acceptance questions for every MacroChallenge;
+- per-question rubrics, repair targets, error repair maps, false-pass risks, variant relations, and mastery signal metadata;
+- publish-plan and controlled-publish integration so planned files include `questions.yaml`;
+- publish manifest metadata for question package schema, content hash, quality report, and mastery criteria schema;
+- runtime registry manifest gate for non-pass question packages;
+- public intelligent-import summary that exposes counts/kinds/states without trusted answers or rubrics.
+
+Remaining final-version gap:
+
+- Generated questions are valid deterministic training skeletons. The next block should make them source-specific by extracting formulas, theorem statements, worked examples, common wrong answers, and user-provided variants from uploaded chapter material.
+
+Verification:
+
+- focused chapter question package chain: `16 passed`;
+- full backend tests: `582 passed`;
+- golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`;
+- synthetic diagnosis lab: `16/16`;
+- strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.

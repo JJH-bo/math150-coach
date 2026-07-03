@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
 from fastapi.testclient import TestClient
 
 from app.challenge.atlas import ChallengeAtlasBuilder
@@ -83,8 +82,9 @@ title: Runtime Registry Demo
 """
 
 
-def test_runtime_registry_marks_controlled_publish_without_questions_as_pending(tmp_path: Path) -> None:
+def test_runtime_registry_marks_publish_missing_questions_as_pending(tmp_path: Path) -> None:
     _controlled_publish(tmp_path)
+    (tmp_path / "backend" / "challenge_data" / "runtime_registry_demo" / "questions.yaml").unlink()
 
     repository = ChallengeRepository(tmp_path / "backend" / "challenge_data")
     registry = ChapterRuntimeRegistry(repository).build()
@@ -104,9 +104,8 @@ def test_runtime_registry_marks_controlled_publish_without_questions_as_pending(
         ChallengeEngine(repository=repository).start("runtime_registry_demo", session_id="blocked-session")
 
 
-def test_runtime_registry_allows_start_after_question_coverage_is_complete(tmp_path: Path) -> None:
+def test_runtime_registry_allows_start_after_controlled_publish_generates_questions(tmp_path: Path) -> None:
     _controlled_publish(tmp_path)
-    _write_questions(tmp_path)
 
     repository = ChallengeRepository(tmp_path / "backend" / "challenge_data")
     registry = ChapterRuntimeRegistry(repository).build()
@@ -123,12 +122,11 @@ def test_runtime_registry_allows_start_after_question_coverage_is_complete(tmp_p
     )
 
     assert payload["challenge"]["chapter_id"] == "runtime_registry_demo"
-    assert payload["challenge"]["current_question"]["question_id"] == "runtime-registry-concept-001"
+    assert payload["challenge"]["current_question"]["question_id"].startswith("runtime_registry_demo.")
 
 
 def test_runtime_registry_blocks_non_pass_publish_manifest_even_with_questions(tmp_path: Path) -> None:
     _controlled_publish(tmp_path)
-    _write_questions(tmp_path)
     manifest_path = tmp_path / "backend" / "challenge_data" / "runtime_registry_demo" / "publish_manifest.json"
     manifest_path.write_text('{"candidate_quality_grade":"warn"}\n', encoding="utf-8")
 
@@ -177,49 +175,6 @@ def _plan_hash() -> str:
     )
     assert plan["publish_plan_grade"] == "ready"
     return plan["publish_plan_hash"]
-
-
-def _write_questions(root: Path) -> None:
-    chapter_dir = root / "backend" / "challenge_data" / "runtime_registry_demo"
-    question_bank = {
-        "chapter_id": "runtime_registry_demo",
-        "questions": [
-            {
-                "id": "runtime-registry-concept-001",
-                "owner_id": "runtime_registry_demo.concept",
-                "task_type": "micro_node",
-                "node_id": "runtime_registry_demo.concept",
-                "title": "Concept check",
-                "stem": "Identify the concept.",
-                "prompt_markdown": "Explain the concept signal.",
-                "target_dimensions": ["concept"],
-            },
-            {
-                "id": "runtime-registry-method-001",
-                "owner_id": "runtime_registry_demo.method",
-                "task_type": "micro_node",
-                "node_id": "runtime_registry_demo.method",
-                "title": "Method check",
-                "stem": "Choose the method.",
-                "prompt_markdown": "Explain the method choice.",
-                "target_dimensions": ["method"],
-            },
-            {
-                "id": "runtime-registry-boss-001",
-                "owner_id": "runtime_registry_demo.boss",
-                "task_type": "macro_challenge",
-                "node_id": "runtime_registry_demo.boss",
-                "title": "Boss check",
-                "stem": "Solve the integrated task.",
-                "prompt_markdown": "Show the concept and method chain.",
-                "target_dimensions": ["concept", "method"],
-            },
-        ],
-    }
-    (chapter_dir / "questions.yaml").write_text(
-        yaml.safe_dump(question_bank, allow_unicode=True, sort_keys=False),
-        encoding="utf-8",
-    )
 
 
 def _chapter_entry(registry: dict, chapter_id: str) -> dict:

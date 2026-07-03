@@ -182,9 +182,9 @@ A chapter is trainable only when it has:
 
 Current remaining gap:
 
-- The controlled publish pipeline can produce graph assets.
-- It still does not automatically generate complete scoreable/diagnosable `questions.yaml`.
-- Therefore the next major content-production block is deterministic training-question package generation with rubrics, error repair maps, variants, and Boss coverage.
+- The controlled publish pipeline can now produce graph assets plus generated `questions.yaml`.
+- The generated question package includes rubrics, error repair maps, repair targets, variants, false-pass risk metadata, Boss coverage, and mastery criteria states.
+- The next major content-production block is deeper material-specific extraction: formulas, theorem wording, worked examples, wrong-answer evidence, and source-specific variants should shape the generated question stems and answer keys more precisely.
 
 ## Core Knowledge Graph Design
 

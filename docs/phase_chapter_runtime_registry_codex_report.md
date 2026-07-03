@@ -72,19 +72,11 @@ It exposes runtime readiness only. It does not expose trusted fields, answer key
 
 ## 5. Current limitation
 
-This phase does not generate training questions from arbitrary uploaded chapter material.
+Superseded addendum, 2026-07-03:
 
-The next major final-version block should be:
+The next block described here has now been implemented by `chapter_training_question_builder.py`. Controlled publish can generate `questions.yaml`, and the runtime registry can start generated packages only when graph, manifest, question bank, and coverage all pass.
 
-```text
-chapter candidate
--> deterministic training question skeletons
--> rubric + error repair mapping per question
--> questions.yaml candidate
--> registry can_start only after full coverage
-```
-
-Without this, controlled publish can create a graph package, but not a complete runnable training package.
+The remaining final-version limitation is deeper material-specific authoring: generated stems, answer keys, examples, variants, and repair evidence should be shaped by formulas, theorem wording, worked examples, and uploaded wrong-answer material rather than only the generated ability graph.
 
 ## 6. Verification
 

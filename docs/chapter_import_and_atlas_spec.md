@@ -90,4 +90,6 @@ Atlas must use this registry:
 
 When `publish_manifest.json` exists, it is part of the runtime gate: the manifest must be readable and must report `candidate_quality_grade: pass`.
 
-Current controlled publish can produce graph assets. A final runnable chapter package still requires generated `questions.yaml` with trainable, scoreable, diagnosable questions and full Boss coverage.
+Current controlled publish can produce graph assets plus generated `questions.yaml`. The generated question package is deterministic and runtime-valid: it covers MicroNodes, Boss checks, rubrics, repair targets, false-pass risks, variants, and mastery criteria metadata.
+
+The remaining final-version work is to make generated questions more material-specific by extracting formulas, theorem wording, worked examples, user notes, and wrong-answer evidence from uploaded source materials.

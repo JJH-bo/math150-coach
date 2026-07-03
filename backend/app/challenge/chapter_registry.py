@@ -87,6 +87,8 @@ class ChapterRuntimeRegistry:
                 blocking_reasons.append("publish_manifest_invalid")
             elif manifest.get("candidate_quality_grade") != "pass":
                 blocking_reasons.append("publish_manifest_quality_not_pass")
+            elif manifest.get("question_package_quality_grade") not in {None, "pass"}:
+                blocking_reasons.append("publish_manifest_question_package_not_pass")
 
         try:
             graph = self.repository.load_graph(chapter_id)

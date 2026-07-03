@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from app.challenge import chapter_publish_plan
 from app.challenge.chapter_publish_plan import build_chapter_publish_plan_dry_run
 from app.main import create_app
 
@@ -94,8 +95,11 @@ def test_publish_plan_dry_run_builds_planned_files_without_unlocking_publish() -
     assert planned_paths == {
         "backend/challenge_data/publish_demo/challenge_graph.yaml",
         "backend/challenge_data/publish_demo/logic_graph.yaml",
+        "backend/challenge_data/publish_demo/questions.yaml",
         "backend/challenge_data/publish_demo/publish_manifest.json",
     }
+    assert payload["question_package_summary"]["quality_passed"] is True
+    assert payload["question_package_summary"]["question_count"] >= 3
     assert all(item["write_mode"] == "create_only" for item in payload["planned_files"])
 
 
@@ -114,6 +118,38 @@ def test_publish_plan_blocks_when_candidate_quality_is_not_pass() -> None:
     assert payload["planned_files"] == []
     assert "candidate_quality:warn" in payload["blocking_reasons"]
     assert payload["formal_publish_allowed"] is False
+
+
+def test_publish_plan_blocks_when_question_package_has_warnings(monkeypatch) -> None:
+    def warn_question_package(candidate: dict) -> dict:
+        return {
+            "question_package_schema_version": "test_question_package_v1",
+            "question_bank": {"chapter_id": candidate["chapter_id"], "questions": []},
+            "mastery_criteria": {"schema_version": "test_mastery_v1"},
+            "quality_report": {
+                "passed": True,
+                "grade": "warn",
+                "error_count": 0,
+                "warning_count": 1,
+                "errors": [],
+                "warnings": [{"code": "transfer_question_missing", "target": "guide_nodes"}],
+                "coverage": {"question_count": 0, "question_kinds": [], "rubric_dimensions": []},
+            },
+        }
+
+    monkeypatch.setattr(chapter_publish_plan, "build_chapter_training_question_package", warn_question_package)
+
+    payload = build_chapter_publish_plan_dry_run(
+        MARKDOWN,
+        reviewer="reviewer-a",
+        decision="approve_for_candidate",
+        checklist=_checklist(),
+        notes="ready",
+    )
+
+    assert payload["publish_plan_grade"] == "blocked"
+    assert payload["planned_files"] == []
+    assert "question_package_quality:warn" in payload["blocking_reasons"]
 
 
 def test_publish_plan_api_returns_dry_run_only_plan() -> None:

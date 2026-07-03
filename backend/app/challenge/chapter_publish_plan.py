@@ -7,6 +7,7 @@ from typing import Any, Literal
 import yaml
 
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run, deterministic_content_hash
+from app.challenge.chapter_training_question_builder import build_chapter_training_question_package
 
 PublishPlanGrade = Literal["ready", "blocked"]
 
@@ -76,7 +77,27 @@ def build_chapter_publish_plan_dry_run(
             "required_next_action": "fix_candidate_gate_or_candidate_quality_before_publish_plan",
         }
 
-    planned_files = _planned_files(chapter_id, candidate, candidate_result)
+    question_package = build_chapter_training_question_package(candidate)
+    question_quality = question_package.get("quality_report", {})
+    if question_quality.get("passed") is not True or question_quality.get("grade") != "pass":
+        return {
+            "mode": "chapter_publish_plan_dry_run",
+            "workflow_stage": "publish_plan_dry_run",
+            "publish_state": "publish_plan_blocked",
+            "chapter_id": chapter_id,
+            "publish_plan_schema_version": PUBLISH_PLAN_SCHEMA_VERSION,
+            "dry_run_only": True,
+            "formal_publish_allowed": False,
+            "formal_publish_lock_reason": FORMAL_PUBLISH_LOCK_REASON,
+            "publish_plan_grade": "blocked",
+            "blocking_reasons": [f"question_package_quality:{question_quality.get('grade', 'missing')}"],
+            "candidate_summary": _candidate_summary(candidate_result),
+            "question_package_summary": _question_package_summary(question_package),
+            "planned_files": [],
+            "required_next_action": "fix_training_question_package_before_publish_plan",
+        }
+
+    planned_files = _planned_files(chapter_id, candidate, candidate_result, question_package)
     plan_hash = _plan_hash(chapter_id, candidate_result, planned_files)
     return {
         "mode": "chapter_publish_plan_dry_run",
@@ -90,6 +111,7 @@ def build_chapter_publish_plan_dry_run(
         "publish_plan_grade": "ready",
         "blocking_reasons": [],
         "candidate_summary": _candidate_summary(candidate_result),
+        "question_package_summary": _question_package_summary(question_package),
         "content_hash": candidate_result.get("content_hash"),
         "publish_plan_hash": plan_hash,
         "planned_files": [file.to_dict() for file in planned_files],
@@ -136,10 +158,17 @@ def _candidate_summary(candidate_result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _planned_files(chapter_id: str, candidate: dict[str, Any], candidate_result: dict[str, Any]) -> list[PlannedFile]:
+def _planned_files(
+    chapter_id: str,
+    candidate: dict[str, Any],
+    candidate_result: dict[str, Any],
+    question_package: dict[str, Any],
+) -> list[PlannedFile]:
     challenge_graph_yaml = _yaml_dump(candidate["challenge_graph"])
     logic_graph_yaml = _yaml_dump(candidate["logic_graph"])
-    manifest = _manifest(chapter_id, candidate_result, candidate)
+    question_bank = question_package["question_bank"]
+    questions_yaml = _yaml_dump(question_bank)
+    manifest = _manifest(chapter_id, candidate_result, candidate, question_package)
     manifest_json = json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     base = f"backend/challenge_data/{chapter_id}"
     return [
@@ -158,6 +187,13 @@ def _planned_files(chapter_id: str, candidate: dict[str, Any], candidate_result:
             preview_content=logic_graph_yaml,
         ),
         PlannedFile(
+            path=f"{base}/questions.yaml",
+            content_format="yaml",
+            content_hash=deterministic_content_hash(question_bank),
+            write_mode="create_only",
+            preview_content=questions_yaml,
+        ),
+        PlannedFile(
             path=f"{base}/publish_manifest.json",
             content_format="json",
             content_hash=deterministic_content_hash(manifest),
@@ -167,8 +203,14 @@ def _planned_files(chapter_id: str, candidate: dict[str, Any], candidate_result:
     ]
 
 
-def _manifest(chapter_id: str, candidate_result: dict[str, Any], candidate: dict[str, Any]) -> dict[str, Any]:
+def _manifest(
+    chapter_id: str,
+    candidate_result: dict[str, Any],
+    candidate: dict[str, Any],
+    question_package: dict[str, Any],
+) -> dict[str, Any]:
     quality = candidate_result.get("candidate_quality", {})
+    question_quality = question_package.get("quality_report", {})
     return {
         "publish_plan_schema_version": PUBLISH_PLAN_SCHEMA_VERSION,
         "chapter_id": chapter_id,
@@ -176,6 +218,11 @@ def _manifest(chapter_id: str, candidate_result: dict[str, Any], candidate: dict
         "candidate_content_hash": candidate_result.get("content_hash"),
         "candidate_quality_grade": quality.get("grade"),
         "candidate_quality_score": quality.get("score"),
+        "question_package_schema_version": question_package.get("question_package_schema_version"),
+        "question_bank_content_hash": deterministic_content_hash(question_package.get("question_bank", {})),
+        "question_package_quality_grade": question_quality.get("grade"),
+        "question_package_quality_report": question_quality,
+        "mastery_criteria_schema_version": question_package.get("mastery_criteria", {}).get("schema_version"),
         "formal_publish_allowed": False,
         "formal_publish_lock_reason": FORMAL_PUBLISH_LOCK_REASON,
         "source": "chapter_draft_candidate_dry_run",
@@ -200,6 +247,21 @@ def _plan_hash(chapter_id: str, candidate_result: dict[str, Any], planned_files:
             "formal_publish_allowed": False,
         }
     )
+
+
+def _question_package_summary(question_package: dict[str, Any]) -> dict[str, Any]:
+    quality = question_package.get("quality_report", {})
+    coverage = quality.get("coverage", {})
+    return {
+        "question_package_schema_version": question_package.get("question_package_schema_version"),
+        "quality_grade": quality.get("grade"),
+        "quality_passed": quality.get("passed"),
+        "question_count": coverage.get("question_count", 0),
+        "question_kinds": list(coverage.get("question_kinds", [])),
+        "rubric_dimensions": list(coverage.get("rubric_dimensions", [])),
+        "micro_nodes_with_questions": coverage.get("micro_nodes_with_questions", 0),
+        "macro_challenges_with_questions": coverage.get("macro_challenges_with_questions", 0),
+    }
 
 
 def _yaml_dump(value: dict[str, Any]) -> str:

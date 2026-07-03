@@ -26,6 +26,9 @@ def test_intelligent_importer_generates_valid_logic_network_from_loose_notes() -
     assert payload["draft_validation"]["report"]["passed"] is True
     assert payload["draft_validation"]["preview"]["counts"]["micro_nodes"] == 6
     assert payload["candidate_preview"]["candidate_quality"]["grade"] == "pass"
+    assert payload["training_question_package"]["quality_passed"] is True
+    assert "boss_acceptance" in payload["training_question_package"]["question_kinds"]
+    assert "stable_mastered" in payload["training_question_package"]["mastery_states"]
     assert "## ErrorRepairMap" in payload["generated_markdown"]
     ensure_no_trusted_fields(payload)
 
@@ -47,4 +50,5 @@ def test_intelligent_importer_api_returns_candidate_preview() -> None:
     assert payload["chapter_id"] == "smart_ode_api_test"
     assert payload["draft_validation"]["report"]["passed"] is True
     assert payload["candidate_preview"]["candidate_quality"]["grade"] == "pass"
+    assert payload["training_question_package"]["quality_passed"] is True
     assert payload["human_review_required"] is True

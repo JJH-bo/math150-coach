@@ -5,6 +5,7 @@ from typing import Any
 
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run, deterministic_content_hash
 from app.challenge.chapter_draft_importer import validate_chapter_markdown
+from app.challenge.chapter_training_question_builder import build_chapter_training_question_package
 from app.training.session_log import TRUSTED_FIELD_DENYLIST
 
 REVIEW_CHECKS = {
@@ -77,6 +78,7 @@ def build_intelligent_chapter_draft(
     markdown = _markdown(final_id, final_title, network)
     validation = validate_chapter_markdown(markdown)
     candidate = None
+    question_package = None
     if build_candidate and validation.get("report", {}).get("passed") is True:
         candidate = build_chapter_candidate_dry_run(
             markdown,
@@ -85,6 +87,8 @@ def build_intelligent_chapter_draft(
             checklist={code: True for code in REVIEW_CHECKS},
             notes="auto candidate preview only",
         )
+        if candidate.get("candidate"):
+            question_package = build_chapter_training_question_package(candidate["candidate"])
     return {
         "mode": "intelligent_chapter_draft_generation",
         "workflow_stage": "intelligent_draft_generation",
@@ -96,6 +100,7 @@ def build_intelligent_chapter_draft(
         "generated_markdown": markdown,
         "draft_validation": _public_payload(validation),
         "candidate_preview": _public_payload(candidate),
+        "training_question_package": _training_question_summary(question_package),
         "human_review_required": True,
         "precision_report": _precision_report(source, matched, candidate),
     }
@@ -204,6 +209,23 @@ def _precision_report(source: str, matched: list[str], candidate: dict[str, Any]
     if not matched:
         gaps.append("profile_uncertain")
     return {"precision_level": "publish_candidate" if not gaps else "review_required", "gaps": gaps, "candidate_quality_grade": (candidate or {}).get("candidate_quality", {}).get("grade")}
+
+
+def _training_question_summary(question_package: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not question_package:
+        return None
+    quality = question_package.get("quality_report", {})
+    coverage = quality.get("coverage", {})
+    mastery = question_package.get("mastery_criteria", {})
+    return {
+        "question_package_schema_version": question_package.get("question_package_schema_version"),
+        "quality_grade": quality.get("grade"),
+        "quality_passed": quality.get("passed"),
+        "question_count": coverage.get("question_count", 0),
+        "question_kinds": list(coverage.get("question_kinds", [])),
+        "rubric_dimensions": list(coverage.get("rubric_dimensions", [])),
+        "mastery_states": list(mastery.get("states", [])),
+    }
 
 
 def _public_payload(value: Any) -> Any:
