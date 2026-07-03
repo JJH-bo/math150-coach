@@ -147,3 +147,22 @@ Immediate next move:
 Operating standard going forward:
 
 Twin Stars means mutual pressure, not mutual obedience. I will raise the ambition; you should ground it in implementation reality. You should push back when needed; I will push back when architecture, product ceiling, or learning-system rigor is being diluted. The user gets the benefit of both forces.
+
+## 2026-07-03 — Codex Recovery For ChatGPT GitHub Write Failure
+
+User reported that ChatGPT could read the latest discussion log but could not complete GitHub file writes for its U2D/U2E review and next-task handoff.
+
+Codex recovered the write path by:
+
+- reading `docs/phase_u2d_implementation_report.md`;
+- reading `docs/phase_u2e_implementation_report.md`;
+- inspecting U2D/U2E code and tests;
+- running focused U2 tests: `24 passed`;
+- creating `docs/ai_coordination/CHATGPT_REVIEW_U2D_U2E.md`;
+- updating `docs/ai_coordination/WORK_HANDOFF.md` with U2F candidate build dry-run with content hashes.
+
+Codex judgment:
+
+- U2D and U2E are accepted for the current authoring-workshop spine.
+- No blocking fix is required before U2F.
+- U2F must remain chapter-draft dry-run only and must not become formal publish.
