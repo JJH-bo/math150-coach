@@ -22,6 +22,35 @@ The importer accepts a structured Markdown document with these sections:
 - `Edges`: semantic graph edges. Allowed types are `requires`, `supports`, `derives_to`, `transforms_to`, `contrasts_with`, `commonly_confused_with`, `checks`, `repairs`, `transfers_to`, `boss_checks`, and `blocks`.
 - `ErrorRepairMap`: maps every declared root cause to a clear MicroNode repair target.
 
+## Multi-Material Intelligent Input
+
+`POST /api/challenge/v1/authoring/chapter-draft/intelligent-generate` accepts either `source_text` or a `materials` array.
+
+Each material item may provide:
+
+- `material_type`: `text`, `markdown`, `notes`, `wrong_answers`, `problem_solution`, `framework`, `pdf`, `docx`, or `pptx`;
+- `filename`;
+- plain `text`;
+- `content_base64` for binary material.
+
+The material understanding layer reads mixed materials and extracts training-ability evidence:
+
+- core concepts;
+- core formulas;
+- theorem statements;
+- typical problem types;
+- entry triggers;
+- method choices;
+- key transformations;
+- confusions;
+- common errors;
+- prerequisites;
+- downstream uses;
+- Mathematics I score value;
+- false-pass risks.
+
+This evidence is returned as a public summary and carried into `knowledge_network.source_evidence`.
+
 ## Validation Gates
 
 The importer returns:
@@ -92,4 +121,6 @@ When `publish_manifest.json` exists, it is part of the runtime gate: the manifes
 
 Current controlled publish can produce graph assets plus generated `questions.yaml`. The generated question package is deterministic and runtime-valid: it covers MicroNodes, Boss checks, rubrics, repair targets, false-pass risks, variants, and mastery criteria metadata.
 
-The remaining final-version work is to make generated questions more material-specific by extracting formulas, theorem wording, worked examples, user notes, and wrong-answer evidence from uploaded source materials.
+The material input layer can now extract formulas, theorem wording, user notes, and wrong-answer evidence from multi-file source materials.
+
+The remaining final-version work is to make generated questions and answer keys more material-specific by injecting that extracted evidence into stems, expected answers, variants, and repair validators.

@@ -309,3 +309,36 @@ Verification:
 - golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`;
 - synthetic diagnosis lab: `16/16`;
 - strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
+
+## 2026-07-04 - Codex Multi-Material Understanding Layer
+
+Codex implemented the first material input layer for the final content production system.
+
+Decision:
+
+- The system should not treat one loose text field as the final upload interface.
+- Multi-file materials must be normalized into explicit ability evidence before chapter graph/question generation.
+- This phase extracts evidence; the next phase must inject that evidence into question stems, expected answers, variants, and validators.
+
+Implemented:
+
+- `backend/app/challenge/chapter_material_understanding.py`;
+- support for text, Markdown, notes, wrong-answer material, problem-solution material, framework material, PDF, Word/docx, and PowerPoint/pptx payloads;
+- binary material input through `content_base64`;
+- deterministic extraction of core concepts, formulas, theorems, typical problem types, entry triggers, methods, transformations, confusions, common errors, prerequisites, downstream uses, Mathematics I value, and false-pass risks;
+- material understanding quality report;
+- `intelligent-generate` API accepts `materials` without requiring `source_text`;
+- extracted material evidence is returned as a public summary and carried into `knowledge_network.source_evidence`.
+
+Current limitation:
+
+- PDF support is deterministic but basic unless an optional PDF library is installed. OCR and complex scanned PDFs are not implemented yet.
+- Generated questions still use mostly graph-derived skeletons; they are not yet fully material-specific.
+
+Verification:
+
+- focused material and chapter generation chain: `9 passed`;
+- full backend tests: `584 passed`;
+- golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`;
+- synthetic diagnosis lab: `16/16`;
+- strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.

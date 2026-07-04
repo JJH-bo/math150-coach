@@ -5,6 +5,10 @@ from typing import Any
 
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run, deterministic_content_hash
 from app.challenge.chapter_draft_importer import validate_chapter_markdown
+from app.challenge.chapter_material_understanding import (
+    build_chapter_material_understanding,
+    public_material_understanding_summary,
+)
 from app.challenge.chapter_training_question_builder import build_chapter_training_question_package
 from app.training.session_log import TRUSTED_FIELD_DENYLIST
 
@@ -63,18 +67,25 @@ ERROR_TARGETS = {
 
 
 def build_intelligent_chapter_draft(
-    source_text: str,
+    source_text: str | None = None,
     *,
     chapter_id: str | None = None,
     title: str | None = None,
     build_candidate: bool = True,
+    materials: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    source = re.sub(r"\s+", " ", source_text.strip())
+    material_understanding = None
+    if materials:
+        material_understanding = build_chapter_material_understanding(materials, source_text=source_text)
+        source = material_understanding.get("combined_text", "")
+    else:
+        source = source_text or ""
+    source = re.sub(r"\s+", " ", source.strip())
     profile_code, matched = _profile(source)
     profile = PROFILES[profile_code]
     final_title = _title(source, title, profile["title"])
     final_id = _chapter_id(source, chapter_id, profile_code)
-    network = _network(final_id, final_title, profile, matched, source)
+    network = _network(final_id, final_title, profile, matched, source, material_understanding)
     markdown = _markdown(final_id, final_title, network)
     validation = validate_chapter_markdown(markdown)
     candidate = None
@@ -96,6 +107,7 @@ def build_intelligent_chapter_draft(
         "title": final_title,
         "profile": {"code": profile_code, "title": profile["title"], "matched_keywords": matched, "confidence": _confidence(matched)},
         "source_hash": deterministic_content_hash(source),
+        "material_understanding": public_material_understanding_summary(material_understanding),
         "knowledge_network": _public_payload(network),
         "generated_markdown": markdown,
         "draft_validation": _public_payload(validation),
@@ -130,7 +142,15 @@ def _chapter_id(source: str, chapter_id: str | None, profile_code: str) -> str:
     return f"smart_{profile_code}_{deterministic_content_hash(source).replace('sha256:', '')[:8]}"
 
 
-def _network(chapter_id: str, title: str, profile: dict[str, Any], matched: list[str], source: str) -> dict[str, Any]:
+def _network(
+    chapter_id: str,
+    title: str,
+    profile: dict[str, Any],
+    matched: list[str],
+    source: str,
+    material_understanding: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    material_signals = (material_understanding or {}).get("ability_signals", {})
     return {
         "macro_nodes": [
             {"id": f"{chapter_id}.entry", "title": f"{profile['title']}入口识别", "knowledge_node_id": f"{chapter_id}.entry"},
@@ -150,7 +170,25 @@ def _network(chapter_id: str, title: str, profile: dict[str, Any], matched: list
         "synthesis_nodes": [{"id": f"{chapter_id}.synthesis.boss", "title": "综合拆解", "owner_node_id": f"{chapter_id}.execution.boss", "repair_target_node_id": f"{chapter_id}.transformation", "why_exists": "把入口、转化、计算、表达连成得分链"}],
         "edges": _edges(chapter_id),
         "error_repair_map": [{"root_cause": cause, "repair_target_node_id": f"{chapter_id}.{suffix}"} for cause, suffix in ERROR_TARGETS.items()],
-        "source_evidence": {"title": title, "matched_keywords": matched, "source_excerpt": source[:300]},
+        "source_evidence": {
+            "title": title,
+            "matched_keywords": matched,
+            "source_excerpt": source[:300],
+            "material_schema_version": (material_understanding or {}).get("schema_version"),
+            "chapter_topic": (material_understanding or {}).get("chapter_topic"),
+            "subject_area": (material_understanding or {}).get("subject_area"),
+            "core_concepts": list(material_signals.get("core_concepts", [])),
+            "core_formulas": list(material_signals.get("core_formulas", [])),
+            "core_theorems": list(material_signals.get("core_theorems", [])),
+            "typical_problem_types": list(material_signals.get("typical_problem_types", [])),
+            "entry_triggers": list(material_signals.get("entry_triggers", [])),
+            "method_choices": list(material_signals.get("method_choices", [])),
+            "key_transformations": list(material_signals.get("key_transformations", [])),
+            "common_errors": list(material_signals.get("common_errors", [])),
+            "prerequisites": list(material_signals.get("prerequisites", [])),
+            "downstream_uses": list(material_signals.get("downstream_uses", [])),
+            "math1_value": material_signals.get("math1_value", {}),
+        },
     }
 
 

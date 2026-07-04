@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.api.v1.schemas import api_error
 from app.training.session_log import validate_session_id
@@ -56,10 +56,29 @@ class ChapterDraftValidateRequest(BaseModel):
 class ChapterIntelligentGenerateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    source_text: str = Field(min_length=1)
+    source_text: str | None = None
     chapter_id: str | None = None
     title: str | None = None
     build_candidate: bool = True
+    materials: list["ChapterMaterialInput"] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_source_or_materials(self) -> "ChapterIntelligentGenerateRequest":
+        if self.source_text and self.source_text.strip():
+            return self
+        if self.materials:
+            return self
+        raise ValueError("source_text or materials is required")
+
+
+class ChapterMaterialInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    material_type: str | None = None
+    filename: str | None = None
+    text: str | None = None
+    content_base64: str | None = None
+    source_role: str | None = None
 
 
 class ChapterDraftHumanReviewRequest(BaseModel):

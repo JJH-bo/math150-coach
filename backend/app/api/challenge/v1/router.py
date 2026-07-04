@@ -108,6 +108,7 @@ async def intelligent_generate_chapter_draft(request: Request) -> dict[str, Any]
         chapter_id=parsed.chapter_id,
         title=parsed.title,
         build_candidate=parsed.build_candidate,
+        materials=[item.model_dump(exclude_none=True) for item in parsed.materials],
     )
 
 

@@ -184,7 +184,8 @@ Current remaining gap:
 
 - The controlled publish pipeline can now produce graph assets plus generated `questions.yaml`.
 - The generated question package includes rubrics, error repair maps, repair targets, variants, false-pass risk metadata, Boss coverage, and mastery criteria states.
-- The next major content-production block is deeper material-specific extraction: formulas, theorem wording, worked examples, wrong-answer evidence, and source-specific variants should shape the generated question stems and answer keys more precisely.
+- The material input layer can now read mixed text/Markdown/PDF/Word/PPT-style material inputs and extract formulas, theorem wording, problem types, triggers, methods, wrong-answer evidence, prerequisites, downstream uses, Mathematics I value, and false-pass risks.
+- The next major content-production block is material-aware question generation: extracted formulas, theorem wording, worked examples, wrong-answer evidence, and source-specific variants must shape the generated stems, expected answers, validators, and repair checks more precisely.
 
 ## Core Knowledge Graph Design
 
