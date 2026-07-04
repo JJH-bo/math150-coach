@@ -137,6 +137,16 @@ class ChapterCorrectionDryRunRequest(BaseModel):
     notes: str | None = None
 
 
+class ChapterFeedbackOptimizationDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate: dict[str, Any]
+    question_package: dict[str, Any]
+    attempt_records: list[dict[str, Any]] = Field(min_length=1)
+    analyst: str = Field(min_length=1, max_length=80)
+    min_sample_size: int = Field(default=3, ge=1, le=50)
+
+
 def parse_request(model: type[BaseModel], payload: dict[str, Any]) -> BaseModel:
     try:
         return model.model_validate(payload)

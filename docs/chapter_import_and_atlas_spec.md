@@ -158,3 +158,43 @@ This endpoint is still preview-only:
 - it does not replace the publish plan or controlled publish executor.
 
 The remaining final-version work is to add a front-end diff editor, persisted authoring history, rollback metadata, training-feedback-derived correction proposals, and deeper worked-example parsing beyond deterministic templates.
+
+## Training Feedback Optimization Dry Run
+
+`POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-dry-run` accepts:
+
+- a candidate package;
+- its generated question package;
+- real or simulated attempt records;
+- an analyst id;
+- optional `min_sample_size`.
+
+The analyzer aggregates attempts by question and returns revision signals such as:
+
+- excessive false passes;
+- abnormal pass rate;
+- unstable diagnosis root causes;
+- insufficient rubric evidence;
+- CompareGuard not stopping confusion;
+- transfer variant weakness;
+- Boss feedback gaps;
+- ineffective repair routing;
+- missing HiddenAbility support.
+
+The response includes:
+
+- `feedback_record`;
+- `quality_gate`;
+- `revision_signals`;
+- `regeneration_plan`;
+- `recommended_correction_operations`;
+- per-question feedback summaries.
+
+This endpoint is also preview-only:
+
+- it does not mutate the candidate;
+- it does not write runtime files;
+- it does not persist feedback history;
+- it does not replace correction dry-run.
+
+Feedback optimization identifies what should be revised. Correction dry-run applies concrete human or AI-reviewed edits and regenerates the affected assets.

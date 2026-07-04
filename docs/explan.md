@@ -187,7 +187,8 @@ Current remaining gap:
 - The material input layer can now read mixed text/Markdown/PDF/Word/PPT-style material inputs and extract formulas, theorem wording, problem types, triggers, methods, wrong-answer evidence, prerequisites, downstream uses, Mathematics I value, and false-pass risks.
 - The generated question package now uses extracted formulas, theorem wording, triggers, methods, common errors, and false-pass risks in stems, expected answers, rubrics, validators, and repair checks.
 - The correction/regeneration dry-run layer now accepts teacher or AI review corrections against a candidate package, applies allowed patches, regenerates the affected question package, reruns runtime and quality gates, and returns before/after hashes, changed paths, changed question ids, and affected node ids.
-- The next major content-production block is deeper feedback optimization: real training attempts and author review signals must decide which nodes, questions, rubrics, and repair mappings need regeneration.
+- The feedback optimization dry-run layer now analyzes real or simulated training attempt records and identifies which questions, nodes, rubrics, repair maps, CompareGuards, transfer variants, Boss checks, and HiddenAbilities need revision.
+- The next major content-production block is turning feedback signals into concrete correction drafts and feeding real session log files into the optimizer.
 
 ## Latest Progress Addendum: 2026-07-04 Correction Regeneration
 
@@ -217,8 +218,34 @@ Current remaining gap:
 
 - No front-end diff editor exists yet.
 - No persisted version history or rollback metadata exists yet.
-- Training-attempt feedback is not yet converted into automatic correction proposals.
+- Training-attempt feedback is analyzed into revision signals, but not yet converted into finished correction drafts.
 - Worked-example parsing and symbolic normalization are still deterministic-template level, not full mathematical authoring intelligence.
+
+## Latest Progress Addendum: 2026-07-04 Feedback Optimization
+
+The content production system now has a first real-training feedback optimization layer.
+
+Implemented:
+
+- New feedback module: `backend/app/challenge/chapter_feedback_optimizer.py`.
+- New endpoint: `POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-dry-run`.
+- Accepts candidate package, generated question package, and attempt records.
+- Detects false-pass excess, abnormal pass rates, diagnosis instability, rubric evidence gaps, CompareGuard weakness, migration weakness, Boss feedback gaps, ineffective repair paths, and missing HiddenAbility support.
+- Returns revision signals, quality gate, affected question ids, affected node ids, affected assets, and correction operation templates.
+
+Important boundary:
+
+```text
+feedback optimization dry-run = detects what should be revised
+correction dry-run = applies reviewed edits and regenerates assets
+controlled publish = writes runtime files only after explicit gates
+```
+
+Current remaining gap:
+
+- The optimizer consumes provided attempt records, but does not yet scan session log files automatically.
+- It proposes correction targets, but does not yet write final revised question/rubric text.
+- Feedback snapshots are not persisted into authoring history.
 
 ## Core Knowledge Graph Design
 

@@ -416,3 +416,37 @@ Verification status:
 - Golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`.
 - Synthetic diagnosis lab: `16/16`.
 - Strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
+
+## 2026-07-04 - Codex Training Feedback Optimization Dry Run
+
+Codex implemented the first real-training feedback optimization layer.
+
+Decision:
+
+- The chapter package must not be considered final just because it can be generated and published.
+- Real learner attempts must feed back into authoring quality.
+- The first stable boundary is dry-run analysis: detect what needs revision, then route concrete edits through correction regeneration.
+
+Implemented:
+
+- `backend/app/challenge/chapter_feedback_optimizer.py`;
+- `POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-dry-run`;
+- aggregation of attempt records by question;
+- revision signals for false-pass excess, pass-rate anomalies, diagnosis instability, rubric evidence gaps, CompareGuard weakness, transfer weakness, Boss feedback gaps, missing HiddenAbility support, and ineffective repair routing;
+- regeneration plan with affected question ids, node ids, and assets;
+- correction operation templates for downstream correction dry-run.
+
+Current limitation:
+
+- The optimizer accepts provided attempt records but does not yet scan session log files automatically.
+- It identifies revision targets but does not yet produce final edited question/rubric text.
+- Feedback history is not yet persisted.
+
+Verification status:
+
+- Focused feedback optimizer tests: `2 passed`.
+- Related authoring tests: `10 passed`.
+- Full backend tests: `589 passed`.
+- Golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`.
+- Synthetic diagnosis lab: `16/16`.
+- Strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
