@@ -123,4 +123,6 @@ Current controlled publish can produce graph assets plus generated `questions.ya
 
 The material input layer can now extract formulas, theorem wording, user notes, and wrong-answer evidence from multi-file source materials.
 
-The remaining final-version work is to make generated questions and answer keys more material-specific by injecting that extracted evidence into stems, expected answers, variants, and repair validators.
+The generated training question package now carries extracted evidence into stems, expected answers, rubrics, validator config, false-pass risks, common-error cues, and variant metadata.
+
+The remaining final-version work is to support selective human correction/regeneration and training-feedback optimization, and to deepen worked-example parsing beyond deterministic templates.

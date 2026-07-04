@@ -204,9 +204,38 @@ def _candidate_payload_from_draft(draft: dict[str, Any]) -> dict[str, Any]:
         "title": draft["title"],
         "challenge_graph": challenge_graph,
         "logic_graph": logic_graph,
+        "material_evidence": _material_evidence_from_draft(draft),
         "error_repair_map": _error_repair_mapping(draft),
     }
     return canonical_content(_candidate_safe_content(candidate))
+
+
+def _material_evidence_from_draft(draft: dict[str, Any]) -> dict[str, Any]:
+    evidence = draft.get("source_evidence")
+    if not isinstance(evidence, dict):
+        return {}
+    allowed_keys = {
+        "chapter_topic",
+        "subject_area",
+        "core_concepts",
+        "core_formulas",
+        "core_theorems",
+        "typical_problem_types",
+        "entry_triggers",
+        "method_choices",
+        "key_transformations",
+        "confusions",
+        "common_errors",
+        "prerequisites",
+        "downstream_uses",
+        "math1_value",
+        "false_pass_risks",
+    }
+    return {
+        key: deepcopy(value)
+        for key, value in evidence.items()
+        if key in allowed_keys and value
+    }
 
 
 def _candidate_safe_content(value: Any) -> Any:

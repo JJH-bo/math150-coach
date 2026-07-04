@@ -184,10 +184,12 @@ def _network(
             "entry_triggers": list(material_signals.get("entry_triggers", [])),
             "method_choices": list(material_signals.get("method_choices", [])),
             "key_transformations": list(material_signals.get("key_transformations", [])),
+            "confusions": list(material_signals.get("confusions", [])),
             "common_errors": list(material_signals.get("common_errors", [])),
             "prerequisites": list(material_signals.get("prerequisites", [])),
             "downstream_uses": list(material_signals.get("downstream_uses", [])),
             "math1_value": material_signals.get("math1_value", {}),
+            "false_pass_risks": list(material_signals.get("false_pass_risks", [])),
         },
     }
 
@@ -219,6 +221,9 @@ def _markdown(chapter_id: str, title: str, network: dict[str, Any]) -> str:
     lines += _table("MacroNodes", ["id", "title", "knowledge_node_id"], network["macro_nodes"])
     lines += _table("MicroNodes", ["id", "macro_node_id", "type", "title", "description"], network["micro_nodes"])
     lines += _table("MacroChallenges", ["id", "macro_node_id", "title", "covers_micro_nodes"], [{**row, "covers_micro_nodes": ", ".join(row["covers_micro_nodes"])} for row in network["macro_challenges"]])
+    source_rows = _source_evidence_rows(network.get("source_evidence", {}))
+    if source_rows:
+        lines += _table("SourceEvidence", ["key", "values"], source_rows)
     lines += _table("HiddenAbilities", ["id", "owner_node_id", "title", "dimensions", "why_exists", "evidence_sources", "failure_modes", "repair_target_node_id"], network["hidden_abilities"])
     lines += _table("CompareGuards", ["id", "title", "node_ids", "contrast"], [{**row, "node_ids": ", ".join(row["node_ids"])} for row in network["compare_guards"]])
     lines += _table("TransferNodes", ["id", "title", "owner_node_id", "repair_target_node_id", "why_exists"], network["transfer_nodes"])
@@ -226,6 +231,40 @@ def _markdown(chapter_id: str, title: str, network: dict[str, Any]) -> str:
     lines += _table("Edges", ["id", "edge_type", "source_id", "target_id", "reason"], network["edges"])
     lines += _table("ErrorRepairMap", ["root_cause", "repair_target_node_id"], network["error_repair_map"])
     return "\n".join(lines).strip() + "\n"
+
+
+def _source_evidence_rows(source_evidence: dict[str, Any]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for key in [
+        "chapter_topic",
+        "subject_area",
+        "core_concepts",
+        "core_formulas",
+        "core_theorems",
+        "typical_problem_types",
+        "entry_triggers",
+        "method_choices",
+        "key_transformations",
+        "confusions",
+        "common_errors",
+        "prerequisites",
+        "downstream_uses",
+        "math1_value",
+        "false_pass_risks",
+    ]:
+        value = source_evidence.get(key)
+        serialized = _source_evidence_value(value)
+        if serialized:
+            rows.append({"key": key, "values": serialized})
+    return rows
+
+
+def _source_evidence_value(value: Any) -> str:
+    if isinstance(value, list):
+        return "; ".join(str(item) for item in value if str(item).strip())
+    if isinstance(value, dict):
+        return "; ".join(f"{key}={child}" for key, child in value.items() if child)
+    return str(value or "").strip()
 
 
 def _table(section: str, headers: list[str], rows: list[dict[str, Any]]) -> list[str]:

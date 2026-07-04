@@ -78,9 +78,11 @@ The public summary does not echo full uploaded material text. It includes excerp
 
 ## 5. Current Limitation
 
-This phase proves the input and evidence-extraction layer. It does not yet fully inject extracted formulas, theorem wording, worked examples, and wrong-answer patterns into every generated question stem, answer key, and variant.
+Superseded addendum, 2026-07-04:
 
-The next major block should make `chapter_training_question_builder.py` material-aware so generated questions stop being generic ability skeletons and become source-specific trainable tasks.
+The next block described here has now been partially implemented by the material-aware question generation phase. Source formulas, theorem wording, triggers, methods, common errors, and false-pass risks now flow into candidate `material_evidence` and generated runtime questions.
+
+The remaining limitation is deeper worked-example authoring and correction/regeneration: generated tasks are source-specific but still templated, and the system still needs selective regeneration after human corrections or training feedback.
 
 ## 6. Verification
 

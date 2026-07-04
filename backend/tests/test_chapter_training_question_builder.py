@@ -74,6 +74,56 @@ def test_training_question_builder_generates_complete_scoreable_question_bank() 
     assert "stable_mastered" in states
 
 
+def test_training_question_builder_uses_material_evidence_in_questions() -> None:
+    generated = build_intelligent_chapter_draft(
+        source_text=None,
+        chapter_id="material_question_pkg",
+        title="Material Aware Question Package",
+        materials=[
+            {
+                "material_type": "markdown",
+                "filename": "multi-variable.md",
+                "text": (
+                    "核心概念：偏导数。核心公式：dz=f_x dx+f_y dy。"
+                    "核心定理：可微推出连续。典型题型：复合函数求偏导。"
+                    "题眼入口：看到 z=f(u,v), u=x+y, v=xy 先画依赖链。"
+                    "方法选择：链式法则。关键转化：写出中间变量依赖图。"
+                    "常见错误：把偏导存在当可微。错题材料：只写最终答案，解释不足，false pass。"
+                    "考研数学一得分价值：高。"
+                ),
+            }
+        ],
+        build_candidate=True,
+    )
+    candidate = generated["candidate_preview"]["candidate"]
+
+    assert candidate["material_evidence"]["core_formulas"] == ["dz=f_x dx+f_y dy"]
+    assert candidate["material_evidence"]["core_theorems"] == ["可微推出连续"]
+
+    package = build_chapter_training_question_package(candidate)
+    question_bank = ChallengeQuestionBank.model_validate(package["question_bank"])
+    serialized_questions = "\n".join(
+        field
+        for question in question_bank.questions
+        for field in [
+            question.stem,
+            question.prompt_markdown,
+            question.expected_answer or "",
+            question.solution_outline or "",
+            str(question.validator_config),
+        ]
+    )
+
+    assert "dz=f_x dx+f_y dy" in serialized_questions
+    assert "可微推出连续" in serialized_questions
+    assert "把偏导存在当可微" in serialized_questions
+    assert "看到 z=f(u,v), u=x+y, v=xy 先画依赖链" in serialized_questions
+    assert any(
+        question.validator_config.get("source_material_evidence", {}).get("core_formulas") == ["dz=f_x dx+f_y dy"]
+        for question in question_bank.questions
+    )
+
+
 def _candidate_from_intelligent_notes() -> dict:
     generated = build_intelligent_chapter_draft(
         LOOSE_NOTES,

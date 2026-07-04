@@ -236,6 +236,7 @@ title: 一阶微分方程扩展示例
             "transfer_nodes": "transfernodes",
             "synthesis_nodes": "synthesisnodes",
             "error_repair_map": "errorrepairmap",
+            "source_evidence": "sourceevidence",
         }
         return aliases.get(key, key)
 
@@ -283,6 +284,7 @@ title: 一阶微分方程扩展示例
             for row in sections.get("macrochallenges", [])
         ]
         abilities = self._logic_abilities(sections)
+        source_evidence = self._source_evidence(sections.get("sourceevidence", []))
         compare_guards = [
             {
                 "id": row.get("id", ""),
@@ -319,6 +321,7 @@ title: 一阶微分方程扩展示例
             "logic_nodes": abilities + compare_guards,
             "logic_edges": edges,
             "error_repair_map": repair_map,
+            "source_evidence": source_evidence,
             "challenge_graph_draft": {
                 "chapter_id": chapter_id,
                 "title": title,
@@ -333,6 +336,35 @@ title: 一阶微分方程扩展示例
                 "edges": edges,
             },
         }
+
+    def _source_evidence(self, rows: list[dict[str, str]]) -> dict[str, Any]:
+        evidence: dict[str, Any] = {}
+        for row in rows:
+            key = row.get("key", "").strip()
+            raw_values = row.get("values", "").strip()
+            if not key or not raw_values:
+                continue
+            if key == "math1_value":
+                evidence[key] = self._split_key_value_list(raw_values)
+                continue
+            if key in {"chapter_topic", "subject_area"}:
+                evidence[key] = raw_values
+                continue
+            evidence[key] = self._split_semicolon_list(raw_values)
+        return evidence
+
+    @staticmethod
+    def _split_semicolon_list(raw: str) -> list[str]:
+        return [item.strip() for item in raw.split(";") if item.strip()]
+
+    def _split_key_value_list(self, raw: str) -> dict[str, str]:
+        values: dict[str, str] = {}
+        for item in re.split(r"[;,]", raw):
+            if "=" not in item:
+                continue
+            key, value = item.split("=", 1)
+            values[key.strip()] = value.strip()
+        return values
 
     def _logic_abilities(self, sections: dict[str, list[dict[str, str]]]) -> list[dict[str, Any]]:
         abilities: list[dict[str, Any]] = []

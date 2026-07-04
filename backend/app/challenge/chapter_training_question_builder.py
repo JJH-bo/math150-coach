@@ -70,22 +70,24 @@ def build_chapter_training_question_package(candidate: dict[str, Any]) -> dict[s
     except (ValidationError, ValueError):
         return _blocked_package("challenge_graph_runtime_validation_failed")
 
-    question_bank = _question_bank(graph)
-    report = _quality_report(graph, question_bank)
+    material_evidence = _material_evidence(candidate)
+    question_bank = _question_bank(graph, material_evidence)
+    report = _quality_report(graph, question_bank, material_evidence)
     return {
         "mode": "chapter_training_question_package",
         "question_package_schema_version": TRAINING_QUESTION_PACKAGE_SCHEMA_VERSION,
         "chapter_id": graph.chapter_id,
+        "material_evidence": material_evidence,
         "question_bank": question_bank,
         "mastery_criteria": _mastery_criteria(graph),
         "quality_report": report,
     }
 
 
-def _question_bank(graph: ChallengeGraph) -> dict[str, Any]:
+def _question_bank(graph: ChallengeGraph, material_evidence: dict[str, Any]) -> dict[str, Any]:
     questions: list[dict[str, Any]] = []
     for micro in graph.micro_nodes:
-        questions.append(_micro_question(graph, micro))
+        questions.append(_micro_question(graph, micro, material_evidence))
 
     for compare in graph.compare_nodes:
         owner_id = _first_micro_id(graph, compare.node_ids)
@@ -104,6 +106,7 @@ def _question_bank(graph: ChallengeGraph) -> dict[str, Any]:
                     prompt="Explain the boundary between the two options and name the signal that chooses one over the other.",
                     repair_target_node_id=owner_id,
                     variant_relation={"relation_type": "compare_guard", "source_id": compare.id, "related_node_ids": compare.node_ids},
+                    material_evidence=material_evidence,
                 )
             )
 
@@ -125,6 +128,7 @@ def _question_bank(graph: ChallengeGraph) -> dict[str, Any]:
                         prompt="State what changes, what stays invariant, and which method signal transfers.",
                         repair_target_node_id=owner_id,
                         variant_relation={"relation_type": "transfer_node", "source_id": guide.id, "related_node_ids": guide.related_node_ids},
+                        material_evidence=material_evidence,
                     )
                 )
             continue
@@ -132,10 +136,10 @@ def _question_bank(graph: ChallengeGraph) -> dict[str, Any]:
             challenge_id = _first_challenge_id(graph, guide.related_node_ids)
             challenge = _challenge_by_id(graph, challenge_id) if challenge_id else None
             if challenge:
-                questions.append(_boss_question(graph, challenge, question_kind="synthesis_decomposition", source_id=guide.id))
+                questions.append(_boss_question(graph, challenge, question_kind="synthesis_decomposition", source_id=guide.id, material_evidence=material_evidence))
 
     for challenge in graph.macro_challenges:
-        questions.append(_boss_question(graph, challenge, question_kind="boss_acceptance", source_id=challenge.id))
+        questions.append(_boss_question(graph, challenge, question_kind="boss_acceptance", source_id=challenge.id, material_evidence=material_evidence))
 
     return {
         "chapter_id": graph.chapter_id,
@@ -143,26 +147,35 @@ def _question_bank(graph: ChallengeGraph) -> dict[str, Any]:
     }
 
 
-def _micro_question(graph: ChallengeGraph, micro: MicroNodeSpec) -> dict[str, Any]:
+def _micro_question(graph: ChallengeGraph, micro: MicroNodeSpec, material_evidence: dict[str, Any]) -> dict[str, Any]:
     question_kind = QUESTION_KIND_BY_MICRO_TYPE[micro.type]
     dimensions = [dimension.value for dimension in micro.default_dimensions] or DEFAULT_DIMENSIONS_BY_MICRO_TYPE[micro.type]
     repair_target = _repair_target_for_micro(graph, micro)
+    evidence_slice = _evidence_for_micro_type(material_evidence, micro.type)
+    context = _material_context_sentence(evidence_slice)
     return _base_question(
         question_id=f"{graph.chapter_id}.{_safe_token(micro.id)}.{question_kind}",
         owner_id=micro.id,
         task_type=ChallengeTaskType.MICRO_NODE.value,
         node_id=micro.id,
         title=f"{micro.title} training check",
-        stem=f"Target ability: {micro.title}.",
-        prompt=f"Answer this {question_kind} task. Give the conclusion, the trigger evidence, and the minimal reasoning chain.",
+        stem=_join_sentences(f"Target ability: {micro.title}.", context),
+        prompt=_join_sentences(
+            f"Answer this {question_kind} task. Give the conclusion, the trigger evidence, and the minimal reasoning chain.",
+            _material_prompt_instruction(evidence_slice),
+        ),
         dimensions=dimensions,
         question_kind=question_kind,
         training_goal=f"Train {micro.type.value} ability for {micro.title}.",
         repair_target_node_id=repair_target,
-        variant_relation={"relation_type": "base_micro_training", "source_node_id": micro.id},
-        expected_answer=f"Correctly identify and justify {micro.title}.",
-        solution_outline=f"Name the ability, cite the decisive evidence, execute the required step, and state the final conclusion for {micro.title}.",
+        variant_relation={"relation_type": "base_micro_training", "source_node_id": micro.id, "material_evidence_keys": sorted(evidence_slice)},
+        expected_answer=_join_sentences(f"Correctly identify and justify {micro.title}.", _expected_material_answer(evidence_slice)),
+        solution_outline=_join_sentences(
+            f"Name the ability, cite the decisive evidence, execute the required step, and state the final conclusion for {micro.title}.",
+            _material_solution_outline(evidence_slice),
+        ),
         difficulty="standard",
+        material_evidence=evidence_slice,
     )
 
 
@@ -180,45 +193,63 @@ def _advisory_micro_question(
     prompt: str,
     repair_target_node_id: str,
     variant_relation: dict[str, Any],
+    material_evidence: dict[str, Any],
 ) -> dict[str, Any]:
+    evidence_slice = _evidence_for_question_kind(material_evidence, question_kind)
     return _base_question(
         question_id=question_id,
         owner_id=owner_id,
         task_type=ChallengeTaskType.MICRO_NODE.value,
         node_id=node_id,
         title=title,
-        stem=stem,
-        prompt=prompt,
+        stem=_join_sentences(stem, _material_context_sentence(evidence_slice)),
+        prompt=_join_sentences(prompt, _material_prompt_instruction(evidence_slice)),
         dimensions=dimensions,
         question_kind=question_kind,
         training_goal=training_goal,
         repair_target_node_id=repair_target_node_id,
         variant_relation=variant_relation,
-        expected_answer="A complete answer states the distinguishing signal and applies it to the variant.",
-        solution_outline="Compare the candidate signals, choose the correct path, and explain why the other path is not valid here.",
+        expected_answer=_join_sentences("A complete answer states the distinguishing signal and applies it to the variant.", _expected_material_answer(evidence_slice)),
+        solution_outline=_join_sentences("Compare the candidate signals, choose the correct path, and explain why the other path is not valid here.", _material_solution_outline(evidence_slice)),
         difficulty="standard",
+        material_evidence=evidence_slice,
     )
 
 
-def _boss_question(graph: ChallengeGraph, challenge: Any, *, question_kind: str, source_id: str) -> dict[str, Any]:
+def _boss_question(
+    graph: ChallengeGraph,
+    challenge: Any,
+    *,
+    question_kind: str,
+    source_id: str,
+    material_evidence: dict[str, Any],
+) -> dict[str, Any]:
     dimensions = [dimension.value for dimension in challenge.target_dimensions] or ALL_SCORE_DIMENSIONS
     repair_target = _first_micro_id(graph, challenge.covers_micro_nodes) or challenge.covers_micro_nodes[0]
+    evidence_slice = _evidence_for_boss(material_evidence)
     return _base_question(
         question_id=f"{graph.chapter_id}.{_safe_token(source_id)}.{question_kind}",
         owner_id=challenge.id,
         task_type=ChallengeTaskType.MACRO_CHALLENGE.value,
         node_id=challenge.id,
         title=f"{challenge.title} {question_kind}",
-        stem=f"Integrated Boss task for {challenge.title}.",
-        prompt="Solve the integrated task. Show concept, trigger, method, transformation, process, calculation, final answer, expression, and transfer judgment.",
+        stem=_join_sentences(f"Integrated Boss task for {challenge.title}.", _material_context_sentence(evidence_slice)),
+        prompt=_join_sentences(
+            "Solve the integrated task. Show concept, trigger, method, transformation, process, calculation, final answer, expression, and transfer judgment.",
+            _material_prompt_instruction(evidence_slice),
+        ),
         dimensions=_dedupe([*dimensions, *ALL_SCORE_DIMENSIONS]),
         question_kind=question_kind,
         training_goal="Verify integrated mastery across the MacroNode rather than a local MicroNode only.",
         repair_target_node_id=repair_target,
-        variant_relation={"relation_type": question_kind, "source_id": source_id, "covered_micro_nodes": challenge.covers_micro_nodes},
-        expected_answer="A Boss-level answer gives the complete reasoning chain and a normalized final conclusion.",
-        solution_outline="Classify the problem, choose the method, transform conditions, execute calculation, normalize expression, and justify transfer or boundary decisions.",
+        variant_relation={"relation_type": question_kind, "source_id": source_id, "covered_micro_nodes": challenge.covers_micro_nodes, "material_evidence_keys": sorted(evidence_slice)},
+        expected_answer=_join_sentences("A Boss-level answer gives the complete reasoning chain and a normalized final conclusion.", _expected_material_answer(evidence_slice)),
+        solution_outline=_join_sentences(
+            "Classify the problem, choose the method, transform conditions, execute calculation, normalize expression, and justify transfer or boundary decisions.",
+            _material_solution_outline(evidence_slice),
+        ),
         difficulty="boss",
+        material_evidence=evidence_slice,
     )
 
 
@@ -239,6 +270,7 @@ def _base_question(
     expected_answer: str,
     solution_outline: str,
     difficulty: str,
+    material_evidence: dict[str, Any],
 ) -> dict[str, Any]:
     clean_dimensions = _dedupe([dimension for dimension in dimensions if dimension in ALL_SCORE_DIMENSIONS])
     if not clean_dimensions:
@@ -259,33 +291,35 @@ def _base_question(
         "target_dimension_mode": "override",
         "expected_answer": expected_answer,
         "answer_aliases": [title],
-        "rubric": _rubric(question_id, clean_dimensions, question_kind),
+        "rubric": _rubric(question_id, clean_dimensions, question_kind, material_evidence),
         "solution_outline": solution_outline,
         "validator_config": {
             "generated_by": TRAINING_QUESTION_PACKAGE_SCHEMA_VERSION,
             "question_kind": question_kind,
             "training_goal": training_goal,
             "necessary_process": _necessary_process(clean_dimensions),
-            "common_errors": _common_errors(clean_dimensions),
-            "false_pass_risks": _false_pass_risks(clean_dimensions),
+            "common_errors": _dedupe([*_common_errors(clean_dimensions), *_material_list(material_evidence, "common_errors")]),
+            "false_pass_risks": _dedupe([*_false_pass_risks(clean_dimensions), *_material_list(material_evidence, "false_pass_risks")]),
             "repair_target_node_id": repair_target_node_id,
             "error_repair_map": _question_error_repair_map(clean_dimensions, repair_target_node_id),
             "variant_relation": variant_relation,
             "mastery_signal": "micro_evidence" if task_type == ChallengeTaskType.MICRO_NODE.value else "boss_acceptance",
+            "source_material_evidence": material_evidence,
         },
     }
 
 
-def _rubric(question_id: str, dimensions: list[str], question_kind: str) -> dict[str, Any]:
+def _rubric(question_id: str, dimensions: list[str], question_kind: str, material_evidence: dict[str, Any]) -> dict[str, Any]:
     items = []
     for dimension in dimensions:
+        material_keywords = _material_keywords_for_dimension(material_evidence, dimension)
         items.append(
             {
                 "id": f"{_safe_token(question_id)}.{dimension}",
                 "description": f"Evidence for {dimension} in {question_kind}.",
                 "target_dimensions": [dimension],
-                "required_keywords": _keywords_for_dimension(dimension),
-                "expected_patterns": [],
+                "required_keywords": _dedupe([*_keywords_for_dimension(dimension), *material_keywords]),
+                "expected_patterns": _material_patterns_for_dimension(material_evidence, dimension),
                 "weight": 1.0,
                 "required": True,
                 "partial_credit": True,
@@ -305,7 +339,7 @@ def _rubric(question_id: str, dimensions: list[str], question_kind: str) -> dict
     }
 
 
-def _quality_report(graph: ChallengeGraph, question_bank: dict[str, Any]) -> dict[str, Any]:
+def _quality_report(graph: ChallengeGraph, question_bank: dict[str, Any], material_evidence: dict[str, Any]) -> dict[str, Any]:
     errors: list[dict[str, str]] = []
     warnings: list[dict[str, str]] = []
     questions = question_bank["questions"]
@@ -328,6 +362,8 @@ def _quality_report(graph: ChallengeGraph, question_bank: dict[str, Any]) -> dic
         for field in ["training_goal", "repair_target_node_id", "error_repair_map", "false_pass_risks", "variant_relation"]:
             if not config.get(field):
                 errors.append(_issue(f"question_missing_{field}", question["id"]))
+        if material_evidence and not config.get("source_material_evidence"):
+            errors.append(_issue("question_missing_source_material_evidence", question["id"]))
     kinds = sorted({question.get("validator_config", {}).get("question_kind", "") for question in questions})
     if graph.compare_nodes and "confusion_compare" not in kinds:
         warnings.append(_issue("compare_guard_question_missing", "compare_nodes", severity="warning"))
@@ -354,6 +390,7 @@ def _quality_report(graph: ChallengeGraph, question_bank: dict[str, Any]) -> dic
             "question_count": len(questions),
             "question_kinds": kinds,
             "rubric_dimensions": sorted({dimension for question in questions for dimension in question.get("target_dimensions", [])}),
+            "material_evidence_categories": sorted(material_evidence),
         },
     }
 
@@ -386,6 +423,173 @@ def _mastery_criteria(graph: ChallengeGraph) -> dict[str, Any]:
             **{challenge.id: {"required_dimensions": ALL_SCORE_DIMENSIONS, "boss_required": True} for challenge in graph.macro_challenges},
         },
     }
+
+
+def _material_evidence(candidate: dict[str, Any]) -> dict[str, Any]:
+    raw = candidate.get("material_evidence") if isinstance(candidate, dict) else None
+    if not isinstance(raw, dict):
+        return {}
+    return {
+        key: value
+        for key, value in raw.items()
+        if value
+    }
+
+
+def _evidence_for_micro_type(material_evidence: dict[str, Any], micro_type: MicroNodeType) -> dict[str, Any]:
+    key_map = {
+        MicroNodeType.CONCEPT: ["core_concepts", "core_theorems", "common_errors", "math1_value"],
+        MicroNodeType.TRIGGER: ["typical_problem_types", "entry_triggers", "confusions", "common_errors"],
+        MicroNodeType.METHOD: ["method_choices", "entry_triggers", "confusions", "common_errors"],
+        MicroNodeType.TRANSFORMATION: ["key_transformations", "prerequisites", "common_errors"],
+        MicroNodeType.CALCULATION: ["core_formulas", "key_transformations", "common_errors", "false_pass_risks"],
+        MicroNodeType.EXPRESSION: ["core_formulas", "core_theorems", "common_errors", "false_pass_risks"],
+    }
+    return _pick_material_evidence(material_evidence, key_map[micro_type])
+
+
+def _evidence_for_question_kind(material_evidence: dict[str, Any], question_kind: str) -> dict[str, Any]:
+    key_map = {
+        "confusion_compare": ["confusions", "common_errors", "core_concepts", "core_theorems"],
+        "transfer_variant": ["method_choices", "key_transformations", "downstream_uses", "false_pass_risks"],
+        "synthesis_decomposition": ["core_concepts", "core_formulas", "core_theorems", "entry_triggers", "method_choices", "key_transformations", "common_errors"],
+    }
+    return _pick_material_evidence(material_evidence, key_map.get(question_kind, []))
+
+
+def _evidence_for_boss(material_evidence: dict[str, Any]) -> dict[str, Any]:
+    return _pick_material_evidence(
+        material_evidence,
+        [
+            "chapter_topic",
+            "subject_area",
+            "core_concepts",
+            "core_formulas",
+            "core_theorems",
+            "typical_problem_types",
+            "entry_triggers",
+            "method_choices",
+            "key_transformations",
+            "confusions",
+            "common_errors",
+            "prerequisites",
+            "downstream_uses",
+            "math1_value",
+            "false_pass_risks",
+        ],
+    )
+
+
+def _pick_material_evidence(material_evidence: dict[str, Any], keys: list[str]) -> dict[str, Any]:
+    picked = {
+        key: material_evidence[key]
+        for key in keys
+        if material_evidence.get(key)
+    }
+    return picked or material_evidence
+
+
+def _material_context_sentence(material_evidence: dict[str, Any]) -> str:
+    if not material_evidence:
+        return ""
+    parts = []
+    if formulas := _material_list(material_evidence, "core_formulas"):
+        parts.append(f"Use source formula: {'; '.join(formulas[:2])}")
+    if theorems := _material_list(material_evidence, "core_theorems"):
+        parts.append(f"Use source theorem: {'; '.join(theorems[:2])}")
+    if triggers := _material_list(material_evidence, "entry_triggers"):
+        parts.append(f"Entry signal from material: {'; '.join(triggers[:2])}")
+    if methods := _material_list(material_evidence, "method_choices"):
+        parts.append(f"Method from material: {'; '.join(methods[:2])}")
+    if transformations := _material_list(material_evidence, "key_transformations"):
+        parts.append(f"Required transformation: {'; '.join(transformations[:2])}")
+    if errors := _material_list(material_evidence, "common_errors"):
+        parts.append(f"Common error to guard: {'; '.join(errors[:2])}")
+    return "Source material evidence: " + "; ".join(parts) + "." if parts else ""
+
+
+def _material_prompt_instruction(material_evidence: dict[str, Any]) -> str:
+    if not material_evidence:
+        return ""
+    return "Your answer must explicitly use the source-material evidence named in the stem and explain why it applies."
+
+
+def _expected_material_answer(material_evidence: dict[str, Any]) -> str:
+    if not material_evidence:
+        return ""
+    values = _flat_material_values(material_evidence)
+    return f"Must cite source-material evidence such as: {'; '.join(values[:4])}." if values else ""
+
+
+def _material_solution_outline(material_evidence: dict[str, Any]) -> str:
+    if not material_evidence:
+        return ""
+    outline = []
+    if triggers := _material_list(material_evidence, "entry_triggers"):
+        outline.append(f"identify the entry trigger ({triggers[0]})")
+    if methods := _material_list(material_evidence, "method_choices"):
+        outline.append(f"choose the method ({methods[0]})")
+    if transformations := _material_list(material_evidence, "key_transformations"):
+        outline.append(f"perform the transformation ({transformations[0]})")
+    if formulas := _material_list(material_evidence, "core_formulas"):
+        outline.append(f"use the formula ({formulas[0]})")
+    if theorems := _material_list(material_evidence, "core_theorems"):
+        outline.append(f"state the theorem boundary ({theorems[0]})")
+    if errors := _material_list(material_evidence, "common_errors"):
+        outline.append(f"avoid the known error ({errors[0]})")
+    return "Material-specific path: " + ", ".join(outline) + "." if outline else ""
+
+
+def _material_keywords_for_dimension(material_evidence: dict[str, Any], dimension: str) -> list[str]:
+    key_map = {
+        "concept": ["core_concepts", "core_theorems"],
+        "trigger": ["entry_triggers", "typical_problem_types"],
+        "method": ["method_choices"],
+        "transformation": ["key_transformations"],
+        "process": ["entry_triggers", "method_choices", "key_transformations"],
+        "calculation": ["core_formulas"],
+        "final_answer": ["core_formulas"],
+        "expression": ["core_formulas", "core_theorems"],
+        "migration": ["downstream_uses", "method_choices"],
+    }
+    values = []
+    for key in key_map.get(dimension, []):
+        values.extend(_material_list(material_evidence, key))
+    return values[:4]
+
+
+def _material_patterns_for_dimension(material_evidence: dict[str, Any], dimension: str) -> list[str]:
+    if dimension not in {"calculation", "final_answer", "expression"}:
+        return []
+    return [re.escape(value) for value in _material_list(material_evidence, "core_formulas")[:2]]
+
+
+def _flat_material_values(material_evidence: dict[str, Any]) -> list[str]:
+    values: list[str] = []
+    for value in material_evidence.values():
+        if isinstance(value, list):
+            values.extend(str(item) for item in value if str(item).strip())
+        elif isinstance(value, dict):
+            values.extend(str(item) for item in value.values() if str(item).strip())
+        elif str(value).strip():
+            values.append(str(value))
+    return _dedupe(values)
+
+
+def _material_list(material_evidence: dict[str, Any], key: str) -> list[str]:
+    value = material_evidence.get(key)
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item).strip()]
+    if isinstance(value, dict):
+        return [str(item) for item in value.values() if str(item).strip()]
+    if value:
+        return [str(value)]
+    return []
+
+
+def _join_sentences(*parts: str) -> str:
+    clean = [part.strip() for part in parts if part and part.strip()]
+    return " ".join(clean)
 
 
 def _repair_target_for_micro(graph: ChallengeGraph, micro: MicroNodeSpec) -> str:

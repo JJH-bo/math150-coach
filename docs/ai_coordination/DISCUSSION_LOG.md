@@ -342,3 +342,34 @@ Verification:
 - golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`;
 - synthetic diagnosis lab: `16/16`;
 - strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
+
+## 2026-07-04 - Codex Material-Aware Question Generation
+
+Codex connected material evidence to runtime question generation.
+
+Decision:
+
+- Material understanding is not enough if questions remain generic templates.
+- Source formulas, theorem wording, triggers, methods, common errors, and false-pass risks must reach `questions.yaml`.
+- Candidate material evidence is public authoring evidence, not trusted answer metadata.
+
+Implemented:
+
+- generated markdown now includes a `SourceEvidence` section when material understanding exists;
+- structured chapter import parses `SourceEvidence` without splitting mathematical commas such as `z=f(u,v)`;
+- chapter candidates now include `material_evidence`;
+- `chapter_training_question_builder.py` uses material evidence in stems, prompts, expected answers, solution outlines, rubrics, validator config, common errors, false-pass risks, and variant relations;
+- question package quality fails when candidate material evidence exists but generated questions do not carry it.
+
+Current limitation:
+
+- Questions are now source-specific but still deterministic templates.
+- Worked-example parsing, symbolic formula normalization, OCR for scanned PDFs, and selective correction/regeneration remain future work.
+
+Verification:
+
+- focused material-aware question chain: `13 passed`;
+- full backend tests: `585 passed`;
+- golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`;
+- synthetic diagnosis lab: `16/16`;
+- strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
