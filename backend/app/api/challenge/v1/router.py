@@ -8,6 +8,7 @@ from fastapi import APIRouter, Request
 from pydantic import ValidationError
 
 from app.api.challenge.v1.schemas import (
+    ChapterCorrectionDryRunRequest,
     ChallengeResetRequest,
     ChallengeStartRequest,
     ChallengeSubmitRequest,
@@ -23,6 +24,7 @@ from app.challenge.atlas import ChallengeAtlasBuilder
 from app.challenge.chapter_registry import ChapterRuntimeRegistry, ChapterRuntimeRegistryError
 from app.challenge.engine import ChallengeEngine, ChallengeEngineError
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run
+from app.challenge.chapter_correction_regeneration import build_chapter_correction_dry_run
 from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
 from app.challenge.chapter_intelligent_importer import build_intelligent_chapter_draft
 from app.challenge.chapter_publish_executor import execute_chapter_controlled_publish
@@ -197,6 +199,19 @@ async def chapter_draft_controlled_publish(request: Request) -> dict[str, Any]:
         )
     except ValueError as exc:
         raise api_error(400, "chapter_controlled_publish_invalid", str(exc))
+
+
+@router.post("/authoring/chapter-package/correction-dry-run")
+async def chapter_package_correction_dry_run(request: Request) -> dict[str, Any]:
+    payload = await request.json()
+    parsed = parse_request(ChapterCorrectionDryRunRequest, payload)
+    assert isinstance(parsed, ChapterCorrectionDryRunRequest)
+    return build_chapter_correction_dry_run(
+        parsed.candidate,
+        corrections=[operation.model_dump() for operation in parsed.corrections],
+        editor=parsed.editor,
+        notes=parsed.notes,
+    )
 
 
 @router.post("/start")

@@ -373,3 +373,46 @@ Verification:
 - golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`;
 - synthetic diagnosis lab: `16/16`;
 - strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.
+
+## 2026-07-04 - Codex Review Of ChatGPT Chapter Import Chain And Correction Loop
+
+Codex reviewed the ChatGPT-uploaded chapter import chain listed by the user:
+
+- `chapter_candidate_builder.py`;
+- `chapter_candidate_quality.py`;
+- `chapter_publish_plan.py`;
+- `chapter_publish_executor.py`;
+- related API schemas/routes;
+- related tests and reports.
+
+Judgment:
+
+- This handoff satisfies the user's hard acceptance standard. It contains concrete code, API wiring, tests, and reports for major chapter-import blocks, not just a request for Codex to implement work.
+- Codex accepts it as current foundation, while keeping independent judgment over later hardening.
+- The next needed block is not another direct publish step. The missing final-version capability is an authoring correction loop: generated candidates and questions must be editable, regeneratable, and auditable before publish planning.
+
+Implemented by Codex:
+
+- `backend/app/challenge/chapter_correction_regeneration.py`;
+- `POST /api/challenge/v1/authoring/chapter-package/correction-dry-run`;
+- correction records with changed paths, operation errors, accepted/blocked status;
+- before/after candidate hashes;
+- runtime validation and candidate quality rerun;
+- regenerated training question package;
+- changed question ids and affected node ids;
+- preview-only boundary with formal publish locked.
+
+Current limitation:
+
+- This is dry-run authoring logic, not persistence or UI.
+- Training-attempt feedback is not yet converted into correction proposals.
+- Front-end diff review and authoring history remain next blocks.
+
+Verification status:
+
+- Focused correction regeneration tests: `2 passed`.
+- Related chapter import/material/question/publish-plan tests: `10 passed`.
+- Full backend tests: `587 passed`.
+- Golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`.
+- Synthetic diagnosis lab: `16/16`.
+- Strict real-attempt calibration remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.

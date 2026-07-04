@@ -107,6 +107,36 @@ class ChapterControlledPublishRequest(ChapterDraftCandidateDryRunRequest):
     expected_publish_plan_hash: str | None = None
 
 
+class ChapterCorrectionOperation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    op: Literal["replace"]
+    target: Literal[
+        "chapter",
+        "material_evidence",
+        "micro_node",
+        "macro_node",
+        "macro_challenge",
+        "atom_node",
+        "compare_node",
+        "guide_node",
+        "typed_edge",
+        "error_repair_map",
+    ]
+    field: str = Field(min_length=1, max_length=80)
+    value: Any
+    id: str | None = None
+
+
+class ChapterCorrectionDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate: dict[str, Any]
+    corrections: list[ChapterCorrectionOperation] = Field(min_length=1)
+    editor: str = Field(min_length=1, max_length=80)
+    notes: str | None = None
+
+
 def parse_request(model: type[BaseModel], payload: dict[str, Any]) -> BaseModel:
     try:
         return model.model_validate(payload)

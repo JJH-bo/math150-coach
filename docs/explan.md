@@ -1,6 +1,6 @@
 # Math150 Coach Project Vision Handoff
 
-Last updated: 2026-07-02
+Last updated: 2026-07-04
 
 This document is the first file a new assistant or new thread should read before making product, engine, UI, or content decisions for this project.
 
@@ -186,7 +186,39 @@ Current remaining gap:
 - The generated question package includes rubrics, error repair maps, repair targets, variants, false-pass risk metadata, Boss coverage, and mastery criteria states.
 - The material input layer can now read mixed text/Markdown/PDF/Word/PPT-style material inputs and extract formulas, theorem wording, problem types, triggers, methods, wrong-answer evidence, prerequisites, downstream uses, Mathematics I value, and false-pass risks.
 - The generated question package now uses extracted formulas, theorem wording, triggers, methods, common errors, and false-pass risks in stems, expected answers, rubrics, validators, and repair checks.
-- The next major content-production block is correction/regeneration and feedback optimization: user edits or training data must selectively regenerate affected nodes, questions, rubrics, and quality reports with an audit diff.
+- The correction/regeneration dry-run layer now accepts teacher or AI review corrections against a candidate package, applies allowed patches, regenerates the affected question package, reruns runtime and quality gates, and returns before/after hashes, changed paths, changed question ids, and affected node ids.
+- The next major content-production block is deeper feedback optimization: real training attempts and author review signals must decide which nodes, questions, rubrics, and repair mappings need regeneration.
+
+## Latest Progress Addendum: 2026-07-04 Correction Regeneration
+
+The chapter package pipeline now has a first selective correction loop.
+
+Implemented:
+
+- New correction module: `backend/app/challenge/chapter_correction_regeneration.py`.
+- New endpoint: `POST /api/challenge/v1/authoring/chapter-package/correction-dry-run`.
+- Supports dry-run `replace` corrections for chapter fields, material evidence, MicroNodes, MacroNodes, MacroChallenges, AtomNodes, CompareNodes, GuideNodes, typed edges, and error repair mappings.
+- Produces a correction record with editor, notes, operations, changed paths, operation errors, and accepted/blocked status.
+- Recomputes candidate content hash after correction.
+- Reruns runtime validation and candidate quality gate.
+- Regenerates the deterministic training question package and compares question ids before/after.
+- Returns affected node ids, changed question ids, regeneration scope, and formal publish lock state.
+
+Important boundary:
+
+```text
+correction dry-run != persistence
+correction dry-run != formal publish
+```
+
+The endpoint does not write runtime files and does not bypass the publish plan or controlled publish executor. It exists so authoring review can iterate on a generated candidate package before building a publish plan.
+
+Current remaining gap:
+
+- No front-end diff editor exists yet.
+- No persisted version history or rollback metadata exists yet.
+- Training-attempt feedback is not yet converted into automatic correction proposals.
+- Worked-example parsing and symbolic normalization are still deterministic-template level, not full mathematical authoring intelligence.
 
 ## Core Knowledge Graph Design
 

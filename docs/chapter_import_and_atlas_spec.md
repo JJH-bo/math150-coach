@@ -125,4 +125,36 @@ The material input layer can now extract formulas, theorem wording, user notes, 
 
 The generated training question package now carries extracted evidence into stems, expected answers, rubrics, validator config, false-pass risks, common-error cues, and variant metadata.
 
-The remaining final-version work is to support selective human correction/regeneration and training-feedback optimization, and to deepen worked-example parsing beyond deterministic templates.
+## Correction And Regeneration Dry Run
+
+`POST /api/challenge/v1/authoring/chapter-package/correction-dry-run` accepts a generated candidate package plus a list of correction operations.
+
+Supported correction operation shape:
+
+- `op`: currently `replace`;
+- `target`: `chapter`, `material_evidence`, `micro_node`, `macro_node`, `macro_challenge`, `atom_node`, `compare_node`, `guide_node`, `typed_edge`, or `error_repair_map`;
+- `id`: required for graph collection targets;
+- `field`: field to replace;
+- `value`: replacement value.
+
+The correction dry run returns:
+
+- `correction_record` with editor, notes, operations, changed paths, operation errors, and accepted/blocked status;
+- `before.candidate_content_hash`;
+- `after.candidate_content_hash`;
+- corrected candidate preview;
+- runtime validation report;
+- candidate quality report;
+- regenerated training question package;
+- changed question ids;
+- affected node ids;
+- regeneration scope.
+
+This endpoint is still preview-only:
+
+- it does not write `backend/challenge_data`;
+- it does not mutate learner state;
+- it does not unlock formal publish;
+- it does not replace the publish plan or controlled publish executor.
+
+The remaining final-version work is to add a front-end diff editor, persisted authoring history, rollback metadata, training-feedback-derived correction proposals, and deeper worked-example parsing beyond deterministic templates.
