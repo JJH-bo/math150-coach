@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from app.api.challenge.v1.schemas import (
     ChapterCorrectionDryRunRequest,
     ChapterFeedbackOptimizationDryRunRequest,
+    ChapterFeedbackOptimizationFromSessionsDryRunRequest,
     ChallengeResetRequest,
     ChallengeStartRequest,
     ChallengeSubmitRequest,
@@ -27,7 +28,10 @@ from app.challenge.engine import ChallengeEngine, ChallengeEngineError
 from app.challenge.chapter_candidate_builder import build_chapter_candidate_dry_run
 from app.challenge.chapter_correction_regeneration import build_chapter_correction_dry_run
 from app.challenge.chapter_draft_importer import record_chapter_human_review, validate_chapter_markdown
-from app.challenge.chapter_feedback_optimizer import build_chapter_feedback_optimization_dry_run
+from app.challenge.chapter_feedback_optimizer import (
+    build_chapter_feedback_optimization_dry_run,
+    build_chapter_feedback_optimization_from_sessions_dry_run,
+)
 from app.challenge.chapter_intelligent_importer import build_intelligent_chapter_draft
 from app.challenge.chapter_publish_executor import execute_chapter_controlled_publish
 from app.challenge.chapter_publish_plan import build_chapter_publish_plan_dry_run
@@ -225,6 +229,21 @@ async def chapter_package_feedback_optimization_dry_run(request: Request) -> dic
         parsed.candidate,
         question_package=parsed.question_package,
         attempt_records=parsed.attempt_records,
+        analyst=parsed.analyst,
+        min_sample_size=parsed.min_sample_size,
+    )
+
+
+@router.post("/authoring/chapter-package/feedback-optimization-from-sessions-dry-run")
+async def chapter_package_feedback_optimization_from_sessions_dry_run(request: Request) -> dict[str, Any]:
+    payload = await request.json()
+    parsed = parse_request(ChapterFeedbackOptimizationFromSessionsDryRunRequest, payload)
+    assert isinstance(parsed, ChapterFeedbackOptimizationFromSessionsDryRunRequest)
+    return build_chapter_feedback_optimization_from_sessions_dry_run(
+        parsed.candidate,
+        question_package=parsed.question_package,
+        session_root=_session_root(),
+        session_ids=parsed.session_ids,
         analyst=parsed.analyst,
         min_sample_size=parsed.min_sample_size,
     )

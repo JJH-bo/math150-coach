@@ -147,6 +147,21 @@ class ChapterFeedbackOptimizationDryRunRequest(BaseModel):
     min_sample_size: int = Field(default=3, ge=1, le=50)
 
 
+class ChapterFeedbackOptimizationFromSessionsDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate: dict[str, Any]
+    question_package: dict[str, Any]
+    session_ids: list[str] = Field(default_factory=list)
+    analyst: str = Field(min_length=1, max_length=80)
+    min_sample_size: int = Field(default=3, ge=1, le=50)
+
+    @field_validator("session_ids")
+    @classmethod
+    def validate_feedback_session_ids(cls, value: list[str]) -> list[str]:
+        return [validate_session_id(session_id) for session_id in value]
+
+
 def parse_request(model: type[BaseModel], payload: dict[str, Any]) -> BaseModel:
     try:
         return model.model_validate(payload)

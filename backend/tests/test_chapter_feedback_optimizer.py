@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from app.challenge.chapter_feedback_optimizer import build_chapter_feedback_optimization_dry_run
+from app.challenge.chapter_feedback_optimizer import (
+    build_chapter_feedback_optimization_dry_run,
+    build_chapter_feedback_optimization_from_sessions_dry_run,
+)
 from app.challenge.chapter_intelligent_importer import build_intelligent_chapter_draft
 from app.challenge.models import ChallengeQuestionBank
 from app.main import create_app
+from app.training.session_log import append_attempt
 
 
 def test_feedback_optimizer_identifies_revision_signals_from_training_attempts() -> None:
@@ -120,6 +124,100 @@ def test_feedback_optimizer_api_returns_revision_preview() -> None:
         "false_pass_excess",
         "rubric_evidence_insufficient",
     }
+
+
+def test_feedback_optimizer_reads_real_session_logs_for_chapter_feedback(tmp_path) -> None:
+    candidate, question_package = _candidate_and_question_package()
+    calculation = _questions_by_kind(question_package)["calculation_execution"]
+    session_id = "real-feedback-session"
+    for attempt in _attempts(
+        calculation,
+        [
+            ("false_pass", "calculation_error", ["process"]),
+            ("false_pass", "calculation_error", ["calculation"]),
+            ("fail", "expression_weakness", ["expression"]),
+        ],
+    ):
+        append_attempt(
+            {
+                **attempt,
+                "session_id": session_id,
+                "challenge_chapter_id": candidate["chapter_id"],
+                "challenge_task_type": attempt["task_type"],
+            },
+            session_id=session_id,
+            session_root=tmp_path,
+        )
+    append_attempt(
+        {
+            **_attempts(calculation, [("pass", "calculation_error", [])])[0],
+            "session_id": "other-session",
+            "challenge_chapter_id": "other_chapter",
+        },
+        session_id="other-session",
+        session_root=tmp_path,
+    )
+
+    payload = build_chapter_feedback_optimization_from_sessions_dry_run(
+        candidate,
+        question_package=question_package,
+        session_root=tmp_path,
+        session_ids=[session_id],
+        analyst="session-log-test",
+    )
+
+    assert payload["mode"] == "chapter_feedback_optimization_dry_run"
+    assert payload["feedback_source"]["source_type"] == "session_logs"
+    assert payload["feedback_source"]["session_ids"] == [session_id]
+    assert payload["feedback_source"]["loaded_attempt_count"] == 3
+    assert payload["feedback_record"]["attempt_count"] == 3
+    assert payload["feedback_record"]["status"] == "needs_revision"
+    assert {signal["code"] for signal in payload["revision_signals"]} >= {
+        "false_pass_excess",
+        "rubric_evidence_insufficient",
+    }
+
+
+def test_feedback_optimizer_session_api_uses_configured_session_root(tmp_path, monkeypatch) -> None:
+    candidate, question_package = _candidate_and_question_package()
+    calculation = _questions_by_kind(question_package)["calculation_execution"]
+    session_id = "api-real-feedback"
+    for attempt in _attempts(
+        calculation,
+        [
+            ("false_pass", "calculation_error", ["process"]),
+            ("false_pass", "calculation_error", ["calculation"]),
+            ("fail", "expression_weakness", ["expression"]),
+        ],
+    ):
+        append_attempt(
+            {
+                **attempt,
+                "session_id": session_id,
+                "challenge_chapter_id": candidate["chapter_id"],
+                "challenge_task_type": attempt["task_type"],
+            },
+            session_id=session_id,
+            session_root=tmp_path,
+        )
+    monkeypatch.setenv("CHALLENGE_SESSION_ROOT", str(tmp_path))
+    client = TestClient(create_app("mixed"))
+
+    response = client.post(
+        "/api/challenge/v1/authoring/chapter-package/feedback-optimization-from-sessions-dry-run",
+        json={
+            "candidate": candidate,
+            "question_package": question_package,
+            "session_ids": [session_id],
+            "analyst": "api-session-feedback",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["feedback_source"]["source_type"] == "session_logs"
+    assert payload["feedback_source"]["loaded_attempt_count"] == 3
+    assert payload["feedback_record"]["status"] == "needs_revision"
 
 
 def _candidate_and_question_package() -> tuple[dict, dict]:

@@ -28,17 +28,21 @@ candidate package
 - `backend/app/challenge/chapter_feedback_optimizer.py`
   - New feedback optimization analyzer.
   - Aggregates attempt records by question.
+  - Loads real safe JSONL session logs from a configured session root.
   - Detects false-pass excess, pass-rate anomalies, diagnosis instability, rubric evidence gaps, CompareGuard weakness, transfer weakness, Boss feedback gaps, hidden-ability support gaps, and ineffective repair paths.
   - Produces regeneration targets and correction operation templates.
 
 - `backend/app/api/challenge/v1/schemas.py`
   - Adds `ChapterFeedbackOptimizationDryRunRequest`.
+  - Adds `ChapterFeedbackOptimizationFromSessionsDryRunRequest`.
 
 - `backend/app/api/challenge/v1/router.py`
   - Adds `POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-dry-run`.
+  - Adds `POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-from-sessions-dry-run`.
 
 - `backend/tests/test_chapter_feedback_optimizer.py`
   - Verifies feedback signals from synthetic training attempts over a generated chapter package.
+  - Verifies real session log ingestion through `append_attempt` JSONL files.
   - Verifies API dry-run behavior.
 
 - `docs/chapter_import_and_atlas_spec.md`
@@ -81,29 +85,30 @@ This implementation does not add:
 
 - automatic package mutation;
 - database-backed feedback history;
-- session-log file scanning;
 - LLM-based revision writing;
 - frontend review UI.
 
 It is a dry-run authoring layer. Corrections still go through the correction regeneration endpoint, and runtime writes still go through publish plan and controlled publish.
 
+The session-log endpoint does not accept an arbitrary filesystem path from request JSON. It reads from the existing configured challenge session root, using `CHALLENGE_SESSION_ROOT` or the default local training session directory.
+
 ## 6. Known next steps
 
 The next high-value blocks are:
 
-1. Feed real session log files into the feedback optimizer.
-2. Convert feedback signals into concrete correction drafts for questions, rubrics, and repair maps.
-3. Add front-end review UI for feedback signals and regeneration plans.
-4. Persist feedback snapshots with authoring version history.
-5. Use feedback optimizer output to prioritize real-attempt calibration fixes.
+1. Convert feedback signals into concrete correction drafts for questions, rubrics, and repair maps.
+2. Add front-end review UI for feedback signals and regeneration plans.
+3. Persist feedback snapshots with authoring version history.
+4. Use feedback optimizer output to prioritize real-attempt calibration fixes.
+5. Connect real-attempt lab mismatch reports as a first-class feedback source.
 
 ## 7. Verification
 
 Local verification completed by Codex:
 
-- Focused feedback optimizer tests: `2 passed`.
-- Related authoring tests: `10 passed`.
-- Full backend tests: `589 passed`.
+- Focused feedback optimizer tests: `4 passed`.
+- Related authoring tests: `12 passed`.
+- Full backend tests: `591 passed`.
 - Golden evals: scoring `30/30`, diagnosis `25/25`, movement `12/12`.
 - Synthetic diagnosis lab: `16/16`.
 - Strict real-attempt lab remains release-blocked: root `5/8`, repair `6/8`, exact `4/8`, grade `fail`.

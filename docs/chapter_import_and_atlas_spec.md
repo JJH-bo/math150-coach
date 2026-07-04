@@ -198,3 +198,22 @@ This endpoint is also preview-only:
 - it does not replace correction dry-run.
 
 Feedback optimization identifies what should be revised. Correction dry-run applies concrete human or AI-reviewed edits and regenerates the affected assets.
+
+`POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-from-sessions-dry-run` runs the same analysis from real local session logs.
+
+The request provides:
+
+- a candidate package;
+- its generated question package;
+- optional `session_ids`;
+- an analyst id;
+- optional `min_sample_size`.
+
+The endpoint reads JSONL logs from the configured challenge session root:
+
+- `CHALLENGE_SESSION_ROOT` when set;
+- otherwise the default local challenge API training session directory.
+
+It does not accept a raw filesystem path from request JSON. This keeps authoring feedback analysis tied to the same local training-session boundary used by the challenge engine.
+
+The response adds `feedback_source` with loaded session ids, source log files, loaded attempt count, ignored record count, and invalid line count.

@@ -187,8 +187,8 @@ Current remaining gap:
 - The material input layer can now read mixed text/Markdown/PDF/Word/PPT-style material inputs and extract formulas, theorem wording, problem types, triggers, methods, wrong-answer evidence, prerequisites, downstream uses, Mathematics I value, and false-pass risks.
 - The generated question package now uses extracted formulas, theorem wording, triggers, methods, common errors, and false-pass risks in stems, expected answers, rubrics, validators, and repair checks.
 - The correction/regeneration dry-run layer now accepts teacher or AI review corrections against a candidate package, applies allowed patches, regenerates the affected question package, reruns runtime and quality gates, and returns before/after hashes, changed paths, changed question ids, and affected node ids.
-- The feedback optimization dry-run layer now analyzes real or simulated training attempt records and identifies which questions, nodes, rubrics, repair maps, CompareGuards, transfer variants, Boss checks, and HiddenAbilities need revision.
-- The next major content-production block is turning feedback signals into concrete correction drafts and feeding real session log files into the optimizer.
+- The feedback optimization dry-run layer now analyzes provided attempt records or real local session log JSONL files, and identifies which questions, nodes, rubrics, repair maps, CompareGuards, transfer variants, Boss checks, and HiddenAbilities need revision.
+- The next major content-production block is turning feedback signals into concrete correction drafts for question text, rubric items, and repair mappings.
 
 ## Latest Progress Addendum: 2026-07-04 Correction Regeneration
 
@@ -229,7 +229,9 @@ Implemented:
 
 - New feedback module: `backend/app/challenge/chapter_feedback_optimizer.py`.
 - New endpoint: `POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-dry-run`.
+- New real-log endpoint: `POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-from-sessions-dry-run`.
 - Accepts candidate package, generated question package, and attempt records.
+- Can read real local challenge session logs from the configured session root using optional session id filters.
 - Detects false-pass excess, abnormal pass rates, diagnosis instability, rubric evidence gaps, CompareGuard weakness, migration weakness, Boss feedback gaps, ineffective repair paths, and missing HiddenAbility support.
 - Returns revision signals, quality gate, affected question ids, affected node ids, affected assets, and correction operation templates.
 
@@ -243,9 +245,9 @@ controlled publish = writes runtime files only after explicit gates
 
 Current remaining gap:
 
-- The optimizer consumes provided attempt records, but does not yet scan session log files automatically.
 - It proposes correction targets, but does not yet write final revised question/rubric text.
 - Feedback snapshots are not persisted into authoring history.
+- Real-attempt lab mismatch reports are not yet a first-class feedback source.
 
 ## Core Knowledge Graph Design
 

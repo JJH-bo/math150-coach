@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 from collections import Counter, defaultdict
+from pathlib import Path
 from typing import Any
 
 from app.challenge.chapter_candidate_builder import deterministic_content_hash
 from app.challenge.models import ChallengeQuestionBank
+from app.training.session_log import resolve_session_root, validate_session_id
 
 
 FEEDBACK_OPTIMIZATION_SCHEMA_VERSION = "chapter_feedback_optimization_v1"
@@ -68,6 +71,93 @@ def build_chapter_feedback_optimization_dry_run(
     }
 
 
+def build_chapter_feedback_optimization_from_sessions_dry_run(
+    candidate: dict[str, Any],
+    *,
+    question_package: dict[str, Any],
+    session_root: str | Path | None,
+    session_ids: list[str] | None,
+    analyst: str,
+    min_sample_size: int = 3,
+) -> dict[str, Any]:
+    """Load real local training session logs and run feedback optimization."""
+
+    chapter_id = str(candidate.get("chapter_id") or question_package.get("chapter_id") or "")
+    feedback_source = load_chapter_session_attempt_records(
+        session_root=session_root,
+        chapter_id=chapter_id,
+        session_ids=session_ids,
+    )
+    payload = build_chapter_feedback_optimization_dry_run(
+        candidate,
+        question_package=question_package,
+        attempt_records=feedback_source["attempt_records"],
+        analyst=analyst,
+        min_sample_size=min_sample_size,
+    )
+    payload["feedback_source"] = {
+        key: value
+        for key, value in feedback_source.items()
+        if key != "attempt_records"
+    }
+    return payload
+
+
+def load_chapter_session_attempt_records(
+    *,
+    session_root: str | Path | None,
+    chapter_id: str,
+    session_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    root = resolve_session_root(session_root)
+    safe_session_ids = [validate_session_id(session_id) for session_id in session_ids or []]
+    paths = [root / f"{session_id}.jsonl" for session_id in safe_session_ids] if safe_session_ids else sorted(root.glob("*.jsonl"))
+    attempt_records: list[dict[str, Any]] = []
+    loaded_session_ids: list[str] = []
+    source_log_files: list[str] = []
+    ignored_record_count = 0
+    invalid_line_count = 0
+
+    for path in paths:
+        if not path.exists() or not path.is_file():
+            continue
+        session_id = path.stem
+        loaded_session_ids.append(session_id)
+        source_log_files.append(path.name)
+        with path.open("r", encoding="utf-8") as file:
+            for line_number, line in enumerate(file, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    invalid_line_count += 1
+                    continue
+                if not isinstance(record, dict):
+                    invalid_line_count += 1
+                    continue
+                if str(record.get("challenge_chapter_id") or record.get("chapter_id") or "") != chapter_id:
+                    ignored_record_count += 1
+                    continue
+                attempt = _attempt_record_from_session_log(record, session_id=session_id, line_number=line_number)
+                if attempt is None:
+                    ignored_record_count += 1
+                    continue
+                attempt_records.append(attempt)
+
+    return {
+        "source_type": "session_logs",
+        "session_root": str(root),
+        "session_ids": safe_session_ids or loaded_session_ids,
+        "source_log_files": source_log_files,
+        "loaded_attempt_count": len(attempt_records),
+        "ignored_record_count": ignored_record_count,
+        "invalid_line_count": invalid_line_count,
+        "attempt_records": attempt_records,
+    }
+
+
 def _question_bank(question_package: dict[str, Any]) -> dict[str, Any]:
     raw = question_package.get("question_bank") if isinstance(question_package, dict) else None
     if not isinstance(raw, dict):
@@ -85,6 +175,31 @@ def _group_attempts(attempt_records: list[dict[str, Any]]) -> dict[str, list[dic
         if question_id:
             grouped[question_id].append(attempt)
     return dict(grouped)
+
+
+def _attempt_record_from_session_log(record: dict[str, Any], *, session_id: str, line_number: int) -> dict[str, Any] | None:
+    question_id = str(record.get("question_id") or "")
+    pass_state = str(record.get("pass_state") or "")
+    if not question_id or not pass_state:
+        return None
+    node_id = str(record.get("node_id") or record.get("challenge_task_id") or "")
+    evidence_gaps = record.get("evidence_gaps") or record.get("weak_dimensions") or []
+    weak_dimensions = record.get("weak_dimensions") or evidence_gaps
+    return {
+        "attempt_id": str(record.get("attempt_id") or f"{session_id}:{line_number}"),
+        "session_id": session_id,
+        "question_id": question_id,
+        "node_id": node_id,
+        "owner_id": str(record.get("owner_id") or node_id),
+        "task_type": str(record.get("task_type") or record.get("challenge_task_type") or ""),
+        "question_kind": str(record.get("question_kind") or ""),
+        "pass_state": pass_state,
+        "root_cause": record.get("root_cause"),
+        "repair_target_node_id": record.get("repair_target_node_id") or node_id,
+        "weak_dimensions": weak_dimensions if isinstance(weak_dimensions, list) else [str(weak_dimensions)],
+        "evidence_gaps": evidence_gaps if isinstance(evidence_gaps, list) else [str(evidence_gaps)],
+        "source_log_file": f"{session_id}.jsonl",
+    }
 
 
 def _signals_for_question(question_id: str, question: dict[str, Any], attempts: list[dict[str, Any]]) -> list[dict[str, Any]]:
