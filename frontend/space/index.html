@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3D Free Flight Knowledge Universe</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%2302040a'/%3E%3Ccircle cx='32' cy='32' r='14' fill='%2376e4ff'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/trainer/space/space.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="spaceApp" class="space-app" aria-label="3D Free Flight Knowledge Universe">
+      <canvas id="spaceCanvas" aria-label="自由飞行数学宇宙"></canvas>
+
+      <section class="space-hud" aria-label="飞行状态">
+        <div class="hud-cluster identity">
+          <p class="eyebrow">Math150 Universe</p>
+          <h1>微分方程星域</h1>
+          <p id="flightHint">点击宇宙开始自由飞行，靠近星体后按 E 进入遭遇。</p>
+        </div>
+
+        <div class="hud-cluster status">
+          <span id="sessionBadge">session</span>
+          <span id="currentTaskBadge">正在同步当前任务</span>
+          <span id="nearestBadge">未接近知识体</span>
+        </div>
+
+        <div class="hud-cluster controls">
+          <button id="syncBtn" type="button">同步</button>
+          <button id="resetBtn" type="button">重置</button>
+          <button id="focusCurrentBtn" type="button">跃迁到当前任务</button>
+        </div>
+      </section>
+
+      <div class="reticle" aria-hidden="true">
+        <span></span>
+      </div>
+
+      <section id="proximityPanel" class="proximity-panel" aria-live="polite">
+        <p class="eyebrow">Nearest Object</p>
+        <h2 id="nearestTitle">深空巡航中</h2>
+        <p id="nearestMeta">靠近知识星体、卫星或星门后，这里会显示可交互目标。</p>
+        <button id="engageBtn" type="button" disabled>进入遭遇</button>
+      </section>
+
+      <section id="encounterPod" class="encounter-pod is-hidden" role="dialog" aria-modal="true" aria-labelledby="podTitle">
+        <div class="pod-shell">
+          <button id="closePodBtn" class="icon-button" type="button" aria-label="关闭">×</button>
+          <div class="pod-intro">
+            <p class="eyebrow">Encounter Pod</p>
+            <h2 id="podTitle">知识遭遇</h2>
+            <p id="podMeta">靠近当前任务节点后开始训练。</p>
+          </div>
+
+          <div id="taskBrief" class="task-brief">
+            正在读取当前挑战。
+          </div>
+
+          <form id="answerForm" class="answer-form">
+            <label for="answerInput">你的回答</label>
+            <textarea id="answerInput" rows="6" placeholder="写出判断、关键步骤和最后结论。"></textarea>
+
+            <label for="explanationInput">自我说明</label>
+            <textarea id="explanationInput" rows="3" placeholder="说明你为什么这样判断。"></textarea>
+
+            <button id="submitBtn" type="submit">提交当前遭遇</button>
+          </form>
+
+          <div id="coachOutput" class="coach-output" aria-live="polite">
+            提交后会显示诊断反馈，并在宇宙中高亮修复方向。
+          </div>
+        </div>
+      </section>
+
+      <div id="loadingOverlay" class="loading-overlay">
+        <p class="eyebrow">Initializing Universe</p>
+        <strong>正在进入三维数学宇宙</strong>
+        <span>建立星域、航道和训练状态。</span>
+      </div>
+
+      <section id="fallbackPanel" class="fallback-panel is-hidden" role="alert">
+        <p class="eyebrow">Render Fallback</p>
+        <h2>三维宇宙没有启动</h2>
+        <p id="fallbackReason">当前浏览器暂时无法创建 WebGL 场景。</p>
+        <a href="/trainer/">返回 2D 训练器</a>
+      </section>
+
+      <nav class="touch-controls" aria-label="移动控制">
+        <button type="button" data-key="KeyW">前</button>
+        <button type="button" data-key="KeyA">左</button>
+        <button type="button" data-key="KeyS">后</button>
+        <button type="button" data-key="KeyD">右</button>
+        <button type="button" data-key="Space">上</button>
+        <button type="button" data-key="ControlLeft">下</button>
+      </nav>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <script type="module" src="/trainer/space/space.js"></script>
+  </body>
+</html>

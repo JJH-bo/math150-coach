@@ -128,3 +128,34 @@ def assert_no_trusted_fields(value) -> None:
     text = json.dumps(value, ensure_ascii=False)
     for field in TRUSTED_FIELDS:
         assert field not in text
+
+
+def test_space_trainer_static_page_and_assets_are_served_from_mixed_profile() -> None:
+    client = TestClient(create_app("mixed"))
+
+    page = client.get("/trainer/space/")
+    script = client.get("/trainer/space/space.js")
+    styles = client.get("/trainer/space/space.css")
+
+    assert page.status_code == 200
+    assert "3D Free Flight Knowledge Universe" in page.text
+    assert 'type="module" src="/trainer/space/space.js"' in page.text
+    assert script.status_code == 200
+    assert "createKnowledgeUniverse" in script.text
+    assert styles.status_code == 200
+    assert ".space-hud" in styles.text
+
+
+def test_space_trainer_uses_cinematic_rendering_pipeline() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+
+    assert script.status_code == 200
+    assert "EffectComposer" in script.text
+    assert "UnrealBloomPass" in script.text
+    assert "createPlanetTexture" in script.text
+    assert "createAtmosphereShell" in script.text
+    assert "createSoftParticleTexture" in script.text
+    assert "addCinematicLighting" in script.text
+    assert "ShaderMaterial" in script.text
