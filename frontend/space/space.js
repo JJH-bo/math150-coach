@@ -34,6 +34,61 @@ const microTypes = [
   { type: "expression", title: "表达", color: 0xff9cae },
 ];
 
+const realisticBodyProfiles = [
+  {
+    surface: 0x6f7c84,
+    shadow: 0x18232a,
+    highlight: 0xc3c9c4,
+    atmosphere: 0x9ebbd1,
+    ring: 0xb8b0a0,
+  },
+  {
+    surface: 0x8d7657,
+    shadow: 0x231a14,
+    highlight: 0xd0b991,
+    atmosphere: 0xc49b6d,
+    ring: 0xb49464,
+  },
+  {
+    surface: 0x465a62,
+    shadow: 0x10161a,
+    highlight: 0xaab8ba,
+    atmosphere: 0x7fa9bd,
+    ring: 0x8c9aa0,
+  },
+  {
+    surface: 0x716b63,
+    shadow: 0x1a1715,
+    highlight: 0xbdb3a3,
+    atmosphere: 0x9a958e,
+    ring: 0xa89a82,
+  },
+];
+
+const realisticMoonProfiles = [
+  {
+    surface: 0x777b80,
+    shadow: 0x191c20,
+    highlight: 0xc6c7c2,
+    atmosphere: 0x8da4b8,
+    ring: 0x8fa2ad,
+  },
+  {
+    surface: 0x5d5148,
+    shadow: 0x16120f,
+    highlight: 0xb29f88,
+    atmosphere: 0x9e8568,
+    ring: 0x9b876f,
+  },
+  {
+    surface: 0x56626e,
+    shadow: 0x11171d,
+    highlight: 0xb4c0c8,
+    atmosphere: 0x8cb0c8,
+    ring: 0x8798a4,
+  },
+];
+
 const compareDefinitions = [
   {
     id: "ode.compare.separable_vs_linear",
@@ -181,9 +236,8 @@ function createKnowledgeUniverse(THREE) {
 
   addCinematicLighting(THREE, scene);
 
-  addNebulaVeils(THREE, scene);
-  addStarFields(THREE, scene);
-  addNebulaDust(THREE, scene);
+  createMilkyWayBackdrop(THREE, scene);
+  createRealisticStarField(THREE, scene);
   buildOdeSector(THREE, scene);
 
   const composer = new state.post.EffectComposer(renderer);
@@ -353,6 +407,17 @@ function buildOdeSector(THREE, scene) {
   }
 }
 
+function realisticBodyProfile(definition) {
+  const profiles = definition.kind === "micro" || definition.kind === "guide"
+    ? realisticMoonProfiles
+    : realisticBodyProfiles;
+  const profile = profiles[hashString(`${definition.id}-${definition.kind}`) % profiles.length];
+  return {
+    ...profile,
+    accent: definition.color || profile.atmosphere,
+  };
+}
+
 function createSpaceObject(THREE, definition) {
   const group = new THREE.Group();
   group.position.set(...definition.position);
@@ -360,6 +425,7 @@ function createSpaceObject(THREE, definition) {
 
   const materials = [];
   const color = definition.color || 0x76e4ff;
+  const profile = realisticBodyProfile(definition);
   let primaryMesh;
 
   if (definition.kind === "boss") {
@@ -409,39 +475,41 @@ function createSpaceObject(THREE, definition) {
     group.add(core);
     materials.push(coreMaterial);
   } else {
-    const surfaceTexture = createPlanetTexture(THREE, color, definition.kind, definition.id);
+    const surfaceTexture = createPlanetTexture(THREE, profile, definition.kind, definition.id);
     const material = new THREE.MeshPhysicalMaterial({
-      color,
+      color: 0xffffff,
       map: surfaceTexture,
       bumpMap: surfaceTexture,
-      bumpScale: definition.kind === "macro" ? 0.34 : 0.16,
-      emissive: color,
-      emissiveIntensity: definition.kind === "macro" ? 0.18 : 0.12,
-      roughness: definition.kind === "macro" ? 0.62 : 0.48,
-      metalness: definition.kind === "macro" ? 0.02 : 0.1,
-      clearcoat: definition.kind === "macro" ? 0.18 : 0.34,
-      clearcoatRoughness: 0.48,
+      bumpScale: definition.kind === "macro" ? 0.42 : 0.22,
+      emissive: profile.atmosphere,
+      emissiveIntensity: 0.015,
+      roughness: definition.kind === "macro" ? 0.82 : 0.9,
+      metalness: 0.01,
+      clearcoat: definition.kind === "macro" ? 0.08 : 0.04,
+      clearcoatRoughness: 0.72,
     });
+    material.userData.preserveSurfaceColor = true;
     primaryMesh = new THREE.Mesh(new THREE.SphereGeometry(definition.radius, 72, 36), material);
     primaryMesh.castShadow = true;
     primaryMesh.receiveShadow = true;
     group.add(primaryMesh);
     materials.push(material);
 
-    const atmosphere = createAtmosphereShell(THREE, definition.radius, color, definition.kind);
+    const atmosphere = createAtmosphereShell(THREE, definition.radius, profile.atmosphere, definition.kind);
     group.add(atmosphere);
 
-    const halo = createHaloSprite(THREE, definition.radius, color, definition.kind);
+    const halo = createHaloSprite(THREE, definition.radius, profile.atmosphere, definition.kind);
     group.add(halo);
 
     if (definition.kind === "macro" || definition.kind === "compare") {
       const ringMaterial = new THREE.MeshBasicMaterial({
-        color,
+        color: profile.ring,
         transparent: true,
-        opacity: definition.kind === "macro" ? 0.3 : 0.22,
+        opacity: definition.kind === "macro" ? 0.18 : 0.14,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       });
+      ringMaterial.userData.statusAccent = true;
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(definition.radius * 1.44, 0.055, 12, 144),
         ringMaterial,
@@ -459,13 +527,18 @@ function createSpaceObject(THREE, definition) {
     opacity: 0.0,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    wireframe: true,
   });
-  const marker = new THREE.Mesh(new THREE.SphereGeometry(definition.radius * 1.34, 24, 12), markerMaterial);
+  markerMaterial.userData.statusAccent = true;
+  const marker = new THREE.Mesh(
+    new THREE.TorusGeometry(definition.radius * 1.45, 0.035, 8, 128),
+    markerMaterial,
+  );
+  marker.rotation.x = Math.PI / 8;
+  marker.rotation.z = -Math.PI / 7;
   group.add(marker);
   materials.push(markerMaterial);
 
-  const pointLight = new THREE.PointLight(color, definition.kind === "macro" ? 0.78 : 0.32, 70);
+  const pointLight = new THREE.PointLight(profile.atmosphere, definition.kind === "macro" ? 0.18 : 0.08, 64);
   group.add(pointLight);
 
   return {
@@ -496,11 +569,11 @@ function addRoute(THREE, scene, fromValue, toValue, color, opacity) {
   const material = new THREE.MeshBasicMaterial({
     color,
     transparent: true,
-    opacity: opacity * 0.84,
+    opacity: opacity * 0.66,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  material.userData.baseOpacity = opacity * 0.84;
+  material.userData.baseOpacity = opacity * 0.66;
   const tube = new THREE.Mesh(geometry, material);
   scene.add(tube);
   state.lines.push(tube);
@@ -509,97 +582,234 @@ function addRoute(THREE, scene, fromValue, toValue, color, opacity) {
   const haloMaterial = new THREE.MeshBasicMaterial({
     color,
     transparent: true,
-    opacity: opacity * 0.25,
+    opacity: opacity * 0.16,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  haloMaterial.userData.baseOpacity = opacity * 0.25;
+  haloMaterial.userData.baseOpacity = opacity * 0.16;
   const halo = new THREE.Mesh(haloGeometry, haloMaterial);
   scene.add(halo);
   state.lines.push(halo);
 }
 
-function addStarFields(THREE, scene) {
-  addPointCloud(THREE, scene, 3200, 230, 920, 0xffffff, 1.12, 0.84);
-  addPointCloud(THREE, scene, 1250, 120, 560, 0x76e4ff, 2.15, 0.42);
-  addPointCloud(THREE, scene, 760, 150, 680, 0xffd37c, 1.58, 0.27);
-  addPointCloud(THREE, scene, 540, 90, 420, 0x72e0b8, 2.8, 0.18, { x: -52, y: 10, z: -160 });
+function createRealisticStarField(THREE, scene) {
+  addStarLayer(THREE, scene, {
+    count: 5200,
+    minRadius: 360,
+    maxRadius: 980,
+    size: 0.82,
+    opacity: 0.72,
+    palette: [0xf5f7ff, 0xd9e5ff, 0xfff2d2],
+  });
+  addStarLayer(THREE, scene, {
+    count: 1100,
+    minRadius: 250,
+    maxRadius: 760,
+    size: 1.15,
+    opacity: 0.34,
+    palette: [0xffffff, 0xd7e7ff, 0xffe3b3],
+  });
+  addStarLayer(THREE, scene, {
+    count: 260,
+    minRadius: 480,
+    maxRadius: 1100,
+    size: 1.7,
+    opacity: 0.22,
+    palette: [0xffffff, 0xe6efff],
+  });
 }
 
-function addNebulaDust(THREE, scene) {
-  addPointCloud(THREE, scene, 1500, 70, 380, 0xb99cff, 6.2, 0.16, { x: 30, y: -14, z: -220 });
-  addPointCloud(THREE, scene, 1280, 70, 350, 0x72e0b8, 5.6, 0.15, { x: -70, y: 16, z: -180 });
-  addPointCloud(THREE, scene, 920, 100, 430, 0x376fff, 4.9, 0.12, { x: 94, y: -22, z: -290 });
+function createMilkyWayBackdrop(THREE, scene) {
+  const material = new THREE.SpriteMaterial({
+    map: createMilkyWayTexture(THREE),
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.22,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.position.set(-40, 28, -520);
+  sprite.scale.set(900, 240, 1);
+  sprite.rotation.z = -0.18;
+  scene.add(sprite);
+
+  addStarLayer(THREE, scene, {
+    count: 1500,
+    minRadius: 180,
+    maxRadius: 620,
+    size: 0.72,
+    opacity: 0.2,
+    palette: [0xc7d2dd, 0xd8d4c8],
+    banded: true,
+  });
 }
 
-function addPointCloud(THREE, scene, count, minRadius, maxRadius, color, size, opacity, offset = { x: 0, y: 0, z: 0 }) {
+function addStarLayer(THREE, scene, options) {
+  const {
+    count,
+    minRadius,
+    maxRadius,
+    size,
+    opacity,
+    palette,
+    banded = false,
+  } = options;
   const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
   for (let index = 0; index < count; index += 1) {
     const radius = minRadius + Math.random() * (maxRadius - minRadius);
     const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    positions[index * 3] = offset.x + radius * Math.sin(phi) * Math.cos(theta);
-    positions[index * 3 + 1] = offset.y + radius * Math.cos(phi) * 0.72;
-    positions[index * 3 + 2] = offset.z + radius * Math.sin(phi) * Math.sin(theta) - 180;
+    const phi = banded
+      ? (Math.PI / 2) + (Math.random() - 0.5) * 0.32
+      : Math.acos(2 * Math.random() - 1);
+    positions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
+    positions[index * 3 + 1] = radius * Math.cos(phi) * (banded ? 0.26 : 0.72);
+    positions[index * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta) - 220;
+
+    const starColor = new THREE.Color(palette[index % palette.length]);
+    const brightness = 0.74 + Math.random() * 0.26;
+    colors[index * 3] = starColor.r * brightness;
+    colors[index * 3 + 1] = starColor.g * brightness;
+    colors[index * 3 + 2] = starColor.b * brightness;
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   const material = new THREE.PointsMaterial({
-    color,
     size,
-    map: createSoftParticleTexture(THREE),
+    map: createStarTexture(THREE),
     transparent: true,
     opacity,
     depthWrite: false,
-    alphaTest: 0.025,
+    alphaTest: 0.04,
     blending: THREE.AdditiveBlending,
     sizeAttenuation: true,
+    vertexColors: true,
   });
   scene.add(new THREE.Points(geometry, material));
 }
 
-function createPlanetTexture(THREE, color, kind, seedValue) {
+function createStarTexture(THREE) {
+  if (state.starTexture) return state.starTexture;
   const canvas = document.createElement("canvas");
-  canvas.width = 512;
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.16, "rgba(255,255,255,0.82)");
+  gradient.addColorStop(0.44, "rgba(255,255,255,0.16)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  state.starTexture = new THREE.CanvasTexture(canvas);
+  state.starTexture.colorSpace = THREE.SRGBColorSpace;
+  return state.starTexture;
+}
+
+function createMilkyWayTexture(THREE) {
+  if (state.milkyWayTexture) return state.milkyWayTexture;
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
   canvas.height = 256;
   const ctx = canvas.getContext("2d");
-  const base = new THREE.Color(color);
-  const rng = mulberry32(hashString(`${seedValue}-${kind}`));
+  const rng = mulberry32(187293);
 
-  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  gradient.addColorStop(0, colorStyle(base, 1.34));
-  gradient.addColorStop(0.42, colorStyle(base, 0.72));
-  gradient.addColorStop(1, colorStyle(base, 0.32));
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const bands = kind === "macro" ? 18 : 10;
-  for (let index = 0; index < bands; index += 1) {
-    const y = Math.floor(rng() * canvas.height);
-    const height = 4 + rng() * (kind === "macro" ? 18 : 9);
-    const alpha = 0.045 + rng() * 0.09;
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let band = 0; band < 9; band += 1) {
+    const y = canvas.height * (0.48 + (rng() - 0.5) * 0.18);
+    const height = 20 + rng() * 54;
+    const gradient = ctx.createLinearGradient(0, y - height, 0, y + height);
+    gradient.addColorStop(0, "rgba(0,0,0,0)");
+    gradient.addColorStop(0.44, `rgba(172,185,198,${0.025 + rng() * 0.04})`);
+    gradient.addColorStop(0.5, `rgba(230,226,210,${0.03 + rng() * 0.05})`);
+    gradient.addColorStop(0.56, `rgba(148,170,194,${0.02 + rng() * 0.035})`);
+    gradient.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.ellipse(canvas.width * 0.5, y, canvas.width * (0.4 + rng() * 0.45), height, rng() * 0.08, 0, Math.PI * 2);
+    ctx.ellipse(canvas.width * 0.5, y, canvas.width * (0.42 + rng() * 0.16), height, (rng() - 0.5) * 0.06, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  for (let index = 0; index < 1350; index += 1) {
+  for (let index = 0; index < 2200; index += 1) {
     const x = rng() * canvas.width;
-    const y = rng() * canvas.height;
-    const radius = rng() * (kind === "macro" ? 2.2 : 1.25);
-    const light = rng() > 0.52 ? 255 : 20;
-    const alpha = 0.025 + rng() * 0.085;
-    ctx.fillStyle = `rgba(${light},${light},${light},${alpha})`;
+    const y = canvas.height * (0.5 + (rng() - 0.5) * 0.42);
+    const alpha = 0.02 + rng() * 0.12;
+    const radius = 0.25 + rng() * 0.9;
+    ctx.fillStyle = `rgba(230,235,240,${alpha})`;
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
   }
 
+  state.milkyWayTexture = new THREE.CanvasTexture(canvas);
+  state.milkyWayTexture.colorSpace = THREE.SRGBColorSpace;
+  return state.milkyWayTexture;
+}
+
+function createPlanetTexture(THREE, profile, kind, seedValue) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  const base = new THREE.Color(profile.surface);
+  const shadow = new THREE.Color(profile.shadow);
+  const highlight = new THREE.Color(profile.highlight);
+  const rng = mulberry32(hashString(`${seedValue}-${kind}`));
+
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  gradient.addColorStop(0, colorStyle(highlight, 0.78));
+  gradient.addColorStop(0.42, colorStyle(base, 0.98));
+  gradient.addColorStop(1, colorStyle(shadow, 1.1));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const bands = kind === "macro" ? 22 : 12;
+  for (let index = 0; index < bands; index += 1) {
+    const y = Math.floor(rng() * canvas.height);
+    const height = 3 + rng() * (kind === "macro" ? 16 : 8);
+    const alpha = 0.035 + rng() * 0.06;
+    const bandColor = rng() > 0.48 ? highlight : shadow;
+    ctx.fillStyle = colorStyle(bandColor, rng() > 0.48 ? 0.9 : 1.25, alpha);
+    ctx.beginPath();
+    ctx.ellipse(canvas.width * 0.5, y, canvas.width * (0.34 + rng() * 0.5), height, rng() * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (let index = 0; index < 1800; index += 1) {
+    const x = rng() * canvas.width;
+    const y = rng() * canvas.height;
+    const radius = rng() * (kind === "macro" ? 1.7 : 1.05);
+    const noiseColor = rng() > 0.55 ? highlight : shadow;
+    const alpha = 0.018 + rng() * 0.06;
+    ctx.fillStyle = colorStyle(noiseColor, 0.8 + rng() * 0.35, alpha);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (kind !== "macro") {
+    for (let index = 0; index < 34; index += 1) {
+      const x = rng() * canvas.width;
+      const y = rng() * canvas.height;
+      const radius = 1.4 + rng() * 5.6;
+      ctx.strokeStyle = colorStyle(shadow, 1.28, 0.08 + rng() * 0.08);
+      ctx.lineWidth = 0.5 + rng() * 0.8;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = colorStyle(shadow, 1.05, 0.035);
+      ctx.beginPath();
+      ctx.arc(x - radius * 0.18, y + radius * 0.18, radius * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   const vignette = ctx.createRadialGradient(256, 128, 20, 256, 128, 260);
-  vignette.addColorStop(0, "rgba(255,255,255,0.08)");
+  vignette.addColorStop(0, "rgba(255,255,255,0.055)");
   vignette.addColorStop(0.64, "rgba(255,255,255,0)");
-  vignette.addColorStop(1, "rgba(0,0,0,0.4)");
+  vignette.addColorStop(1, "rgba(0,0,0,0.52)");
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -617,7 +827,7 @@ function createAtmosphereShell(THREE, radius, color, kind) {
     new THREE.ShaderMaterial({
       uniforms: {
         glowColor: { value: new THREE.Color(color) },
-        intensity: { value: kind === "macro" ? 0.54 : 0.38 },
+        intensity: { value: kind === "macro" ? 0.34 : 0.22 },
       },
       vertexShader: `
         varying vec3 vNormal;
@@ -656,7 +866,7 @@ function createHaloSprite(THREE, radius, color, kind) {
     map: createSoftParticleTexture(THREE),
     color,
     transparent: true,
-    opacity: kind === "macro" ? 0.11 : 0.055,
+    opacity: kind === "macro" ? 0.055 : 0.026,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
@@ -843,11 +1053,19 @@ function statusForObject(challenge, object) {
 function applyVisualState(object) {
   const palette = visualPalette(object.status, object.kind, object.color);
   for (const material of object.materials) {
-    if (material.color) material.color.setHex(palette.color);
+    if (material.userData.preserveSurfaceColor) {
+      if (material.emissive) material.emissive.setHex(palette.emissive);
+      if ("emissiveIntensity" in material) material.emissiveIntensity = object.isCurrent ? 0.055 : 0.012;
+      continue;
+    }
+    if (material.color && material.userData.statusAccent) material.color.setHex(palette.color);
+    if (material.color && !material.userData.statusAccent && !material.userData.fixedRealisticColor) {
+      material.color.setHex(palette.color);
+    }
     if (material.emissive) material.emissive.setHex(palette.emissive);
     if ("emissiveIntensity" in material) material.emissiveIntensity = palette.intensity;
   }
-  object.markerMaterial.opacity = object.isCurrent ? 0.04 : 0;
+  object.markerMaterial.opacity = object.isCurrent ? 0.18 : 0;
 }
 
 function visualPalette(status, kind, fallbackColor) {

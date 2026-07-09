@@ -159,3 +159,16 @@ def test_space_trainer_uses_cinematic_rendering_pipeline() -> None:
     assert "createSoftParticleTexture" in script.text
     assert "addCinematicLighting" in script.text
     assert "ShaderMaterial" in script.text
+
+
+def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+
+    assert script.status_code == 200
+    assert "createRealisticStarField" in script.text
+    assert "createMilkyWayBackdrop" in script.text
+    assert "realisticBodyProfile" in script.text
+    assert "preserveSurfaceColor" in script.text
+    assert "addNebulaDust" not in script.text
