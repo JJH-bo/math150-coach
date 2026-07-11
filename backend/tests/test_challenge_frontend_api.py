@@ -139,9 +139,12 @@ def test_space_trainer_static_page_and_assets_are_served_from_mixed_profile() ->
 
     assert page.status_code == 200
     assert "3D Free Flight Knowledge Universe" in page.text
-    assert 'type="module" src="/trainer/space/space.js"' in page.text
+    assert 'href="/trainer/space/space.css?v=' in page.text
+    assert 'type="module" src="/trainer/space/space.js?v=' in page.text
     assert script.status_code == 200
     assert "createKnowledgeUniverse" in script.text
+    assert "startSpaceExperience" in script.text
+    assert "showRenderFallback" in script.text
     assert styles.status_code == 200
     assert ".space-hud" in styles.text
 

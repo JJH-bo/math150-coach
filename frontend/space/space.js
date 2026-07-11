@@ -160,7 +160,16 @@ const state = {
   toastTimer: null,
 };
 
-init();
+startSpaceExperience();
+
+async function startSpaceExperience() {
+  try {
+    await init();
+  } catch (error) {
+    console.error(error);
+    showRenderFallback(error);
+  }
+}
 
 async function init() {
   cacheDom();
@@ -180,6 +189,11 @@ async function init() {
   await bootChallengeState();
   hideLoading();
   animate();
+}
+
+function showRenderFallback(error) {
+  const message = error instanceof Error ? error.message : String(error || "未知渲染错误");
+  showFallback(message);
 }
 
 async function loadThree() {
@@ -1389,12 +1403,15 @@ function titleForNode(nodeId) {
 
 function showFallback(reason) {
   hideLoading();
-  dom.fallbackReason.textContent = reason;
-  dom.fallbackPanel.classList.remove("is-hidden");
+  const fallbackReason = dom.fallbackReason || document.querySelector("#fallbackReason");
+  const fallbackPanel = dom.fallbackPanel || document.querySelector("#fallbackPanel");
+  if (fallbackReason) fallbackReason.textContent = reason;
+  if (fallbackPanel) fallbackPanel.classList.remove("is-hidden");
 }
 
 function hideLoading() {
-  dom.loadingOverlay.classList.add("is-hidden");
+  const loadingOverlay = dom.loadingOverlay || document.querySelector("#loadingOverlay");
+  loadingOverlay?.classList.add("is-hidden");
 }
 
 function showToast(message) {
