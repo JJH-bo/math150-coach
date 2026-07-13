@@ -157,7 +157,7 @@ def test_space_trainer_uses_cinematic_rendering_pipeline() -> None:
     assert script.status_code == 200
     assert "EffectComposer" in script.text
     assert "UnrealBloomPass" in script.text
-    assert "createPlanetTexture" in script.text
+    assert "createPlanetSurfaceMaps" in script.text
     assert "createAtmosphereShell" in script.text
     assert "createSoftParticleTexture" in script.text
     assert "addCinematicLighting" in script.text
@@ -224,5 +224,30 @@ def test_space_trainer_expands_to_large_dynamic_knowledge_galaxy() -> None:
     assert "updateCosmicMotion" in script.text
     assert "state.nebulaSprites" in script.text
     assert "currentCandidate" in script.text
-    assert "radius: 16" in script.text
-    assert "interactionRadius: 70" in script.text
+    assert "macroRadii = [56, 48, 52, 42, 46, 50, 44, 40]" in script.text
+    assert "interactionRadius: macroRadius * 3.6" in script.text
+
+
+def test_space_trainer_uses_galactic_scale_and_physical_routes() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+
+    assert script.status_code == 200
+    assert "const GALAXY_SCALE = 1.95" in script.text
+    assert "macroRadiusFor" in script.text
+    assert "createPlanetSurfaceMaps" in script.text
+    assert "colorMap" in script.text
+    assert "roughnessMap" in script.text
+    assert "emissiveMap" in script.text
+    assert "const orbitBase = 120" in script.text
+    assert "LineDashedMaterial" in script.text
+    assert "computeLineDistances" in script.text
+    assert "Math.min(0.42, 0.12 + opacity * 1.5)" in script.text
+    assert "toneMapped: false" in script.text
+    assert "pointLight.position.set(-definition.radius * 3" in script.text
+    assert "if (index === 0) addRoute" in script.text
+    assert "satellitePositions[index - 3]" not in script.text
+    assert 'radius * (kind === "macro" ? 1.028 : 1.055)' in script.text
+    assert "new THREE.AmbientLight(0x789cff, 0.22)" in script.text
+    assert "new THREE.TubeGeometry" not in script.text

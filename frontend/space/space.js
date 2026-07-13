@@ -1,5 +1,7 @@
 const apiBase = "/api/challenge/v1";
 const threeModuleUrl = "three";
+const GALAXY_SCALE = 1.95;
+const macroRadii = [56, 48, 52, 42, 46, 50, 44, 40];
 
 const macroDefinitions = [
   {
@@ -84,13 +86,15 @@ const microTypes = nodeTypeDefinitions;
 
 const realisticBodyProfiles = [
   {
-    surface: 0x6f7c84,
-    shadow: 0x18232a,
-    highlight: 0xc3c9c4,
-    atmosphere: 0x9ebbd1,
-    ring: 0xb8b0a0,
+    terrain: "rocky",
+    surface: 0x766a5d,
+    shadow: 0x221d18,
+    highlight: 0xc9bba4,
+    atmosphere: 0x7da5c4,
+    ring: 0xafa18a,
   },
   {
+    terrain: "gas",
     surface: 0x8d7657,
     shadow: 0x231a14,
     highlight: 0xd0b991,
@@ -98,13 +102,15 @@ const realisticBodyProfiles = [
     ring: 0xb49464,
   },
   {
-    surface: 0x465a62,
-    shadow: 0x10161a,
-    highlight: 0xaab8ba,
+    terrain: "oceanic",
+    surface: 0x4f6268,
+    shadow: 0x141d22,
+    highlight: 0xb1beb8,
     atmosphere: 0x7fa9bd,
     ring: 0x8c9aa0,
   },
   {
+    terrain: "volcanic",
     surface: 0x716b63,
     shadow: 0x1a1715,
     highlight: 0xbdb3a3,
@@ -115,6 +121,7 @@ const realisticBodyProfiles = [
 
 const realisticMoonProfiles = [
   {
+    terrain: "moon",
     surface: 0x777b80,
     shadow: 0x191c20,
     highlight: 0xc6c7c2,
@@ -122,6 +129,7 @@ const realisticMoonProfiles = [
     ring: 0x8fa2ad,
   },
   {
+    terrain: "moon",
     surface: 0x5d5148,
     shadow: 0x16120f,
     highlight: 0xb29f88,
@@ -129,6 +137,7 @@ const realisticMoonProfiles = [
     ring: 0x9b876f,
   },
   {
+    terrain: "ice",
     surface: 0x56626e,
     shadow: 0x11171d,
     highlight: 0xb4c0c8,
@@ -195,6 +204,7 @@ const state = {
   objects: [],
   objectById: new Map(),
   lines: [],
+  surfaceMapCache: new Map(),
   nebulaSprites: [],
   nearest: null,
   activeObject: null,
@@ -282,9 +292,9 @@ function createKnowledgeUniverse(THREE) {
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x020511);
-  scene.fog = new THREE.FogExp2(0x061022, 0.00082);
+  scene.fog = new THREE.FogExp2(0x061022, 0.00034);
 
-  const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 2600);
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 5200);
   camera.position.set(-120, 36, 40);
   camera.rotation.order = "YXZ";
   camera.lookAt(new THREE.Vector3(-210, 8, -260));
@@ -319,7 +329,7 @@ function createKnowledgeUniverse(THREE) {
 }
 
 function addCinematicLighting(THREE, scene) {
-  const ambient = new THREE.AmbientLight(0x789cff, 0.1);
+  const ambient = new THREE.AmbientLight(0x789cff, 0.22);
   scene.add(ambient);
 
   const hemisphere = new THREE.HemisphereLight(0x9edcff, 0x050714, 0.64);
@@ -374,29 +384,42 @@ function addNebulaVeils(THREE, scene) {
   }
 }
 
+function scaledKnowledgePosition(position) {
+  return [position[0] * GALAXY_SCALE, position[1] * 1.45, position[2] * GALAXY_SCALE];
+}
+
+function macroRadiusFor(index) {
+  return macroRadii[index % macroRadii.length];
+}
+
 function buildOdeSector(THREE, scene) {
   const macroPositions = new Map();
-  for (const macro of macroDefinitions) {
+  for (const [macroIndex, macro] of macroDefinitions.entries()) {
+    const macroPosition = scaledKnowledgePosition(macro.position);
+    const macroRadius = macroRadiusFor(macroIndex);
     const macroObject = createSpaceObject(THREE, {
       ...macro,
       kind: "macro",
       role: "知识星体",
-      radius: 16,
-      interactionRadius: 70,
+      position: macroPosition,
+      radius: macroRadius,
+      interactionRadius: macroRadius * 3.6,
     });
     scene.add(macroObject.group);
     registerObject(macroObject);
-    macroPositions.set(macro.id, new THREE.Vector3(...macro.position));
+    macroPositions.set(macro.id, new THREE.Vector3(...macroPosition));
 
     const satellitePositions = [];
     microTypes.forEach((micro, index) => {
       const angle = (Math.PI * 2 * index) / microTypes.length + 0.32;
-      const orbit = 58 + (index % 4) * 10;
+      const orbitBase = 120;
+      const orbit = orbitBase + (index % 4) * 30;
       const position = [
-        macro.position[0] + Math.cos(angle) * orbit,
-        macro.position[1] + Math.sin(index * 1.7) * 16,
-        macro.position[2] + Math.sin(angle) * orbit,
+        macroPosition[0] + Math.cos(angle) * orbit,
+        macroPosition[1] + Math.sin(index * 1.7) * (24 + (index % 3) * 5),
+        macroPosition[2] + Math.sin(angle) * orbit,
       ];
+      const moonRadius = 4.8 + (index % 4) * 1.1;
       const object = createSpaceObject(THREE, {
         id: `${macro.id}.${micro.type}`,
         title: `${macro.title} · ${micro.title}`,
@@ -404,21 +427,18 @@ function buildOdeSector(THREE, scene) {
         role: "能力卫星",
         position,
         color: micro.color,
-        radius: 4.2 + (index % 3) * 0.45,
-        interactionRadius: 36,
+        radius: moonRadius,
+        interactionRadius: 42 + moonRadius * 2.8,
         summary: `${micro.title}能力点，靠近后可进入当前训练遭遇。`,
       });
       scene.add(object.group);
       registerObject(object);
       satellitePositions.push(new THREE.Vector3(...position));
-      addRoute(THREE, scene, macro.position, position, micro.color, 0.24);
-      if (index > 0) addRoute(THREE, scene, satellitePositions[index - 1], position, 0x6f8ea8, 0.12);
-      if (index > 1 && index % 3 === 0) {
-        addRoute(THREE, scene, satellitePositions[index - 3], position, micro.color, 0.1);
-      }
+      if (index === 0) addRoute(THREE, scene, macroPosition, position, micro.color, 0.18);
+      if (index > 0) addRoute(THREE, scene, satellitePositions[index - 1], position, micro.color, 0.16);
     });
 
-    const bossPosition = [macro.position[0] + 34, macro.position[1] + 34, macro.position[2] - 92];
+    const bossPosition = [macroPosition[0] + 82, macroPosition[1] + 68, macroPosition[2] - 196];
     const boss = createSpaceObject(THREE, {
       id: `${macro.id}.macro_challenge`,
       title: `${macro.title} · Boss 星门`,
@@ -426,8 +446,8 @@ function buildOdeSector(THREE, scene) {
       role: "综合星门",
       position: bossPosition,
       color: 0xb99cff,
-      radius: 9.4,
-      interactionRadius: 58,
+      radius: 18,
+      interactionRadius: 112,
       summary: "完成能力卫星后，通过 Boss 星门验证整条推理链。",
     });
     scene.add(boss.group);
@@ -439,10 +459,10 @@ function buildOdeSector(THREE, scene) {
     addRoute(
       THREE,
       scene,
-      macroDefinitions[index].position,
-      macroDefinitions[index + 1].position,
+      scaledKnowledgePosition(macroDefinitions[index].position),
+      scaledKnowledgePosition(macroDefinitions[index + 1].position),
       0x76e4ff,
-      0.28,
+      0.16,
     );
   }
 
@@ -451,8 +471,9 @@ function buildOdeSector(THREE, scene) {
       ...compare,
       kind: "compare",
       role: "易混双星",
-      radius: 5.2,
-      interactionRadius: 36,
+      position: scaledKnowledgePosition(compare.position),
+      radius: 9,
+      interactionRadius: 62,
       summary: "这里不是新题目，而是用来区分相邻入口和方法的对比航标。",
     });
     scene.add(object.group);
@@ -464,8 +485,9 @@ function buildOdeSector(THREE, scene) {
       ...guide,
       kind: "guide",
       role: "导航信标",
-      radius: 5,
-      interactionRadius: 36,
+      position: scaledKnowledgePosition(guide.position),
+      radius: 8,
+      interactionRadius: 58,
       summary: "导航信标帮助你理解星域结构，不消耗训练机会。",
     });
     scene.add(object.group);
@@ -477,7 +499,13 @@ function realisticBodyProfile(definition) {
   const profiles = definition.kind === "micro" || definition.kind === "guide"
     ? realisticMoonProfiles
     : realisticBodyProfiles;
-  const profile = profiles[hashString(`${definition.id}-${definition.kind}`) % profiles.length];
+  const macroIndex = definition.kind === "macro"
+    ? macroDefinitions.findIndex((macro) => macro.id === definition.id)
+    : -1;
+  const profileIndex = macroIndex >= 0
+    ? macroIndex % profiles.length
+    : hashString(`${definition.id}-${definition.kind}`) % profiles.length;
+  const profile = profiles[profileIndex];
   return {
     ...profile,
     accent: definition.color || profile.atmosphere,
@@ -541,21 +569,25 @@ function createSpaceObject(THREE, definition) {
     group.add(core);
     materials.push(coreMaterial);
   } else {
-    const surfaceTexture = createPlanetTexture(THREE, profile, definition.kind, definition.id);
+    const surfaceMaps = createPlanetSurfaceMaps(THREE, profile, definition.kind, definition.id);
     const material = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
-      map: surfaceTexture,
-      bumpMap: surfaceTexture,
-      bumpScale: definition.kind === "macro" ? 0.42 : 0.22,
-      emissive: profile.atmosphere,
-      emissiveIntensity: 0.015,
-      roughness: definition.kind === "macro" ? 0.82 : 0.9,
-      metalness: 0.01,
-      clearcoat: definition.kind === "macro" ? 0.08 : 0.04,
-      clearcoatRoughness: 0.72,
+      map: surfaceMaps.colorMap,
+      bumpMap: surfaceMaps.bumpMap,
+      bumpScale: definition.kind === "macro" ? definition.radius * 0.018 : definition.radius * 0.01,
+      roughnessMap: surfaceMaps.roughnessMap,
+      emissiveMap: surfaceMaps.emissiveMap,
+      emissive: 0xd3a26c,
+      emissiveIntensity: definition.kind === "macro" ? 0.11 : 0.015,
+      roughness: definition.kind === "macro" ? 0.72 : 0.88,
+      metalness: 0.02,
+      clearcoat: profile.terrain === "oceanic" ? 0.18 : 0.025,
+      clearcoatRoughness: 0.78,
     });
     material.userData.preserveSurfaceColor = true;
-    primaryMesh = new THREE.Mesh(new THREE.SphereGeometry(definition.radius, 72, 36), material);
+    material.userData.surfaceEmissiveIntensity = material.emissiveIntensity;
+    const widthSegments = definition.kind === "macro" ? 96 : 64;
+    primaryMesh = new THREE.Mesh(new THREE.SphereGeometry(definition.radius, widthSegments, widthSegments / 2), material);
     primaryMesh.castShadow = true;
     primaryMesh.receiveShadow = true;
     group.add(primaryMesh);
@@ -567,21 +599,22 @@ function createSpaceObject(THREE, definition) {
     const halo = createHaloSprite(THREE, definition.radius, profile.atmosphere, definition.kind);
     group.add(halo);
 
-    if (definition.kind === "macro" || definition.kind === "compare") {
-      const ringMaterial = new THREE.MeshBasicMaterial({
+    if (definition.kind === "macro" && hashString(definition.id) % 3 === 0) {
+      const ringMaterial = new THREE.MeshPhysicalMaterial({
         color: profile.ring,
         transparent: true,
-        opacity: definition.kind === "macro" ? 0.18 : 0.14,
+        opacity: 0.16,
+        roughness: 0.88,
+        metalness: 0.02,
         depthWrite: false,
-        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
       });
-      ringMaterial.userData.statusAccent = true;
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(definition.radius * 1.44, 0.055, 12, 144),
+        new THREE.RingGeometry(definition.radius * 1.3, definition.radius * 1.92, 192, 4),
         ringMaterial,
       );
-      ring.rotation.x = Math.PI / 2.25;
-      ring.rotation.z = Math.PI / 7;
+      ring.rotation.x = Math.PI / 2.45;
+      ring.rotation.z = Math.PI / 8;
       group.add(ring);
       materials.push(ringMaterial);
     }
@@ -605,10 +638,12 @@ function createSpaceObject(THREE, definition) {
   materials.push(markerMaterial);
 
   const pointLight = new THREE.PointLight(
-    profile.atmosphere,
-    definition.kind === "macro" ? 0.24 : 0.1,
-    definition.radius * 13,
+    0xffe1bc,
+    definition.kind === "macro" ? 1.8 : 0.45,
+    definition.radius * 14,
+    0,
   );
+  pointLight.position.set(-definition.radius * 3, definition.radius * 2.1, definition.radius * 4.4);
   group.add(pointLight);
 
   return {
@@ -632,34 +667,25 @@ function registerObject(object) {
 function addRoute(THREE, scene, fromValue, toValue, color, opacity) {
   const from = Array.isArray(fromValue) ? new THREE.Vector3(...fromValue) : fromValue;
   const to = Array.isArray(toValue) ? new THREE.Vector3(...toValue) : toValue;
+  const distance = from.distanceTo(to);
   const mid = from.clone().lerp(to, 0.5);
-  mid.y += 9;
+  mid.y += Math.max(16, distance * 0.11);
   const curve = new THREE.QuadraticBezierCurve3(from.clone(), mid, to.clone());
-  const geometry = new THREE.TubeGeometry(curve, 56, 0.11, 8, false);
-  const material = new THREE.MeshBasicMaterial({
+  const geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(96));
+  const material = new THREE.LineDashedMaterial({
     color,
     transparent: true,
-    opacity: opacity * 0.66,
-    blending: THREE.AdditiveBlending,
+    opacity: Math.min(0.42, 0.12 + opacity * 1.5),
+    dashSize: Math.max(2.4, distance * 0.012),
+    gapSize: Math.max(3.8, distance * 0.018),
     depthWrite: false,
+    toneMapped: false,
   });
-  material.userData.baseOpacity = opacity * 0.66;
-  const tube = new THREE.Mesh(geometry, material);
-  scene.add(tube);
-  state.lines.push(tube);
-
-  const haloGeometry = new THREE.TubeGeometry(curve, 40, 0.38, 8, false);
-  const haloMaterial = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity: opacity * 0.16,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
-  haloMaterial.userData.baseOpacity = opacity * 0.16;
-  const halo = new THREE.Mesh(haloGeometry, haloMaterial);
-  scene.add(halo);
-  state.lines.push(halo);
+  material.userData.baseOpacity = material.opacity;
+  const route = new THREE.Line(geometry, material);
+  route.computeLineDistances();
+  scene.add(route);
+  state.lines.push(route);
 }
 
 function createWorldLockedSky(THREE, scene) {
@@ -807,86 +833,178 @@ function createSolarFlareTexture(THREE) {
   return state.solarFlareTexture;
 }
 
-function createPlanetTexture(THREE, profile, kind, seedValue) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 256;
-  const ctx = canvas.getContext("2d");
-  const base = new THREE.Color(profile.surface);
-  const shadow = new THREE.Color(profile.shadow);
-  const highlight = new THREE.Color(profile.highlight);
-  const rng = mulberry32(hashString(`${seedValue}-${kind}`));
+function createPlanetSurfaceMaps(THREE, profile, kind, seedValue) {
+  const isMacro = kind === "macro";
+  const cacheKey = `${profile.terrain}-${profile.surface}-${isMacro ? "macro" : "minor"}`;
+  if (state.surfaceMapCache.has(cacheKey)) return state.surfaceMapCache.get(cacheKey);
 
-  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  gradient.addColorStop(0, colorStyle(highlight, 0.78));
-  gradient.addColorStop(0.42, colorStyle(base, 0.98));
-  gradient.addColorStop(1, colorStyle(shadow, 1.1));
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const bands = kind === "macro" ? 22 : 12;
-  for (let index = 0; index < bands; index += 1) {
-    const y = Math.floor(rng() * canvas.height);
-    const height = 3 + rng() * (kind === "macro" ? 16 : 8);
-    const alpha = 0.035 + rng() * 0.06;
-    const bandColor = rng() > 0.48 ? highlight : shadow;
-    ctx.fillStyle = colorStyle(bandColor, rng() > 0.48 ? 0.9 : 1.25, alpha);
-    ctx.beginPath();
-    ctx.ellipse(canvas.width * 0.5, y, canvas.width * (0.34 + rng() * 0.5), height, rng() * 0.12, 0, Math.PI * 2);
-    ctx.fill();
+  const width = isMacro ? 1024 : 512;
+  const height = width / 2;
+  const colorCanvas = document.createElement("canvas");
+  const bumpCanvas = document.createElement("canvas");
+  const roughnessCanvas = document.createElement("canvas");
+  const emissiveCanvas = document.createElement("canvas");
+  for (const canvas of [colorCanvas, bumpCanvas, roughnessCanvas, emissiveCanvas]) {
+    canvas.width = width;
+    canvas.height = height;
   }
 
-  for (let index = 0; index < 1800; index += 1) {
-    const x = rng() * canvas.width;
-    const y = rng() * canvas.height;
-    const radius = rng() * (kind === "macro" ? 1.7 : 1.05);
-    const noiseColor = rng() > 0.55 ? highlight : shadow;
-    const alpha = 0.018 + rng() * 0.06;
-    ctx.fillStyle = colorStyle(noiseColor, 0.8 + rng() * 0.35, alpha);
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  const colorContext = colorCanvas.getContext("2d");
+  const bumpContext = bumpCanvas.getContext("2d");
+  const roughnessContext = roughnessCanvas.getContext("2d");
+  const emissiveContext = emissiveCanvas.getContext("2d");
+  const colorImage = colorContext.createImageData(width, height);
+  const bumpImage = bumpContext.createImageData(width, height);
+  const roughnessImage = roughnessContext.createImageData(width, height);
+  const emissiveImage = emissiveContext.createImageData(width, height);
+  const base = colorChannels(THREE, profile.surface);
+  const shadow = colorChannels(THREE, profile.shadow);
+  const highlight = colorChannels(THREE, profile.highlight);
+  const seed = hashString(`${profile.terrain}-${seedValue}`);
 
-  if (kind !== "macro") {
-    for (let index = 0; index < 34; index += 1) {
-      const x = rng() * canvas.width;
-      const y = rng() * canvas.height;
-      const radius = 1.4 + rng() * 5.6;
-      ctx.strokeStyle = colorStyle(shadow, 1.28, 0.08 + rng() * 0.08);
-      ctx.lineWidth = 0.5 + rng() * 0.8;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = colorStyle(shadow, 1.05, 0.035);
-      ctx.beginPath();
-      ctx.arc(x - radius * 0.18, y + radius * 0.18, radius * 0.7, 0, Math.PI * 2);
-      ctx.fill();
+  for (let y = 0; y < height; y += 1) {
+    const v = y / (height - 1);
+    const latitude = Math.abs(v - 0.5) * 2;
+    for (let x = 0; x < width; x += 1) {
+      const u = x / (width - 1);
+      const broad = periodicFbm(u, v, seed, 5);
+      const detail = periodicFbm(u, v, seed + 1931, 4, 14, 7);
+      const ridge = 1 - Math.abs(periodicFbm(u, v, seed + 7727, 3, 9, 5) * 2 - 1);
+      let elevation = broad * 0.62 + detail * 0.22 + ridge * 0.16;
+
+      if (profile.terrain === "oceanic") elevation = elevation * 1.18 - 0.08;
+      if (profile.terrain === "ice") elevation = elevation * 0.76 + latitude * 0.24;
+      if (profile.terrain === "volcanic") elevation = broad * 0.72 + ridge * 0.28;
+      if (profile.terrain === "gas") {
+        const bands = Math.sin(v * Math.PI * 38 + broad * 3.4) * 0.5 + 0.5;
+        elevation = bands * 0.72 + detail * 0.28;
+      }
+
+      const color = terrainColor(profile.terrain, elevation, latitude, shadow, base, highlight);
+      const index = (y * width + x) * 4;
+      colorImage.data[index] = color[0];
+      colorImage.data[index + 1] = color[1];
+      colorImage.data[index + 2] = color[2];
+      colorImage.data[index + 3] = 255;
+
+      const bump = Math.round(clamp01(elevation) * 255);
+      bumpImage.data[index] = bump;
+      bumpImage.data[index + 1] = bump;
+      bumpImage.data[index + 2] = bump;
+      bumpImage.data[index + 3] = 255;
+
+      const roughness = Math.round((0.72 + detail * 0.24) * 255);
+      roughnessImage.data[index] = roughness;
+      roughnessImage.data[index + 1] = roughness;
+      roughnessImage.data[index + 2] = roughness;
+      roughnessImage.data[index + 3] = 255;
+
+      const cityNoise = latticeHash(x, y, seed + 4201);
+      const city = isMacro
+        && profile.terrain !== "ice"
+        && profile.terrain !== "gas"
+        && elevation > 0.55
+        && cityNoise > 0.9965;
+      const fissure = profile.terrain === "volcanic" && ridge > 0.91 && detail > 0.62;
+      const emission = city ? 230 : fissure ? 104 : 0;
+      emissiveImage.data[index] = emission;
+      emissiveImage.data[index + 1] = emission;
+      emissiveImage.data[index + 2] = emission;
+      emissiveImage.data[index + 3] = 255;
     }
   }
 
-  const vignette = ctx.createRadialGradient(256, 128, 20, 256, 128, 260);
-  vignette.addColorStop(0, "rgba(255,255,255,0.055)");
-  vignette.addColorStop(0.64, "rgba(255,255,255,0)");
-  vignette.addColorStop(1, "rgba(0,0,0,0.52)");
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  colorContext.putImageData(colorImage, 0, 0);
+  bumpContext.putImageData(bumpImage, 0, 0);
+  roughnessContext.putImageData(roughnessImage, 0, 0);
+  emissiveContext.putImageData(emissiveImage, 0, 0);
 
+  const colorMap = configurePlanetTexture(THREE, colorCanvas, true);
+  const bumpMap = configurePlanetTexture(THREE, bumpCanvas, false);
+  const roughnessMap = configurePlanetTexture(THREE, roughnessCanvas, false);
+  const emissiveMap = configurePlanetTexture(THREE, emissiveCanvas, false);
+  const maps = { colorMap, bumpMap, roughnessMap, emissiveMap };
+  state.surfaceMapCache.set(cacheKey, maps);
+  return maps;
+}
+
+function configurePlanetTexture(THREE, canvas, useSrgb) {
   const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
+  if (useSrgb) texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.anisotropy = 8;
   return texture;
 }
 
+function colorChannels(THREE, value) {
+  const color = new THREE.Color(value);
+  return [color.r * 255, color.g * 255, color.b * 255];
+}
+
+function terrainColor(terrain, elevation, latitude, shadow, base, highlight) {
+  let t = clamp01((elevation - 0.18) / 0.72);
+  if (terrain === "oceanic" && elevation < 0.5) t *= 0.48;
+  if (terrain === "volcanic") t *= 0.72;
+  const low = t < 0.55 ? shadow : base;
+  const high = t < 0.55 ? base : highlight;
+  const mix = t < 0.55 ? t / 0.55 : (t - 0.55) / 0.45;
+  const polar = terrain === "ice" || terrain === "oceanic"
+    ? clamp01((latitude - 0.68) / 0.3) * (terrain === "ice" ? 0.72 : 0.42)
+    : 0;
+  return low.map((channel, index) => Math.round(
+    channel + (high[index] - channel) * mix + (highlight[index] - channel) * polar,
+  ));
+}
+
+function periodicFbm(u, v, seed, octaves, baseX = 5, baseY = 3) {
+  let value = 0;
+  let amplitude = 0.56;
+  let total = 0;
+  for (let octave = 0; octave < octaves; octave += 1) {
+    const periodX = baseX * (2 ** octave);
+    const periodY = baseY * (2 ** octave);
+    value += periodicValueNoise(u * periodX, v * periodY, seed + octave * 1013, periodX) * amplitude;
+    total += amplitude;
+    amplitude *= 0.5;
+  }
+  return value / total;
+}
+
+function periodicValueNoise(x, y, seed, periodX) {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const tx = x - x0;
+  const ty = y - y0;
+  const sx = tx * tx * (3 - 2 * tx);
+  const sy = ty * ty * (3 - 2 * ty);
+  const wrapX = (value) => ((value % periodX) + periodX) % periodX;
+  const a = latticeHash(wrapX(x0), y0, seed);
+  const b = latticeHash(wrapX(x0 + 1), y0, seed);
+  const c = latticeHash(wrapX(x0), y0 + 1, seed);
+  const d = latticeHash(wrapX(x0 + 1), y0 + 1, seed);
+  const top = a + (b - a) * sx;
+  const bottom = c + (d - c) * sx;
+  return top + (bottom - top) * sy;
+}
+
+function latticeHash(x, y, seed) {
+  let value = Math.imul(x + seed, 374761393) ^ Math.imul(y - seed, 668265263);
+  value = Math.imul(value ^ (value >>> 13), 1274126177);
+  return ((value ^ (value >>> 16)) >>> 0) / 4294967295;
+}
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
 function createAtmosphereShell(THREE, radius, color, kind) {
   const atmosphere = new THREE.Mesh(
-    new THREE.SphereGeometry(radius * (kind === "macro" ? 1.075 : 1.13), 72, 36),
+    new THREE.SphereGeometry(radius * (kind === "macro" ? 1.028 : 1.055), 72, 36),
     new THREE.ShaderMaterial({
       uniforms: {
         glowColor: { value: new THREE.Color(color) },
-        intensity: { value: kind === "macro" ? 0.34 : 0.22 },
+        intensity: { value: kind === "macro" ? 0.1 : 0.055 },
       },
       vertexShader: `
         varying vec3 vNormal;
@@ -925,7 +1043,7 @@ function createHaloSprite(THREE, radius, color, kind) {
     map: createSoftParticleTexture(THREE),
     color,
     transparent: true,
-    opacity: kind === "macro" ? 0.055 : 0.026,
+    opacity: kind === "macro" ? 0.006 : 0.003,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
   });
@@ -1113,8 +1231,10 @@ function applyVisualState(object) {
   const palette = visualPalette(object.status, object.kind, object.color);
   for (const material of object.materials) {
     if (material.userData.preserveSurfaceColor) {
-      if (material.emissive) material.emissive.setHex(palette.emissive);
-      if ("emissiveIntensity" in material) material.emissiveIntensity = object.isCurrent ? 0.055 : 0.012;
+      if ("emissiveIntensity" in material) {
+        const baseIntensity = material.userData.surfaceEmissiveIntensity || 0;
+        material.emissiveIntensity = object.isCurrent ? baseIntensity * 1.35 : baseIntensity;
+      }
       continue;
     }
     if (material.color && material.userData.statusAccent) material.color.setHex(palette.color);
@@ -1339,8 +1459,11 @@ function focusCurrentTask() {
 
 function flyToObject(object) {
   const THREE = state.THREE;
-  const approachDistance = Math.max(object.radius * 4.8, Math.min(object.interactionRadius * 0.86, 120));
-  const approachHeight = Math.max(12, Math.min(object.radius * 2.2, object.interactionRadius * 0.46));
+  const isMacro = object.kind === "macro";
+  const approachDistance = isMacro
+    ? object.radius * 3.35
+    : Math.max(object.radius * 4.8, Math.min(object.interactionRadius * 0.86, 150));
+  const approachHeight = Math.max(14, Math.min(object.radius * (isMacro ? 0.82 : 2.2), object.interactionRadius * 0.46));
   const sideOffset = object.kind === "micro" ? object.radius * 1.9 : object.radius * 1.4;
   const offset = new THREE.Vector3(sideOffset, approachHeight, approachDistance);
   const destination = object.group.position.clone().add(offset);
