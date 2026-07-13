@@ -138,7 +138,7 @@ def test_space_trainer_static_page_and_assets_are_served_from_mixed_profile() ->
     styles = client.get("/trainer/space/space.css")
 
     assert page.status_code == 200
-    assert "3D Free Flight Knowledge Universe" in page.text
+    assert "3D Knowledge Singularity Universe" in page.text
     assert 'href="/trainer/space/space.css?v=' in page.text
     assert 'type="module" src="/trainer/space/space.js?v=' in page.text
     assert script.status_code == 200
@@ -153,15 +153,17 @@ def test_space_trainer_uses_cinematic_rendering_pipeline() -> None:
     client = TestClient(create_app("mixed"))
 
     script = client.get("/trainer/space/space.js")
+    renderer = client.get("/trainer/space/singularity-renderer.js")
 
     assert script.status_code == 200
+    assert renderer.status_code == 200
     assert "EffectComposer" in script.text
     assert "UnrealBloomPass" in script.text
-    assert "createPlanetSurfaceMaps" in script.text
-    assert "createAtmosphereShell" in script.text
-    assert "createSoftParticleTexture" in script.text
     assert "addCinematicLighting" in script.text
-    assert "ShaderMaterial" in script.text
+    assert "ShaderMaterial" in renderer.text
+    assert "createAccretionDisk" in renderer.text
+    assert "createCoronaSprite" in renderer.text
+    assert "qualityLevel" in renderer.text
 
 
 def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
@@ -173,8 +175,10 @@ def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
     assert "createWorldLockedSky" in script.text
     assert "createDeepSpaceTexture" in script.text
     assert "createSolarLightSource" in script.text
-    assert "realisticBodyProfile" in script.text
-    assert "preserveSurfaceColor" in script.text
+    assert "createKnowledgeSingularity" in script.text
+    assert "createBossCataclysm" in script.text
+    assert "createPlanetSurfaceMaps" not in script.text
+    assert "realisticBodyProfile" not in script.text
     assert "addNebulaDust" not in script.text
 
 
@@ -212,42 +216,95 @@ def test_space_trainer_uses_high_resolution_observatory_panorama() -> None:
     assert len(panorama.content) > 6_000_000
 
 
-def test_space_trainer_expands_to_large_dynamic_knowledge_galaxy() -> None:
+def test_space_trainer_builds_the_universe_from_the_runtime_knowledge_graph() -> None:
     client = TestClient(create_app("mixed"))
 
     script = client.get("/trainer/space/space.js")
+    graph_adapter = client.get("/trainer/space/cosmos-graph.js")
 
     assert script.status_code == 200
-    assert script.text.count("visualOnly: true") >= 4
-    assert script.text.count("type:") >= 12
-    assert "nodeTypeDefinitions" in script.text
+    assert graph_adapter.status_code == 200
+    assert 'from "./cosmos-graph.js?v=' in script.text
+    assert "buildCosmosGraph" in script.text
+    assert "challenge.network" in graph_adapter.text
+    assert "network.typed_edges" in graph_adapter.text
+    assert "challenge.logic_overlay" in graph_adapter.text
+    assert "deriveProgressionEdges" not in graph_adapter.text
+    assert "macroDefinitions" not in script.text
+    assert "nodeTypeDefinitions" not in script.text
+    assert "visualOnly" not in script.text
     assert "updateCosmicMotion" in script.text
-    assert "state.nebulaSprites" in script.text
     assert "currentCandidate" in script.text
-    assert "macroRadii = [56, 48, 52, 42, 46, 50, 44, 40]" in script.text
-    assert "interactionRadius: macroRadius * 3.6" in script.text
 
 
-def test_space_trainer_uses_galactic_scale_and_physical_routes() -> None:
+def test_space_trainer_uses_knowledge_singularities_and_semantic_routes() -> None:
     client = TestClient(create_app("mixed"))
 
     script = client.get("/trainer/space/space.js")
+    renderer = client.get("/trainer/space/singularity-renderer.js")
 
     assert script.status_code == 200
-    assert "const GALAXY_SCALE = 1.95" in script.text
-    assert "macroRadiusFor" in script.text
-    assert "createPlanetSurfaceMaps" in script.text
-    assert "colorMap" in script.text
-    assert "roughnessMap" in script.text
-    assert "emissiveMap" in script.text
-    assert "const orbitBase = 120" in script.text
+    assert renderer.status_code == 200
+    assert "createKnowledgeSingularity" in script.text
+    assert "createAuxiliaryStar" in script.text
+    assert "createRepairSingularity" in script.text
+    assert "createBossCataclysm" in script.text
+    assert "BOSS_SCALE = 3.8" in script.text
+    assert "ShaderMaterial" in renderer.text
+    assert "accretion" in renderer.text
     assert "LineDashedMaterial" in script.text
     assert "computeLineDistances" in script.text
-    assert "Math.min(0.42, 0.12 + opacity * 1.5)" in script.text
-    assert "toneMapped: false" in script.text
-    assert "pointLight.position.set(-definition.radius * 3" in script.text
-    assert "if (index === 0) addRoute" in script.text
-    assert "satellitePositions[index - 3]" not in script.text
-    assert 'radius * (kind === "macro" ? 1.028 : 1.055)' in script.text
-    assert "new THREE.AmbientLight(0x789cff, 0.22)" in script.text
+    assert "edge.edgeType" in script.text
     assert "new THREE.TubeGeometry" not in script.text
+
+
+def test_space_trainer_has_enterable_focus_observatory() -> None:
+    client = TestClient(create_app("mixed"))
+
+    page = client.get("/trainer/space/")
+    script = client.get("/trainer/space/space.js")
+    styles = client.get("/trainer/space/space.css")
+
+    assert page.status_code == 200
+    assert script.status_code == 200
+    assert styles.status_code == 200
+    assert 'id="learningObservatory"' in page.text
+    assert 'id="observatoryObject"' in page.text
+    assert 'id="branchChoices"' in page.text
+    assert "enterKnowledgeDomain" in script.text
+    assert "exitKnowledgeDomain" in script.text
+    assert 'experienceMode: "flight"' in script.text
+    assert "deriveNextDestinations" in script.text
+    assert ".learning-observatory" in styles.text
+    assert ".observatory-object" in styles.text
+
+
+def test_space_trainer_submits_the_backend_challenge_contract() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+
+    assert script.status_code == 200
+    submit_source = script.text.split("async function submitEncounter", 1)[1].split(
+        "function renderCoachOutput", 1
+    )[0]
+    assert "answer_text" not in submit_source
+    assert "explanation_text" not in submit_source
+    assert "answer," in submit_source
+    assert "steps: []," in submit_source
+    assert "explanation:" in submit_source
+
+
+def test_space_trainer_supports_touch_drag_camera_control() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+    styles = client.get("/trainer/space/space.css")
+
+    assert script.status_code == 200
+    assert styles.status_code == 200
+    assert "touchLook" in script.text
+    assert 'event.pointerType === "mouse"' in script.text
+    assert 'dom.canvas.addEventListener("pointermove"' in script.text
+    assert "setPointerCapture" in script.text
+    assert "touch-action: none" in styles.text
