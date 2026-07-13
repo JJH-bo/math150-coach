@@ -8,11 +8,14 @@ import {
   createRepairSingularity,
   detectQualityLevel,
   updateCelestialObject,
-} from "./singularity-renderer.js?v=20260713-singularity-3";
+} from "./singularity-renderer.js?v=20260713-portal-aperture-4";
 
 const apiBase = "/api/challenge/v1";
 const threeModuleUrl = "three";
 const BOSS_SCALE = 3.8;
+const MOVEMENT_KEYS = new Set([
+  "KeyW", "KeyA", "KeyS", "KeyD", "Space", "ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight",
+]);
 const dom = {};
 
 const state = {
@@ -400,7 +403,10 @@ function updateCosmicMotion(elapsed, delta) {
 }
 
 function updateFlight(delta) {
-  if (state.experienceMode !== "flight" || state.flightTween) return;
+  if (state.experienceMode !== "flight") return;
+  const hasManualMovement = [...MOVEMENT_KEYS].some((key) => state.keys.has(key));
+  if (hasManualMovement) cancelAutopilotForManualControl();
+  if (state.flightTween) return;
   const THREE = state.THREE;
   const camera = state.camera;
   const direction = new THREE.Vector3();
@@ -418,7 +424,6 @@ function updateFlight(delta) {
   const boost = state.keys.has("ShiftLeft") || state.keys.has("ShiftRight");
   const acceleration = boost ? 440 : 230;
   state.velocity.addScaledVector(direction, acceleration * delta);
-  applyGuidedNavigation(delta);
   state.velocity.multiplyScalar(Math.exp(-2.35 * delta));
   const maxSpeed = boost ? 310 : 150;
   if (state.velocity.length() > maxSpeed) state.velocity.setLength(maxSpeed);
@@ -426,13 +431,10 @@ function updateFlight(delta) {
   camera.rotation.set(state.pitch, state.yaw, 0);
 }
 
-function applyGuidedNavigation(delta) {
-  if (state.flightMode !== "guided" || !state.keys.has("KeyW") || !state.currentTaskId) return;
-  const current = state.objectById.get(state.currentTaskId);
-  if (!current) return;
-  const targetDirection = current.group.position.clone().sub(state.camera.position).normalize();
-  const speed = Math.min(70, state.velocity.length() + 18);
-  state.velocity.lerp(targetDirection.multiplyScalar(speed), Math.min(1, delta * 0.55));
+function cancelAutopilotForManualControl() {
+  if (!state.flightTween) return;
+  state.flightTween = null;
+  syncCameraAngles();
 }
 
 function updateNearestObject() {
@@ -652,12 +654,13 @@ function flyToObject(object, options = {}) {
   const distance = options.approach
     ? Math.max(radius * 0.78, 5)
     : object.role === "boss"
-      ? radius * 4.8
+      ? radius * (BOSS_SCALE + 1)
       : object.role === "auxiliary"
         ? Math.max(radius * 8, 62)
         : Math.max(radius * 7.8, 104);
   const viewDirection = new THREE.Vector3(0.62, 0.24, 1).normalize();
   const destination = object.group.position.clone().addScaledVector(viewDirection, distance);
+  state.velocity?.set(0, 0, 0);
   if (options.immediate || prefersReducedMotion()) {
     state.camera.position.copy(destination);
     state.camera.lookAt(object.group.position);
@@ -694,11 +697,12 @@ function syncCameraAngles() {
 }
 
 function setFlightMode(mode) {
+  cancelAutopilotForManualControl();
   state.flightMode = mode;
   dom.guidedModeBtn.classList.toggle("is-active", mode === "guided");
   dom.exploreModeBtn.classList.toggle("is-active", mode === "explore");
   dom.routeReason.textContent = mode === "guided"
-    ? "推荐航线已增强；向前飞行时会获得轻微导航修正"
+    ? "推荐航线已增强；导航只提供方向，不会接管飞行控制"
     : "全部已发现关系保持可见，自由选择观察方向";
   updateRouteVisibility();
 }
@@ -714,6 +718,7 @@ function wireDom() {
   });
   document.addEventListener("mousemove", (event) => {
     if (!state.pointerLocked || state.experienceMode !== "flight") return;
+    cancelAutopilotForManualControl();
     state.yaw -= event.movementX * 0.0018;
     state.pitch -= event.movementY * 0.0018;
     state.pitch = clamp(state.pitch, -Math.PI * 0.48, Math.PI * 0.48);
@@ -721,7 +726,7 @@ function wireDom() {
   dom.canvas.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" || state.experienceMode !== "flight") return;
     state.touchLook = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
-    state.flightTween = null;
+    cancelAutopilotForManualControl();
     dom.canvas.setPointerCapture?.(event.pointerId);
     event.preventDefault();
   });
@@ -745,6 +750,7 @@ function wireDom() {
       if (event.code === "Escape") exitKnowledgeDomain();
       return;
     }
+    if (MOVEMENT_KEYS.has(event.code)) cancelAutopilotForManualControl();
     state.keys.add(event.code);
     if (event.code === "KeyE") enterKnowledgeDomain();
   });
@@ -763,7 +769,11 @@ function wireDom() {
   document.querySelectorAll("[data-key]").forEach((button) => {
     const key = button.dataset.key;
     const release = () => state.keys.delete(key);
-    button.addEventListener("pointerdown", (event) => { event.preventDefault(); state.keys.add(key); });
+    button.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      cancelAutopilotForManualControl();
+      state.keys.add(key);
+    });
     button.addEventListener("pointerup", release);
     button.addEventListener("pointercancel", release);
     button.addEventListener("pointerleave", release);

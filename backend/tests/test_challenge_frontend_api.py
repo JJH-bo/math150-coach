@@ -161,7 +161,7 @@ def test_space_trainer_uses_cinematic_rendering_pipeline() -> None:
     assert "UnrealBloomPass" in script.text
     assert "addCinematicLighting" in script.text
     assert "ShaderMaterial" in renderer.text
-    assert "createAccretionDisk" in renderer.text
+    assert "createPortalAperture" in renderer.text
     assert "createCoronaSprite" in renderer.text
     assert "qualityLevel" in renderer.text
 
@@ -251,7 +251,14 @@ def test_space_trainer_uses_knowledge_singularities_and_semantic_routes() -> Non
     assert "createBossCataclysm" in script.text
     assert "BOSS_SCALE = 3.8" in script.text
     assert "ShaderMaterial" in renderer.text
-    assert "accretion" in renderer.text
+    assert "createPortalThroat" in renderer.text
+    assert "createDistortedRim" in renderer.text
+    assert "createInfallField" in renderer.text
+    assert "createBossGasEnvelope" in renderer.text
+    assert "createGasCloudHalo" in renderer.text
+    assert "createAccretionDisk" not in renderer.text
+    assert "new THREE.SphereGeometry" not in renderer.text
+    assert "new THREE.IcosahedronGeometry" not in renderer.text
     assert "LineDashedMaterial" in script.text
     assert "computeLineDistances" in script.text
     assert "edge.edgeType" in script.text
@@ -308,3 +315,31 @@ def test_space_trainer_supports_touch_drag_camera_control() -> None:
     assert 'dom.canvas.addEventListener("pointermove"' in script.text
     assert "setPointerCapture" in script.text
     assert "touch-action: none" in styles.text
+
+
+def test_manual_flight_input_cancels_autopilot_without_guided_force() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+
+    assert script.status_code == 200
+    assert "cancelAutopilotForManualControl" in script.text
+    assert "MOVEMENT_KEYS" in script.text
+    assert "applyGuidedNavigation" not in script.text
+    update_source = script.text.split("function updateFlight", 1)[1].split(
+        "function updateNearestObject", 1
+    )[0]
+    assert "hasManualMovement" in update_source
+    assert update_source.index("cancelAutopilotForManualControl") < update_source.index(
+        "if (state.flightTween) return"
+    )
+
+
+def test_runtime_graph_exposes_visual_difficulty_to_the_portal_renderer() -> None:
+    client = TestClient(create_app("mixed"))
+
+    graph_adapter = client.get("/trainer/space/cosmos-graph.js")
+
+    assert graph_adapter.status_code == 200
+    assert "TYPE_DIFFICULTY" in graph_adapter.text
+    assert "difficulty:" in graph_adapter.text

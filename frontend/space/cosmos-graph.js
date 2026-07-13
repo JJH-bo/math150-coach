@@ -13,6 +13,21 @@ const TYPE_COLORS = {
   review: 0x9ee6bd,
 };
 
+const TYPE_DIFFICULTY = {
+  concept: 0.24,
+  trigger: 0.34,
+  method: 0.48,
+  transformation: 0.62,
+  calculation: 0.74,
+  expression: 0.82,
+  condition: 0.56,
+  example: 0.38,
+  mistake: 0.58,
+  proof: 0.86,
+  comparison: 0.52,
+  review: 0.3,
+};
+
 const DOMAIN_COLORS = [0x77dff8, 0x7cddb9, 0xa996dc, 0xd6a769, 0x8fb8e9];
 
 export function buildCosmosGraph(challenge = {}) {
@@ -40,6 +55,7 @@ export function buildCosmosGraph(challenge = {}) {
       status: challenge.macro_nodes?.[macro.id]?.status || "locked",
       position: center,
       radius: 28,
+      difficulty: 0.42,
       interactionRadius: 128,
       color,
       macroId: macro.id,
@@ -63,6 +79,7 @@ export function buildCosmosGraph(challenge = {}) {
         status: progress.status || "locked",
         position,
         radius: role === "repair" ? 12 : 14,
+        difficulty: role === "repair" ? Math.max(0.58, TYPE_DIFFICULTY[micro.type] || 0.5) : TYPE_DIFFICULTY[micro.type] || 0.5,
         interactionRadius: 122,
         color: TYPE_COLORS[micro.type] || color,
         macroId: macro.id,
@@ -81,6 +98,7 @@ export function buildCosmosGraph(challenge = {}) {
         status: progress.status || "locked",
         position: [center[0] + 370, center[1] + 56, center[2] - 510],
         radius: 52,
+        difficulty: 1,
         interactionRadius: 250,
         color: 0x9f351d,
         macroId: macro.id,
@@ -105,6 +123,7 @@ export function buildCosmosGraph(challenge = {}) {
         parent.position[2] + Math.sin(angle) * orbit,
       ],
       radius: 5.2,
+      difficulty: 0.12,
       interactionRadius: 36,
       color: 0xcfeaf0,
       macroId: parent.macroId,
@@ -123,6 +142,7 @@ export function buildCosmosGraph(challenge = {}) {
       status: "available",
       position,
       radius: 10,
+      difficulty: 0.52,
       interactionRadius: 54,
       color: 0xb68ecb,
       trainable: false,
@@ -138,6 +158,7 @@ export function buildCosmosGraph(challenge = {}) {
       status: "available",
       position: [fallback[0] - 250 + (index % 2) * 80, fallback[1] + 130, fallback[2] + 180 - index * 36],
       radius: 7,
+      difficulty: 0.16,
       interactionRadius: 42,
       color: 0xe4f5f6,
       trainable: false,
@@ -177,6 +198,7 @@ export function buildCosmosGraph(challenge = {}) {
         anchor.position[2] + Math.sin(angle) * (68 + index * 3),
       ],
       radius: role === "repair" ? 7.5 : 4.8,
+      difficulty: role === "repair" ? 0.56 : 0.14,
       interactionRadius: 38,
       color: role === "repair" ? 0xaa718a : 0xc8e8ed,
       macroId: anchor.macroId,
@@ -255,6 +277,7 @@ function makeObject(definition) {
     status: definition.status,
     position: [...definition.position],
     radius: definition.radius,
+    difficulty: Number(definition.difficulty ?? 0.5),
     interactionRadius: definition.interactionRadius,
     color: definition.color,
     macroId: definition.macroId || null,
