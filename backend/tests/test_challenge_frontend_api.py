@@ -239,6 +239,24 @@ def test_space_graph_is_front_facing_and_orders_each_boss_last() -> None:
     assert "approachDirection" not in renderer.text
 
 
+def test_space_progression_edges_render_and_travel_as_rapid_transit_corridors() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+    transit = client.get("/trainer/space/transit-route.js")
+
+    assert script.status_code == 200
+    assert transit.status_code == 200
+    assert "buildRapidTransitControlPoints" in script.text
+    assert "buildGuidedTransitWaypoints" in script.text
+    assert "createRapidTransitCorridor" in script.text
+    assert "new THREE.TubeGeometry" in script.text
+    assert "viaTunnelPath: choice.transitPath" in script.text
+    assert "tween.path.getPointAt" in script.text
+    assert "navigationTargetId" in script.text
+    assert "edge.decisionRole" in transit.text
+
+
 def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
     client = TestClient(create_app("mixed"))
 
@@ -335,7 +353,7 @@ def test_space_trainer_uses_knowledge_singularities_and_semantic_routes() -> Non
     assert "LineDashedMaterial" in script.text
     assert "computeLineDistances" in script.text
     assert "edge.edgeType" in script.text
-    assert "new THREE.TubeGeometry" not in script.text
+    assert "isRapidTransitEdge(edge, start.toArray(), end.toArray())" in script.text
 
 
 def test_space_trainer_has_enterable_focus_observatory() -> None:

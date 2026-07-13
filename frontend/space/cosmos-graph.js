@@ -30,8 +30,11 @@ const TYPE_DIFFICULTY = {
 
 const DOMAIN_COLORS = [0x77dff8, 0x7cddb9, 0xa996dc, 0xd6a769, 0x8fb8e9];
 const BOSS_RADIUS = 78;
-const PROGRESSION_NODE_SPACING = 245;
-const PROGRESSION_ROW_SPACING = 520;
+const PROGRESSION_DEPTH_SPACING = 290;
+const PROGRESSION_CHAPTER_GAP = 220;
+const PROGRESSION_BOSS_APPROACH_GAP = 150;
+const PROGRESSION_ENTRY_Z = -520;
+const PROGRESSION_LANE_RADIUS = 220;
 
 export function buildCosmosGraph(challenge = {}) {
   const network = challenge.network || {};
@@ -240,15 +243,34 @@ export function deriveNextDestinations(graph, currentId, challenge = {}) {
   const nextTaskId = challenge.current_task?.task_id || null;
   const outgoing = graph.edges
     .filter((edge) => edge.sourceId === currentId)
-    .map((edge) => ({ object: graph.byId.get(edge.targetId), edge }))
+    .map((edge) => ({
+      object: graph.byId.get(edge.targetId),
+      edge,
+      transitPath: isForwardProgressionEdge(graph, edge) ? [currentId, edge.targetId] : null,
+    }))
     .filter((item) => item.object);
   const candidates = [];
 
   if (nextTaskId && nextTaskId !== currentId && graph.byId.has(nextTaskId)) {
+    const transitPath = findProgressionPath(graph, currentId, nextTaskId);
+    const progressionEdge = transitPath?.length === 2
+      ? graph.edges.find((edge) => edge.sourceId === currentId && edge.targetId === nextTaskId)
+      : transitPath
+        ? {
+          edgeType: "progression_path",
+          label: "沿前置知识通道进入下一阶段",
+          decisionRole: "progression",
+        }
+        : null;
     candidates.push({
       object: graph.byId.get(nextTaskId),
-      edge: { edgeType: "recommended", label: "系统推荐的下一项训练" },
+      edge: progressionEdge || {
+        edgeType: "recommended",
+        label: "系统推荐的下一项训练",
+        decisionRole: "navigation",
+      },
       recommended: true,
+      transitPath,
     });
   }
   outgoing.forEach((item) => {
@@ -262,7 +284,7 @@ export function deriveNextDestinations(graph, currentId, challenge = {}) {
       }
     });
 
-  return candidates.slice(0, 3).map(({ object, edge, recommended }) => ({
+  return candidates.slice(0, 3).map(({ object, edge, recommended, transitPath }) => ({
     id: object.id,
     title: object.title,
     description: object.description,
@@ -270,8 +292,39 @@ export function deriveNextDestinations(graph, currentId, challenge = {}) {
     relation: edge.label || edge.edgeType,
     edgeType: edge.edgeType,
     recommended: Boolean(recommended),
+    rapidTransit: Boolean(transitPath?.length > 1),
+    transitPath: transitPath || null,
     enterable: object.trainable && ["active", "available"].includes(object.status),
   }));
+}
+
+export function findProgressionPath(graph, sourceId, targetId) {
+  if (sourceId === targetId) return [sourceId];
+  const queue = [[sourceId]];
+  const visited = new Set([sourceId]);
+  while (queue.length > 0) {
+    const path = queue.shift();
+    const currentId = path.at(-1);
+    const nextIds = graph.edges
+      .filter((edge) => edge.sourceId === currentId && isForwardProgressionEdge(graph, edge))
+      .map((edge) => edge.targetId);
+    for (const nextId of nextIds) {
+      if (visited.has(nextId)) continue;
+      const nextPath = [...path, nextId];
+      if (nextId === targetId) return nextPath;
+      visited.add(nextId);
+      queue.push(nextPath);
+    }
+  }
+  return null;
+}
+
+function isForwardProgressionEdge(graph, edge) {
+  if (edge.decisionRole !== "progression") return false;
+  const source = graph.byId.get(edge.sourceId);
+  const target = graph.byId.get(edge.targetId);
+  if (!source?.position || !target?.position) return true;
+  return Number(target.position[2]) < Number(source.position[2]) - 0.001;
 }
 
 function makeObject(definition) {
@@ -320,8 +373,9 @@ export function buildProgressionLayout(network = {}) {
   const typedEdges = network.typed_edges || [];
   const orderedMacros = orderProgressionMacros(macros, microSpecs, bossSpecs, typedEdges);
   const positions = new Map();
-  const rowCount = Math.max(orderedMacros.length, 1);
-  let firstRowBounds = null;
+  const progressionSequence = [];
+  let depthCursor = 0;
+  let depthRank = 0;
 
   orderedMacros.forEach((macro, macroIndex) => {
     const micros = microSpecs.filter((item) => item.macro_node_id === macro.id);
@@ -331,37 +385,45 @@ export function buildProgressionLayout(network = {}) {
     const bossLast = boss
       ? [...ordered.filter((nodeId) => nodeId !== boss.id), boss.id]
       : ordered;
-    const direction = macroIndex % 2 === 0 ? 1 : -1;
-    const rowWidth = Math.max(0, bossLast.length - 1) * PROGRESSION_NODE_SPACING;
-    const rowY = ((rowCount - 1) * 0.5 - macroIndex) * PROGRESSION_ROW_SPACING;
-    const rowZ = -760 - macroIndex * 38;
+
+    if (macroIndex > 0) depthCursor += PROGRESSION_CHAPTER_GAP;
 
     bossLast.forEach((nodeId, index) => {
-      const x = direction * (-rowWidth * 0.5 + index * PROGRESSION_NODE_SPACING);
+      const isBoss = nodeId === boss?.id;
+      if (isBoss) depthCursor += PROGRESSION_BOSS_APPROACH_GAP;
+      const phase = depthRank * 0.88;
+      const chapterBias = Math.sin(macroIndex * 1.73) * 48;
+      const x = Math.sin(phase) * PROGRESSION_LANE_RADIUS + chapterBias;
+      const y = Math.cos(phase * 0.72) * 86 + Math.sin(macroIndex * 1.4) * 34;
+      const z = PROGRESSION_ENTRY_Z - depthCursor;
       positions.set(nodeId, {
-        position: [x, rowY, rowZ],
+        position: [x, y, z],
         rank: index,
         row: macroIndex,
+        depthRank,
       });
+      progressionSequence.push(nodeId);
+      depthRank += 1;
+      depthCursor += PROGRESSION_DEPTH_SPACING;
     });
-
-    if (macroIndex === 0) {
-      firstRowBounds = {
-        macroId: macro.id,
-        center: [0, rowY, rowZ],
-        width: rowWidth + BOSS_RADIUS * 8.9,
-        height: BOSS_RADIUS * 8.9,
-      };
-    }
   });
+
+  const entryId = progressionSequence[0] || null;
+  const entry = positions.get(entryId)?.position || [0, 0, PROGRESSION_ENTRY_Z];
+  const next = positions.get(progressionSequence[1])?.position || [entry[0], entry[1], entry[2] - 320];
+  const lookAt = entry.map((value, index) => value + (next[index] - value) * 0.58);
 
   return {
     positions,
-    frontFrame: firstRowBounds || {
-      macroId: null,
-      center: [0, 0, -760],
-      width: 1600,
-      height: 720,
+    progressionSequence,
+    frontFrame: {
+      macroId: orderedMacros[0]?.id || null,
+      entryId,
+      center: [...entry],
+      camera: [entry[0] - 150, entry[1] + 72, entry[2] + 470],
+      lookAt,
+      width: 760,
+      height: 520,
     },
   };
 }

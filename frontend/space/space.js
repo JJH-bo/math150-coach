@@ -1,4 +1,10 @@
-import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260713-depth-layout-5";
+import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260713-depth-layout-9";
+import {
+  buildCombinedTransitControlPoints,
+  buildGuidedTransitWaypoints,
+  buildRapidTransitControlPoints,
+  isRapidTransitEdge,
+} from "./transit-route.js?v=20260713-depth-route-3";
 import {
   applyCelestialStatus,
   createAuxiliaryStar,
@@ -36,6 +42,7 @@ const state = {
   nearest: null,
   activeObject: null,
   currentTaskId: null,
+  navigationTargetId: null,
   lastPayload: null,
   started: false,
   experienceMode: "flight",
@@ -114,9 +121,9 @@ function createKnowledgeUniverse(THREE) {
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x010306);
-  scene.fog = new THREE.FogExp2(0x02070d, 0.00022);
+  scene.fog = new THREE.FogExp2(0x02070d, 0.00012);
 
-  const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 6800);
+  const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 12000);
   camera.position.set(-180, 58, 120);
   camera.rotation.order = "YXZ";
   camera.lookAt(new THREE.Vector3(-280, 0, -520));
@@ -225,6 +232,9 @@ function rebuildKnowledgeUniverse(challenge) {
     state.objectById.set(node.id, node);
     applyCelestialStatus(state.THREE, node, definition.status, definition.id === state.currentTaskId);
   });
+  if (state.navigationTargetId && !state.objectById.has(state.navigationTargetId)) {
+    state.navigationTargetId = null;
+  }
 
   state.graph.edges.forEach((edge) => addSemanticRoute(edge));
   updateRouteVisibility();
@@ -243,11 +253,7 @@ function rebuildKnowledgeUniverse(challenge) {
 
 function clearKnowledgeUniverse() {
   state.objects.forEach((object) => disposeObject(object.group));
-  state.routes.forEach((route) => {
-    state.scene?.remove(route.line);
-    route.line.geometry.dispose();
-    route.line.material.dispose();
-  });
+  state.routes.forEach((route) => disposeObject(route.group || route.line));
   state.objects = [];
   state.objectById = new Map();
   state.routes = [];
@@ -285,21 +291,181 @@ function addSemanticRoute(edge) {
   const THREE = state.THREE;
   const start = source.group.position.clone();
   const end = target.group.position.clone();
+  const rapid = isRapidTransitEdge(edge, start.toArray(), end.toArray());
+  const controlPoints = rapid
+    ? buildRapidTransitControlPoints(start.toArray(), end.toArray(), {
+      sourceRadius: source.radius,
+      targetRadius: target.radius,
+      seed: ((edge.id?.length || 7) % 17) / 17,
+    }).map((point) => new THREE.Vector3(...point))
+    : null;
+  const curve = rapid
+    ? new THREE.CatmullRomCurve3(controlPoints, false, "centripetal", 0.36)
+    : createSemanticCurve(THREE, start, end);
+  const color = rapid ? (target.color || 0x77dff8) : routeColor(edge.edgeType);
+  const visual = rapid
+    ? createRapidTransitCorridor(THREE, curve, color, state.qualityLevel)
+    : createSemanticLine(THREE, curve, color, edge.edgeType);
+
+  state.scene.add(visual.group);
+  state.routes.push({
+    edge,
+    curve,
+    controlPoints,
+    rapid,
+    ...visual,
+  });
+}
+
+function createSemanticCurve(THREE, start, end) {
   const distance = start.distanceTo(end);
   const midpoint = start.clone().lerp(end, 0.5);
   midpoint.y += Math.min(120, 18 + distance * 0.12);
-  const curve = new THREE.QuadraticBezierCurve3(start, midpoint, end);
+  return new THREE.QuadraticBezierCurve3(start, midpoint, end);
+}
+
+function createSemanticLine(THREE, curve, color, edgeType) {
   const geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(72));
-  const color = routeColor(edge.edgeType);
-  const dashed = ["confusion", "repair", "bridge", "unlock", "prerequisite"].includes(edge.edgeType);
+  const dashed = ["confusion", "repair", "bridge", "unlock", "prerequisite"].includes(edgeType);
   const material = dashed
     ? new THREE.LineDashedMaterial({ color, transparent: true, opacity: 0.08, dashSize: 8, gapSize: 12, depthWrite: false, toneMapped: false })
     : new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.08, depthWrite: false, toneMapped: false });
   const line = new THREE.Line(geometry, material);
   if (dashed) line.computeLineDistances();
   line.renderOrder = 1;
-  state.scene.add(line);
-  state.routes.push({ edge, line, baseOpacity: dashed ? 0.075 : 0.09 });
+  return {
+    group: line,
+    line,
+    layers: [{ material, baseOpacity: dashed ? 0.075 : 0.09, maxOpacity: 0.62 }],
+    baseOpacity: dashed ? 0.075 : 0.09,
+  };
+}
+
+function createRapidTransitCorridor(THREE, curve, color, qualityLevel) {
+  const group = new THREE.Group();
+  const highQuality = qualityLevel === "high";
+  const segments = highQuality ? 76 : 42;
+  const radius = highQuality ? 9.4 : 8.2;
+  const outerMaterial = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.022,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+  const innerMaterial = highQuality
+    ? new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.025,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    })
+    : null;
+  const outer = new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius, highQuality ? 10 : 6, false), outerMaterial);
+  const inner = innerMaterial
+    ? new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius * 0.34, 7, false), innerMaterial)
+    : null;
+  outer.renderOrder = 2;
+  group.add(outer);
+  if (inner) {
+    inner.renderOrder = 2;
+    group.add(inner);
+  }
+
+  const frames = curve.computeFrenetFrames(segments, false);
+  const strandPositions = [];
+  const strandCount = highQuality ? 8 : 4;
+  for (let strand = 0; strand < strandCount; strand += 1) {
+    const angle = (strand / strandCount) * Math.PI * 2;
+    for (let index = 0; index < segments; index += 1) {
+      [index, index + 1].forEach((sampleIndex) => {
+        const t = sampleIndex / segments;
+        const point = curve.getPointAt(t);
+        const offsetRadius = radius * (0.88 + Math.sin(t * Math.PI * 5 + angle) * 0.08);
+        point.addScaledVector(frames.normals[sampleIndex], Math.cos(angle) * offsetRadius);
+        point.addScaledVector(frames.binormals[sampleIndex], Math.sin(angle) * offsetRadius);
+        strandPositions.push(point.x, point.y, point.z);
+      });
+    }
+  }
+  const strandGeometry = new THREE.BufferGeometry();
+  strandGeometry.setAttribute("position", new THREE.Float32BufferAttribute(strandPositions, 3));
+  const strandMaterial = new THREE.LineBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.068,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const strands = new THREE.LineSegments(strandGeometry, strandMaterial);
+  strands.renderOrder = 3;
+  group.add(strands);
+
+  const flowMaterial = new THREE.LineDashedMaterial({
+    color,
+    transparent: true,
+    opacity: 0.14,
+    dashSize: 6,
+    gapSize: 13,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const flowLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(curve.getPoints(segments)),
+    flowMaterial,
+  );
+  flowLine.computeLineDistances();
+  flowLine.renderOrder = 3;
+  group.add(flowLine);
+
+  const gateMaterial = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.085,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const gateCount = highQuality ? 6 : 3;
+  const gates = new THREE.InstancedMesh(
+    new THREE.TorusGeometry(radius * 0.84, Math.max(0.22, radius * 0.045), 7, 28),
+    gateMaterial,
+    gateCount,
+  );
+  const dummy = new THREE.Object3D();
+  const forward = new THREE.Vector3(0, 0, 1);
+  for (let index = 0; index < gateCount; index += 1) {
+    const t = (index + 1) / (gateCount + 1);
+    dummy.position.copy(curve.getPointAt(t));
+    dummy.quaternion.setFromUnitVectors(forward, curve.getTangentAt(t).normalize());
+    dummy.scale.setScalar(0.86 + Math.sin(index * 1.9) * 0.08);
+    dummy.updateMatrix();
+    gates.setMatrixAt(index, dummy.matrix);
+  }
+  gates.instanceMatrix.needsUpdate = true;
+  gates.renderOrder = 3;
+  group.add(gates);
+
+  return {
+    group,
+    line: flowLine,
+    gates,
+    layers: [
+      { material: outerMaterial, baseOpacity: 0.022, maxOpacity: 0.07 },
+      ...(innerMaterial ? [{ material: innerMaterial, baseOpacity: 0.025, maxOpacity: 0.08 }] : []),
+      { material: strandMaterial, baseOpacity: 0.068, maxOpacity: 0.2 },
+      { material: flowMaterial, baseOpacity: 0.14, maxOpacity: 0.42 },
+      { material: gateMaterial, baseOpacity: 0.085, maxOpacity: 0.26 },
+    ],
+    baseOpacity: 0.1,
+  };
 }
 
 function routeColor(edgeType) {
@@ -320,17 +486,27 @@ function routeColor(edgeType) {
 function updateRouteVisibility(focusId = state.nearest?.id || state.currentTaskId) {
   state.routes.forEach((route) => {
     const edge = route.edge;
-    const relevant = edge.sourceId === focusId || edge.targetId === focusId;
+    const focusRelevant = edge.sourceId === focusId || edge.targetId === focusId;
+    const navigationRelevant = state.navigationTargetId
+      && (edge.sourceId === state.navigationTargetId || edge.targetId === state.navigationTargetId);
+    const relevant = focusRelevant || navigationRelevant;
     const currentRelevant = edge.sourceId === state.currentTaskId || edge.targetId === state.currentTaskId;
     const targetOpacity = relevant
-      ? 0.46
+      ? route.rapid ? 0.19 : 0.46
       : currentRelevant && state.flightMode === "guided"
-        ? 0.28
+        ? route.rapid ? 0.145 : 0.28
         : state.flightMode === "guided"
-          ? route.baseOpacity * 0.22
+          ? route.baseOpacity * (route.rapid ? 0.74 : 0.22)
           : route.baseOpacity;
-    route.line.material.opacity = targetOpacity;
+    setRouteOpacity(route, targetOpacity);
     if ("dashOffset" in route.line.material) route.line.material.dashOffset = relevant ? -0.8 : 0;
+  });
+}
+
+function setRouteOpacity(route, targetOpacity) {
+  const intensity = targetOpacity / Math.max(route.baseOpacity, 0.001);
+  route.layers.forEach((layer) => {
+    layer.material.opacity = Math.min(layer.maxOpacity, layer.baseOpacity * intensity);
   });
 }
 
@@ -385,7 +561,7 @@ function updateMissionHud() {
   const current = state.objectById.get(state.currentTaskId);
   dom.currentTaskBadge.textContent = current ? current.title : "当前没有训练任务";
   dom.routeReason.textContent = current
-    ? "沿高亮航线接近奇点，进入后完成当前训练"
+    ? "沿高亮快速通道深入知识链，进入奇点完成当前训练"
     : "可以切换到自由模式探索已发现知识域";
 }
 
@@ -398,7 +574,9 @@ function animate() {
   updateNearestObject();
   updateTransitTween();
   state.routes.forEach((route) => {
-    if ("dashOffset" in route.line.material) route.line.material.dashOffset -= delta * 1.5;
+    if ("dashOffset" in route.line.material) {
+      route.line.material.dashOffset -= delta * (route.rapid ? 8.5 : 1.5);
+    }
   });
   state.composer.render();
 }
@@ -496,6 +674,7 @@ function enterKnowledgeDomain(object = state.nearest) {
     return;
   }
   state.activeObject = object;
+  if (state.navigationTargetId === object.id) state.navigationTargetId = null;
   state.experienceMode = "transit";
   document.exitPointerLock?.();
   dom.transitOverlay.classList.remove("is-hidden");
@@ -628,12 +807,19 @@ function renderBranchChoices(completedNodeId, challenge) {
     button.disabled = choice.status === "locked";
     button.innerHTML = `
       <span><strong>${escapeHtml(choice.title)}</strong><span>${escapeHtml(choice.relation)} · ${escapeHtml(choice.description)}</span></span>
-      <em>${choice.recommended ? "推荐" : choice.status === "locked" ? "未解锁" : "前往"}</em>
+      <em>${choice.status === "locked" ? "未解锁" : choice.rapidTransit && state.flightMode === "guided" ? "快速通道" : "设为目标"}</em>
     `;
     button.addEventListener("click", () => {
       const target = state.objectById.get(choice.id);
       exitKnowledgeDomain();
-      if (target) window.setTimeout(() => flyToObject(target), 120);
+      if (!target) return;
+      if (state.flightMode === "guided") {
+        window.setTimeout(() => flyToObject(target, { viaTunnelPath: choice.transitPath }), 120);
+      } else {
+        state.navigationTargetId = target.id;
+        updateRouteVisibility(target.id);
+        showToast(`自由航行目标已标记：${target.title}`);
+      }
     });
     dom.branchChoiceList.append(button);
   });
@@ -649,7 +835,7 @@ function emphasizeRepairTarget(nodeId) {
   const target = state.objectById.get(nodeId);
   if (!target) return;
   state.routes.forEach((route) => {
-    if (route.edge.sourceId === nodeId || route.edge.targetId === nodeId) route.line.material.opacity = 0.58;
+    if (route.edge.sourceId === nodeId || route.edge.targetId === nodeId) setRouteOpacity(route, 0.58);
   });
   showToast(`修复航线已指向：${target.title}`);
 }
@@ -658,8 +844,13 @@ function flyToObject(object, options = {}) {
   if (!object || !state.camera) return;
   const THREE = state.THREE;
   const radius = object.radius || 12;
+  const tunnelRoutes = state.flightMode === "guided"
+    ? findRapidTransitRoutes(options.viaTunnelPath)
+    : null;
   const distance = options.approach
     ? Math.max(radius * 0.78, 5)
+    : tunnelRoutes?.length
+      ? object.role === "boss" ? radius * 2.8 : Math.max(radius * 4.2, 70)
     : object.role === "boss"
       ? radius * (BOSS_SCALE + 1)
       : object.role === "auxiliary"
@@ -674,6 +865,28 @@ function flyToObject(object, options = {}) {
     syncCameraAngles();
     return;
   }
+  if (tunnelRoutes?.length) {
+    const controlPoints = buildCombinedTransitControlPoints(
+      tunnelRoutes.map((route) => route.controlPoints.map((point) => point.toArray())),
+    );
+    const waypoints = buildGuidedTransitWaypoints(
+      state.camera.position.toArray(),
+      controlPoints,
+      destination.toArray(),
+    ).map((point) => new THREE.Vector3(...point));
+    const path = new THREE.CatmullRomCurve3(waypoints, false, "centripetal", 0.34);
+    const routeLength = tunnelRoutes.reduce((sum, route) => sum + route.curve.getLength(), 0);
+    state.flightTween = {
+      startedAt: performance.now(),
+      duration: clamp(routeLength * 4.2, 1450, 5200),
+      start: state.camera.position.clone(),
+      destination,
+      target: object.group.position.clone(),
+      path,
+    };
+    showToast(`快速通道已锁定：${object.title}`);
+    return;
+  }
   state.flightTween = {
     startedAt: performance.now(),
     duration: options.approach ? 780 : 1050,
@@ -683,6 +896,21 @@ function flyToObject(object, options = {}) {
   };
 }
 
+function findRapidTransitRoutes(nodeIds) {
+  if (!Array.isArray(nodeIds) || nodeIds.length < 2) return null;
+  const routes = [];
+  for (let index = 0; index < nodeIds.length - 1; index += 1) {
+    const route = state.routes.find((candidate) => (
+      candidate.rapid
+      && candidate.edge.sourceId === nodeIds[index]
+      && candidate.edge.targetId === nodeIds[index + 1]
+    ));
+    if (!route) return null;
+    routes.push(route);
+  }
+  return routes;
+}
+
 function frameLearningPathFront(currentObject) {
   if (!state.camera || !state.graph?.frontFrame) {
     flyToObject(currentObject, { immediate: true });
@@ -690,17 +918,18 @@ function frameLearningPathFront(currentObject) {
   }
   const THREE = state.THREE;
   const frame = state.graph.frontFrame;
-  const center = new THREE.Vector3(...frame.center);
-  const verticalFov = THREE.MathUtils.degToRad(state.camera.fov);
-  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov * 0.5) * state.camera.aspect);
-  const widthDistance = frame.width / (2 * Math.tan(horizontalFov * 0.5));
-  const heightDistance = frame.height / (2 * Math.tan(verticalFov * 0.5));
-  const distance = clamp(Math.max(widthDistance, heightDistance) * 1.08, 920, 2600);
-  state.camera.position.copy(center).addScaledVector(
-    new THREE.Vector3(...PORTAL_APPROACH_DIRECTION),
-    distance,
-  );
-  state.camera.lookAt(center);
+  const currentPosition = currentObject.group.position;
+  const nextRoute = state.routes.find((route) => route.rapid && route.edge.sourceId === currentObject.id);
+  const nextTarget = nextRoute ? state.objectById.get(nextRoute.edge.targetId)?.group.position : null;
+  const isEntry = currentObject.id === frame.entryId;
+  const cameraPosition = isEntry
+    ? new THREE.Vector3(...frame.camera)
+    : currentPosition.clone().add(new THREE.Vector3(-150, 72, 470));
+  const lookAt = nextTarget
+    ? currentPosition.clone().lerp(nextTarget, 0.54)
+    : isEntry ? new THREE.Vector3(...frame.lookAt) : currentPosition.clone();
+  state.camera.position.copy(cameraPosition);
+  state.camera.lookAt(lookAt);
   state.velocity?.set(0, 0, 0);
   syncCameraAngles();
 }
@@ -711,8 +940,14 @@ function updateTransitTween() {
   const raw = (performance.now() - tween.startedAt) / tween.duration;
   const t = clamp(raw, 0, 1);
   const eased = 1 - Math.pow(1 - t, 3);
-  state.camera.position.lerpVectors(tween.start, tween.destination, eased);
-  state.camera.lookAt(tween.target);
+  if (tween.path) {
+    state.camera.position.copy(tween.path.getPointAt(eased));
+    const lookAhead = tween.path.getPointAt(Math.min(1, eased + 0.035));
+    state.camera.lookAt(eased > 0.94 ? tween.target : lookAhead);
+  } else {
+    state.camera.position.lerpVectors(tween.start, tween.destination, eased);
+    state.camera.lookAt(tween.target);
+  }
   if (t >= 1) {
     state.flightTween = null;
     syncCameraAngles();
@@ -728,11 +963,12 @@ function syncCameraAngles() {
 function setFlightMode(mode) {
   cancelAutopilotForManualControl();
   state.flightMode = mode;
+  if (mode === "guided") state.navigationTargetId = null;
   dom.guidedModeBtn.classList.toggle("is-active", mode === "guided");
   dom.exploreModeBtn.classList.toggle("is-active", mode === "explore");
   dom.routeReason.textContent = mode === "guided"
-    ? "推荐航线已增强；导航只提供方向，不会接管飞行控制"
-    : "全部已发现关系保持可见，自由选择观察方向";
+    ? "前置快速通道已激活，完成训练后可直接跃迁"
+    : "自由航行已激活，选择目标后由你亲自飞行";
   updateRouteVisibility();
 }
 

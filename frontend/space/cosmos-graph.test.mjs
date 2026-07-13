@@ -6,7 +6,7 @@ const moduleUrl = new URL("./cosmos-graph.js", import.meta.url);
 const moduleSource = await readFile(moduleUrl, "utf8");
 const graphModule = await import(`data:text/javascript;base64,${Buffer.from(moduleSource).toString("base64")}`);
 
-const { buildProgressionLayout, orderProgressionNodes } = graphModule;
+const { buildProgressionLayout, deriveNextDestinations, orderProgressionNodes } = graphModule;
 
 function progressionEdge(sourceId, targetId) {
   return {
@@ -46,7 +46,13 @@ test("cross-chapter progression overrides reversed input and keeps each boss las
   assert.equal(layout.positions.get("a-boss").rank, 2);
   assert.equal(layout.positions.get("b-boss").rank, 2);
   assert.equal(layout.frontFrame.macroId, "chapter-a");
-  assert.equal(layout.positions.get("chapter-a").position[2], layout.positions.get("a-boss").position[2]);
+  const depthSequence = ["chapter-a", "a-concept", "a-boss", "chapter-b", "b-concept", "b-boss"]
+    .map((nodeId) => layout.positions.get(nodeId).position[2]);
+  depthSequence.slice(1).forEach((depth, index) => {
+    assert.ok(depth < depthSequence[index], `${depth} must be deeper than ${depthSequence[index]}`);
+  });
+  assert.equal(layout.frontFrame.entryId, "chapter-a");
+  assert.ok(layout.frontFrame.lookAt[2] < layout.frontFrame.camera[2]);
 });
 
 test("unconnected chapters retain author order", () => {
@@ -72,4 +78,74 @@ test("cycles remain deterministic instead of dropping nodes", () => {
   );
 
   assert.deepEqual(ordered, ["chapter", "concept", "boss"]);
+});
+
+test("recommended next task retains its real progression tunnel metadata", () => {
+  const nextObject = {
+    id: "method",
+    title: "Method",
+    description: "Next training step",
+    status: "available",
+    trainable: true,
+  };
+  const graph = {
+    edges: [{
+      sourceId: "concept",
+      targetId: "method",
+      edgeType: "transfers_to",
+      decisionRole: "progression",
+      label: "Concept to method",
+    }],
+    byId: new Map([[nextObject.id, nextObject]]),
+    objects: [nextObject],
+  };
+
+  const [choice] = deriveNextDestinations(graph, "concept", {
+    current_task: { task_id: "method" },
+  });
+
+  assert.equal(choice.id, "method");
+  assert.equal(choice.recommended, true);
+  assert.equal(choice.edgeType, "transfers_to");
+  assert.equal(choice.rapidTransit, true);
+  assert.deepEqual(choice.transitPath, ["concept", "method"]);
+});
+
+test("recommended task can traverse a multi-hop progression path across chapters", () => {
+  const boss = { id: "a-boss", title: "Boss A", status: "mastered", trainable: true, position: [0, 0, -300] };
+  const chapter = { id: "chapter-b", title: "Chapter B", status: "available", trainable: false, position: [0, 0, -600] };
+  const concept = { id: "b-concept", title: "Concept B", status: "available", trainable: true, position: [0, 0, -900] };
+  const graph = {
+    edges: [
+      { sourceId: "a-boss", targetId: "chapter-b", edgeType: "unlock", decisionRole: "progression" },
+      { sourceId: "chapter-b", targetId: "b-concept", edgeType: "contains", decisionRole: "progression" },
+    ],
+    byId: new Map([[boss.id, boss], [chapter.id, chapter], [concept.id, concept]]),
+    objects: [boss, chapter, concept],
+  };
+
+  const [choice] = deriveNextDestinations(graph, "a-boss", {
+    current_task: { task_id: "b-concept" },
+  });
+
+  assert.equal(choice.id, "b-concept");
+  assert.equal(choice.rapidTransit, true);
+  assert.deepEqual(choice.transitPath, ["a-boss", "chapter-b", "b-concept"]);
+});
+
+test("a cyclic progression edge that points toward the player is not offered as rapid transit", () => {
+  const source = { id: "deep", title: "Deep", status: "available", trainable: true, position: [0, 0, -800] };
+  const target = { id: "front", title: "Front", status: "available", trainable: true, position: [0, 0, -300] };
+  const graph = {
+    edges: [{ sourceId: "deep", targetId: "front", edgeType: "transfers_to", decisionRole: "progression" }],
+    byId: new Map([[source.id, source], [target.id, target]]),
+    objects: [source, target],
+  };
+
+  const [choice] = deriveNextDestinations(graph, "deep", {
+    current_task: { task_id: "front" },
+  });
+
+  assert.equal(choice.rapidTransit, false);
+  assert.equal(choice.transitPath, null);
 });
