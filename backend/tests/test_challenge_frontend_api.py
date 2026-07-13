@@ -201,6 +201,44 @@ def test_space_trainer_builds_high_fidelity_volumetric_portals() -> None:
     assert "highp float" in renderer.text
 
 
+def test_space_portals_have_a_layered_traversable_interior() -> None:
+    client = TestClient(create_app("mixed"))
+
+    renderer = client.get("/trainer/space/singularity-renderer.js")
+
+    assert renderer.status_code == 200
+    assert "DEPTH_CHAMBER_FRAGMENT_SHADER" in renderer.text
+    assert "BALANCED_DEPTH_CHAMBER_FRAGMENT_SHADER" in renderer.text
+    assert "createPortalDepthChamber" in renderer.text
+    assert "createTunnelRib" in renderer.text
+    assert "mouthScale" in renderer.text
+    assert "layerCount" in renderer.text
+    assert "coreRadius" in renderer.text
+    assert "new THREE.RingGeometry" in renderer.text
+
+
+def test_space_graph_is_front_facing_and_orders_each_boss_last() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+    graph_adapter = client.get("/trainer/space/cosmos-graph.js")
+    renderer = client.get("/trainer/space/singularity-renderer.js")
+
+    assert script.status_code == 200
+    assert graph_adapter.status_code == 200
+    assert renderer.status_code == 200
+    assert "buildProgressionLayout" in graph_adapter.text
+    assert "orderProgressionNodes" in graph_adapter.text
+    assert "decisionRole" in graph_adapter.text
+    assert "frontFrame" in graph_adapter.text
+    assert "BOSS_RADIUS = 78" in graph_adapter.text
+    assert "frameLearningPathFront" in script.text
+    assert "PORTAL_APPROACH_DIRECTION" in script.text
+    assert "Object.freeze([0, 0, 1])" in script.text
+    assert "new THREE.Vector3(0.62, 0.24, 1)" not in script.text
+    assert "approachDirection" not in renderer.text
+
+
 def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
     client = TestClient(create_app("mixed"))
 

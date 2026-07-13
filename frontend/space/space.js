@@ -1,4 +1,4 @@
-import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260713-singularity-3";
+import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260713-depth-layout-5";
 import {
   applyCelestialStatus,
   createAuxiliaryStar,
@@ -8,11 +8,12 @@ import {
   createRepairSingularity,
   detectQualityLevel,
   updateCelestialObject,
-} from "./singularity-renderer.js?v=20260713-volumetric-portals-7";
+} from "./singularity-renderer.js?v=20260713-depth-layout-8";
 
 const apiBase = "/api/challenge/v1";
 const threeModuleUrl = "three";
 const BOSS_SCALE = 3.8;
+const PORTAL_APPROACH_DIRECTION = Object.freeze([0, 0, 1]);
 const MOVEMENT_KEYS = new Set([
   "KeyW", "KeyA", "KeyS", "KeyD", "Space", "ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight",
 ]);
@@ -234,7 +235,8 @@ function rebuildKnowledgeUniverse(challenge) {
     const current = state.objectById.get(requestedFocusId) || state.objectById.get(state.currentTaskId);
     if (current) {
       state.hasFramedInitialTask = true;
-      flyToObject(current, { immediate: true });
+      if (requestedFocusId) flyToObject(current, { immediate: true });
+      else frameLearningPathFront(current);
     }
   }
 }
@@ -663,7 +665,7 @@ function flyToObject(object, options = {}) {
       : object.role === "auxiliary"
         ? Math.max(radius * 8, 62)
         : Math.max(radius * 7.8, 104);
-  const viewDirection = new THREE.Vector3(0.62, 0.24, 1).normalize();
+  const viewDirection = new THREE.Vector3(...PORTAL_APPROACH_DIRECTION);
   const destination = object.group.position.clone().addScaledVector(viewDirection, distance);
   state.velocity?.set(0, 0, 0);
   if (options.immediate || prefersReducedMotion()) {
@@ -679,6 +681,28 @@ function flyToObject(object, options = {}) {
     destination,
     target: object.group.position.clone(),
   };
+}
+
+function frameLearningPathFront(currentObject) {
+  if (!state.camera || !state.graph?.frontFrame) {
+    flyToObject(currentObject, { immediate: true });
+    return;
+  }
+  const THREE = state.THREE;
+  const frame = state.graph.frontFrame;
+  const center = new THREE.Vector3(...frame.center);
+  const verticalFov = THREE.MathUtils.degToRad(state.camera.fov);
+  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov * 0.5) * state.camera.aspect);
+  const widthDistance = frame.width / (2 * Math.tan(horizontalFov * 0.5));
+  const heightDistance = frame.height / (2 * Math.tan(verticalFov * 0.5));
+  const distance = clamp(Math.max(widthDistance, heightDistance) * 1.08, 920, 2600);
+  state.camera.position.copy(center).addScaledVector(
+    new THREE.Vector3(...PORTAL_APPROACH_DIRECTION),
+    distance,
+  );
+  state.camera.lookAt(center);
+  state.velocity?.set(0, 0, 0);
+  syncCameraAngles();
 }
 
 function updateTransitTween() {

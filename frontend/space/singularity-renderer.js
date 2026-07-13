@@ -61,6 +61,8 @@ const APERTURE_FRAGMENT_SHADER = `
   uniform float time;
   uniform float activity;
   uniform float seed;
+  uniform float coreRadius;
+  uniform float bossMode;
   varying vec2 vUv;
   ${DOMAIN_WARP_GLSL}
 
@@ -68,23 +70,60 @@ const APERTURE_FRAGMENT_SHADER = `
     vec2 p = vUv * 2.0 - 1.0;
     float radius = length(p);
     float angle = atan(p.y, p.x);
-    vec2 warped = domainWarp(p * 2.8, seed, time * 0.24);
+    vec2 warped = domainWarp(p * 3.15, seed, time * 0.2);
     float warpedRadius = length(warped);
     float vortexAngle = atan(warped.y, warped.x);
-    float spiral = pow(0.5 + 0.5 * sin(vortexAngle * 10.0 - log(radius + 0.075) * 29.0 + time * 0.34), 7.0);
-    float fineSpiral = pow(0.5 + 0.5 * sin(angle * 19.0 - radius * 62.0 - time * 0.17), 9.0);
-    float tunnel = smoothstep(0.05, 0.72, radius) * (1.0 - smoothstep(0.72, 1.0, radius));
-    float rim = smoothstep(0.55, 0.91, warpedRadius) * (1.0 - smoothstep(0.86, 1.02, radius));
-    vec2 cells = floor((warped + vec2(seed * 2.0)) * 78.0);
-    float stars = step(0.992, hash21(cells)) * pow(max(0.0, 1.0 - radius), 1.4);
-    float centralVoid = 1.0 - smoothstep(0.08, 0.48, radius);
-    vec3 color = coreColor * (0.72 + radius * 0.22);
-    color += accent * spiral * tunnel * (0.008 + activity * 0.012);
-    color += accent * fineSpiral * tunnel * 0.004;
-    color += accent * rim * (0.014 + spiral * 0.026) * activity;
-    color += mix(accent, vec3(1.0), 0.78) * stars * (0.38 + activity * 0.22);
-    color *= 1.0 - centralVoid * 0.82;
-    float alpha = 1.0 - smoothstep(0.96, 1.0, radius);
+    float spiral = pow(0.5 + 0.5 * sin(vortexAngle * (9.0 + bossMode * 3.0) - log(radius + 0.06) * 31.0 + time * 0.3), 6.0);
+    float counterSpiral = pow(0.5 + 0.5 * sin(angle * 17.0 + log(radius + 0.12) * 19.0 - time * 0.12), 10.0);
+    float depthBands = pow(0.5 + 0.5 * sin(log(radius + 0.055) * 42.0 - angle * 2.0), 12.0);
+    float tunnel = smoothstep(coreRadius * 0.72, 0.82, radius) * (1.0 - smoothstep(0.82, 1.0, radius));
+    float rim = smoothstep(0.5, 0.92, warpedRadius) * (1.0 - smoothstep(0.83, 1.02, radius));
+    float turbulence = fbm(warped * 3.4 - vec2(time * 0.025, seed * 5.0));
+    vec2 cells = floor((warped + vec2(seed * 2.0)) * 92.0);
+    float stars = step(0.9935, hash21(cells)) * smoothstep(coreRadius * 0.8, 0.94, radius);
+    float centralVoid = 1.0 - smoothstep(coreRadius * 0.72, coreRadius * 1.28, radius);
+    vec3 heatColor = mix(accent, vec3(1.0, 0.48, 0.2), bossMode * 0.42);
+    vec3 color = coreColor * (0.58 + radius * 0.34);
+    color += accent * turbulence * tunnel * (0.018 + activity * 0.025);
+    color += heatColor * spiral * tunnel * (0.04 + activity * 0.052);
+    color += accent * counterSpiral * tunnel * 0.026;
+    color += heatColor * depthBands * tunnel * (0.014 + bossMode * 0.018);
+    color += heatColor * rim * (0.035 + spiral * 0.072) * activity;
+    color += mix(accent, vec3(1.0), 0.82) * stars * (0.48 + activity * 0.26);
+    color *= 1.0 - centralVoid * (0.78 + bossMode * 0.08);
+    float alpha = (1.0 - smoothstep(0.95, 1.0, radius)) * 0.98;
+    gl_FragColor = vec4(color, alpha);
+  }
+`;
+
+const DEPTH_CHAMBER_FRAGMENT_SHADER = `
+  precision highp float;
+  uniform vec3 accent;
+  uniform vec3 hotColor;
+  uniform float time;
+  uniform float activity;
+  uniform float seed;
+  uniform float layer;
+  uniform float bossMode;
+  varying vec2 vUv;
+  ${DOMAIN_WARP_GLSL}
+
+  void main() {
+    vec2 p = vUv * 2.0 - 1.0;
+    float radius = length(p);
+    float angle = atan(p.y, p.x);
+    vec2 warped = domainWarp(p * (3.5 + layer * 1.4), seed + layer * 0.31, time * (0.16 + layer * 0.04));
+    float turbulence = fbm(warped * 3.2 + vec2(layer * 6.0));
+    float spiral = pow(0.5 + 0.5 * sin(angle * (8.0 + bossMode * 3.0) - radius * 24.0 + warped.x * 8.0 - time * 0.22), 8.0);
+    float fracture = pow(0.5 + 0.5 * sin(angle * 19.0 + warped.y * 13.0 + time * 0.11), 18.0);
+    float edge = 1.0 - smoothstep(0.57, 0.98, radius);
+    float innerFade = smoothstep(0.08, 0.4, radius);
+    float hotArc = pow(max(0.0, cos(angle - 0.72 - layer * 1.7)), 13.0);
+    hotArc += 0.58 * pow(max(0.0, cos(angle + 2.3 + layer * 0.8)), 17.0);
+    vec3 color = mix(accent * (0.28 + turbulence * 0.55), hotColor, clamp(hotArc + spiral * 0.26, 0.0, 1.0));
+    float energy = edge * innerFade * (spiral * 0.42 + fracture * 0.22 + turbulence * 0.18 + hotArc * 0.52);
+    float alpha = energy * (0.1 + activity * 0.13) * mix(1.0, 0.62, layer);
+    if (alpha < 0.004) discard;
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -246,6 +285,7 @@ const RIM_FRAGMENT_SHADER = `
 
 const BALANCED_APERTURE_FRAGMENT_SHADER = APERTURE_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
 const BALANCED_THROAT_FRAGMENT_SHADER = THROAT_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
+const BALANCED_DEPTH_CHAMBER_FRAGMENT_SHADER = DEPTH_CHAMBER_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
 const BALANCED_VOLUMETRIC_MANTLE_FRAGMENT_SHADER = VOLUMETRIC_MANTLE_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
 const BALANCED_RIM_FRAGMENT_SHADER = RIM_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
 
@@ -337,6 +377,7 @@ export function createKnowledgeSingularity(THREE, definition, qualityLevel = "hi
     activity: 0.62 + difficulty * 0.58,
     coreColor: 0x000207,
     qualityLevel,
+    mouthScale: 1.34 + difficulty * 0.08,
     seed: hashAngle(definition.id),
     distortion: 0.035 + difficulty * 0.035,
   });
@@ -416,6 +457,8 @@ export function createAuxiliaryStar(THREE, definition, qualityLevel = "high") {
     activity: 0.28,
     coreColor: 0x101a20,
     qualityLevel,
+    auxiliary: true,
+    mouthScale: 1.2,
     openness: 0.86,
     seed: hashAngle(definition.id),
     distortion: 0.018,
@@ -496,6 +539,7 @@ export function createRepairSingularity(THREE, definition, qualityLevel = "high"
     activity: 0.92,
     coreColor: 0x050107,
     qualityLevel,
+    mouthScale: 1.46,
     seed: hashAngle(definition.id),
     distortion: 0.085,
   });
@@ -571,7 +615,11 @@ export function createBossCataclysm(THREE, definition, qualityLevel = "high") {
     activity: 1.45,
     coreColor: 0x030001,
     qualityLevel,
-    openness: 0.72,
+    openness: 0.68,
+    mouthScale: 1.62,
+    coreRadius: 0.29,
+    hotColor: whiteHeat,
+    boss: true,
     seed: hashAngle(definition.id),
     distortion: 0.12,
   });
@@ -682,6 +730,7 @@ export function createKnowledgeDomain(THREE, definition, qualityLevel = "high") 
     activity: 0.22,
     coreColor: 0x03080c,
     qualityLevel,
+    mouthScale: 1.28,
     openness: 0.88,
     seed: hashAngle(definition.id),
     distortion: 0.028,
@@ -746,7 +795,9 @@ export function createPortalThroat(THREE, radius, depth, accent, options = {}) {
   const qualityLevel = options.qualityLevel || "high";
   const segments = qualityLevel === "high" ? 128 : 72;
   const depthSegments = qualityLevel === "high" ? 34 : 18;
-  const openness = options.openness ?? 0.78;
+  const boss = options.boss === true;
+  const mouthScale = options.mouthScale ?? (boss ? 1.58 : options.auxiliary ? 1.2 : 1.34);
+  const openness = options.openness ?? (boss ? 0.66 : 0.76);
   const coreColor = new THREE.Color(options.coreColor ?? 0x000205);
   const material = new THREE.ShaderMaterial({
     uniforms: {
@@ -764,7 +815,7 @@ export function createPortalThroat(THREE, radius, depth, accent, options = {}) {
     side: THREE.BackSide,
     toneMapped: false,
   });
-  const wallGeometry = new THREE.CylinderGeometry(radius * 0.98, radius * openness, depth, segments, depthSegments, true);
+  const wallGeometry = new THREE.CylinderGeometry(radius * mouthScale, radius * openness, depth, segments, depthSegments, true);
   distortRadialGeometry(wallGeometry, "x", "z", options.distortion || 0, options.seed || 0);
   const wall = new THREE.Mesh(wallGeometry, material);
   wall.rotation.x = Math.PI * 0.5;
@@ -772,15 +823,23 @@ export function createPortalThroat(THREE, radius, depth, accent, options = {}) {
   wall.renderOrder = 1;
   group.add(wall);
 
-  const aperture = createPortalAperture(THREE, radius * Math.min(1.02, openness * 1.18), accent, {
+  const chamber = createPortalDepthChamber(THREE, radius, depth, accent, {
+    ...options,
+    mouthScale,
+    openness,
     activity: options.activity,
     coreColor,
     qualityLevel,
     seed: options.seed,
   });
-  aperture.mesh.position.z = -depth * 0.58;
-  group.add(aperture.mesh);
-  return { group, materials: [material, aperture.material], wall, aperture: aperture.mesh };
+  group.add(chamber.group);
+  return {
+    group,
+    materials: [material, ...chamber.materials],
+    meshes: [wall, ...chamber.meshes],
+    wall,
+    aperture: chamber.aperture,
+  };
 }
 
 export function createPortalAperture(THREE, radius, accent, options = {}) {
@@ -792,6 +851,8 @@ export function createPortalAperture(THREE, radius, accent, options = {}) {
       time: { value: 0 },
       activity: { value: options.activity ?? 0.7 },
       seed: { value: options.seed ?? 0 },
+      coreRadius: { value: options.coreRadius ?? 0.23 },
+      bossMode: { value: options.boss ? 1 : 0 },
     },
     vertexShader: PORTAL_VERTEX_SHADER,
     fragmentShader: qualityLevel === "high" ? APERTURE_FRAGMENT_SHADER : BALANCED_APERTURE_FRAGMENT_SHADER,
@@ -802,6 +863,91 @@ export function createPortalAperture(THREE, radius, accent, options = {}) {
   });
   const mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, qualityLevel === "high" ? 128 : 72), material);
   mesh.renderOrder = 0;
+  return { mesh, material };
+}
+
+export function createPortalDepthChamber(THREE, radius, depth, accent, options = {}) {
+  const group = new THREE.Group();
+  const qualityLevel = options.qualityLevel || "high";
+  const boss = options.boss === true;
+  const mouthScale = options.mouthScale ?? (boss ? 1.58 : 1.34);
+  const openness = options.openness ?? (boss ? 0.66 : 0.76);
+  const layerCount = options.layerCount ?? (boss
+    ? (qualityLevel === "high" ? 7 : 4)
+    : (qualityLevel === "high" ? 5 : 3));
+  const coreRadius = options.coreRadius ?? (boss ? 0.27 : options.auxiliary ? 0.18 : 0.22);
+  const materials = [];
+  const meshes = [];
+  const hotColor = options.hotColor instanceof THREE.Color
+    ? options.hotColor
+    : accent.clone().lerp(new THREE.Color(0xffffff), boss ? 0.32 : 0.68);
+
+  const aperture = createPortalAperture(THREE, radius * mouthScale * 0.99, accent, {
+    ...options,
+    coreRadius,
+    boss,
+  });
+  aperture.mesh.position.z = -depth * 0.78;
+  aperture.mesh.renderOrder = 0.5;
+  group.add(aperture.mesh);
+  materials.push(aperture.material);
+  meshes.push(aperture.mesh);
+
+  for (let layerIndex = 0; layerIndex < layerCount; layerIndex += 1) {
+    const layer = layerCount <= 1 ? 0 : layerIndex / (layerCount - 1);
+    const outerScale = mouthScale * (1 - layer) + openness * 1.08 * layer;
+    const outerRadius = radius * outerScale;
+    const innerRadius = outerRadius * (0.56 + layer * 0.14);
+    const rib = createTunnelRib(THREE, innerRadius, outerRadius, accent, {
+      activity: options.activity,
+      boss,
+      hotColor,
+      layer,
+      qualityLevel,
+      seed: (options.seed ?? 0) + layerIndex * 0.137,
+      distortion: (options.distortion ?? 0.04) * (0.62 + layer * 0.72),
+    });
+    rib.mesh.position.z = -depth * (0.06 + layer * 0.64);
+    rib.mesh.rotation.z = (options.seed ?? 0) * Math.PI * 2 + layerIndex * 0.83;
+    rib.mesh.renderOrder = 1.25 + layerIndex * 0.015;
+    group.add(rib.mesh);
+    materials.push(rib.material);
+    meshes.push(rib.mesh);
+  }
+
+  return { group, materials, meshes, aperture: aperture.mesh };
+}
+
+export function createTunnelRib(THREE, innerRadius, outerRadius, accent, options = {}) {
+  const qualityLevel = options.qualityLevel || "high";
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      accent: { value: accent },
+      hotColor: { value: options.hotColor instanceof THREE.Color ? options.hotColor : accent },
+      time: { value: 0 },
+      activity: { value: options.activity ?? 0.7 },
+      seed: { value: options.seed ?? 0 },
+      layer: { value: options.layer ?? 0 },
+      bossMode: { value: options.boss ? 1 : 0 },
+    },
+    vertexShader: PORTAL_VERTEX_SHADER,
+    fragmentShader: qualityLevel === "high"
+      ? DEPTH_CHAMBER_FRAGMENT_SHADER
+      : BALANCED_DEPTH_CHAMBER_FRAGMENT_SHADER,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const geometry = new THREE.RingGeometry(
+    innerRadius,
+    outerRadius,
+    qualityLevel === "high" ? 144 : 84,
+    2,
+  );
+  distortRadialGeometry(geometry, "x", "y", options.distortion ?? 0.03, options.seed ?? 0);
+  const mesh = new THREE.Mesh(geometry, material);
   return { mesh, material };
 }
 
@@ -1266,8 +1412,6 @@ function baseGroup(THREE, definition) {
   const group = new THREE.Group();
   group.position.set(...definition.position);
   group.userData.id = definition.id;
-  const approachDirection = new THREE.Vector3(0.62, 0.24, 1).normalize();
-  group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), approachDirection);
   group.rotateZ((hashAngle(definition.id) - 0.5) * 0.36);
   return group;
 }

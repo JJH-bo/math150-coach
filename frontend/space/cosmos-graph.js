@@ -29,6 +29,9 @@ const TYPE_DIFFICULTY = {
 };
 
 const DOMAIN_COLORS = [0x77dff8, 0x7cddb9, 0xa996dc, 0xd6a769, 0x8fb8e9];
+const BOSS_RADIUS = 78;
+const PROGRESSION_NODE_SPACING = 245;
+const PROGRESSION_ROW_SPACING = 520;
 
 export function buildCosmosGraph(challenge = {}) {
   const network = challenge.network || {};
@@ -42,9 +45,11 @@ export function buildCosmosGraph(challenge = {}) {
   const objects = [];
   const byId = new Map();
   const domains = [];
+  const progressionLayout = buildProgressionLayout(network);
 
   macroSpecs.forEach((macro, macroIndex) => {
-    const center = domainCenter(macroIndex, macroSpecs.length);
+    const center = progressionLayout.positions.get(macro.id)?.position
+      || domainCenter(macroIndex, macroSpecs.length);
     const color = DOMAIN_COLORS[macroIndex % DOMAIN_COLORS.length];
     const domain = makeObject({
       id: macro.id,
@@ -71,7 +76,8 @@ export function buildCosmosGraph(challenge = {}) {
       const role = progress.status === "failed" || mastery.visual_state === "repair"
         ? "repair"
         : "training";
-      const position = progressionPosition(center, microIndex, micros.length, macroIndex);
+      const position = progressionLayout.positions.get(micro.id)?.position
+        || progressionPosition(center, microIndex, micros.length, macroIndex);
       addObject(makeObject({
         ...micro,
         kind: "micro",
@@ -96,10 +102,11 @@ export function buildCosmosGraph(challenge = {}) {
         kind: "boss",
         role: "boss",
         status: progress.status || "locked",
-        position: [center[0] + 370, center[1] + 56, center[2] - 510],
-        radius: 52,
+        position: progressionLayout.positions.get(boss.id)?.position
+          || [center[0] + 370, center[1] + 56, center[2] - 510],
+        radius: BOSS_RADIUS,
         difficulty: 1,
-        interactionRadius: 250,
+        interactionRadius: 360,
         color: 0x9f351d,
         macroId: macro.id,
         trainable: true,
@@ -224,6 +231,7 @@ export function buildCosmosGraph(challenge = {}) {
     domains,
     edges,
     currentTaskId: challenge.current_task?.task_id || null,
+    frontFrame: progressionLayout.frontFrame,
   };
 }
 
@@ -300,8 +308,115 @@ function normalizeEdge(edge) {
     label: edge.label || edge.edge_type || "知识关系",
     reason: edge.reason || "",
     weight: Number(edge.semantic_weight || 1),
+    decisionRole: edge.decision_role || "navigation",
     derived: false,
   };
+}
+
+export function buildProgressionLayout(network = {}) {
+  const macros = network.macro_nodes || [];
+  const microSpecs = network.micro_nodes || [];
+  const bossSpecs = network.macro_challenges || [];
+  const typedEdges = network.typed_edges || [];
+  const orderedMacros = orderProgressionMacros(macros, microSpecs, bossSpecs, typedEdges);
+  const positions = new Map();
+  const rowCount = Math.max(orderedMacros.length, 1);
+  let firstRowBounds = null;
+
+  orderedMacros.forEach((macro, macroIndex) => {
+    const micros = microSpecs.filter((item) => item.macro_node_id === macro.id);
+    const boss = bossSpecs.find((item) => item.macro_node_id === macro.id);
+    const candidateIds = [macro.id, ...micros.map((item) => item.id), ...(boss ? [boss.id] : [])];
+    const ordered = orderProgressionNodes(candidateIds, typedEdges);
+    const bossLast = boss
+      ? [...ordered.filter((nodeId) => nodeId !== boss.id), boss.id]
+      : ordered;
+    const direction = macroIndex % 2 === 0 ? 1 : -1;
+    const rowWidth = Math.max(0, bossLast.length - 1) * PROGRESSION_NODE_SPACING;
+    const rowY = ((rowCount - 1) * 0.5 - macroIndex) * PROGRESSION_ROW_SPACING;
+    const rowZ = -760 - macroIndex * 38;
+
+    bossLast.forEach((nodeId, index) => {
+      const x = direction * (-rowWidth * 0.5 + index * PROGRESSION_NODE_SPACING);
+      positions.set(nodeId, {
+        position: [x, rowY, rowZ],
+        rank: index,
+        row: macroIndex,
+      });
+    });
+
+    if (macroIndex === 0) {
+      firstRowBounds = {
+        macroId: macro.id,
+        center: [0, rowY, rowZ],
+        width: rowWidth + BOSS_RADIUS * 8.9,
+        height: BOSS_RADIUS * 8.9,
+      };
+    }
+  });
+
+  return {
+    positions,
+    frontFrame: firstRowBounds || {
+      macroId: null,
+      center: [0, 0, -760],
+      width: 1600,
+      height: 720,
+    },
+  };
+}
+
+export function orderProgressionMacros(macros, microSpecs = [], bossSpecs = [], typedEdges = []) {
+  const macroIds = macros.map((macro) => macro.id);
+  const ownerByNodeId = new Map(macroIds.map((macroId) => [macroId, macroId]));
+  microSpecs.forEach((micro) => ownerByNodeId.set(micro.id, micro.macro_node_id));
+  bossSpecs.forEach((boss) => ownerByNodeId.set(boss.id, boss.macro_node_id));
+
+  const chapterEdges = typedEdges
+    .filter((edge) => edge.decision_role === "progression")
+    .map((edge) => ({
+      source_id: ownerByNodeId.get(edge.source_id),
+      target_id: ownerByNodeId.get(edge.target_id),
+      decision_role: "progression",
+    }))
+    .filter((edge) => edge.source_id && edge.target_id && edge.source_id !== edge.target_id);
+  const macroById = new Map(macros.map((macro) => [macro.id, macro]));
+
+  return orderProgressionNodes(macroIds, chapterEdges)
+    .map((macroId) => macroById.get(macroId))
+    .filter(Boolean);
+}
+
+export function orderProgressionNodes(nodeIds, typedEdges = []) {
+  const originalOrder = new Map(nodeIds.map((nodeId, index) => [nodeId, index]));
+  const nodeSet = new Set(nodeIds);
+  const outgoing = new Map(nodeIds.map((nodeId) => [nodeId, []]));
+  const indegree = new Map(nodeIds.map((nodeId) => [nodeId, 0]));
+
+  typedEdges
+    .filter((edge) => edge.decision_role === "progression")
+    .filter((edge) => nodeSet.has(edge.source_id) && nodeSet.has(edge.target_id))
+    .forEach((edge) => {
+      outgoing.get(edge.source_id).push(edge.target_id);
+      indegree.set(edge.target_id, indegree.get(edge.target_id) + 1);
+    });
+
+  const ready = nodeIds.filter((nodeId) => indegree.get(nodeId) === 0);
+  const ordered = [];
+  while (ready.length > 0) {
+    ready.sort((left, right) => originalOrder.get(left) - originalOrder.get(right));
+    const nodeId = ready.shift();
+    ordered.push(nodeId);
+    outgoing.get(nodeId).forEach((targetId) => {
+      indegree.set(targetId, indegree.get(targetId) - 1);
+      if (indegree.get(targetId) === 0) ready.push(targetId);
+    });
+  }
+
+  nodeIds.forEach((nodeId) => {
+    if (!ordered.includes(nodeId)) ordered.push(nodeId);
+  });
+  return ordered;
 }
 
 function dedupeEdges(edges) {
