@@ -178,3 +178,20 @@ def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
     assert "realisticBodyProfile" in script.text
     assert "preserveSurfaceColor" in script.text
     assert "addNebulaDust" not in script.text
+
+
+def test_space_trainer_expands_to_large_dynamic_knowledge_galaxy() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+
+    assert script.status_code == 200
+    assert script.text.count("visualOnly: true") >= 4
+    assert script.text.count("type:") >= 12
+    assert "nodeTypeDefinitions" in script.text
+    assert "updateCosmicMotion" in script.text
+    assert "state.cosmicLayers" in script.text
+    assert "state.nebulaSprites" in script.text
+    assert "currentCandidate" in script.text
+    assert "radius: 16" in script.text
+    assert "interactionRadius: 70" in script.text

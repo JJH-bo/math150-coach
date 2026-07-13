@@ -5,34 +5,82 @@ const macroDefinitions = [
   {
     id: "ode_separable",
     title: "可分离变量方程",
-    position: [-76, 6, -136],
+    position: [-210, 4, -260],
     color: 0x76e4ff,
     summary: "先判断变量是否真的能分到两侧，再进入积分链。",
   },
   {
     id: "ode_first_order_linear",
     title: "一阶线性方程",
-    position: [4, 18, -230],
+    position: [60, 34, -470],
     color: 0x72e0b8,
     summary: "标准形、积分因子和乘积导数结构构成这片星域的主航道。",
   },
   {
     id: "ode_homogeneous_first_order",
     title: "一阶齐次方程",
-    position: [92, -4, -324],
+    position: [330, -20, -700],
     color: 0xb99cff,
     summary: "通过比值结构和换元视角，把未知区域重新化为可分离航道。",
   },
+  {
+    id: "ode_exact_equation",
+    title: "恰当方程星域",
+    position: [-40, -88, -860],
+    color: 0x8fdcff,
+    visualOnly: true,
+    summary: "视觉星域：用于承载恰当性检查、势函数和微分形式。",
+  },
+  {
+    id: "ode_bernoulli",
+    title: "伯努利变换星域",
+    position: [590, 52, -980],
+    color: 0xffd37c,
+    visualOnly: true,
+    summary: "视觉星域：用于承载代换、指数结构和可化为线性方程的入口。",
+  },
+  {
+    id: "ode_second_order_constant",
+    title: "二阶常系数线性星域",
+    position: [-430, 68, -980],
+    color: 0x9fb5ff,
+    visualOnly: true,
+    summary: "视觉星域：用于承载特征根、齐次解和受迫响应。",
+  },
+  {
+    id: "ode_nonhom_resonance",
+    title: "非齐次共振星域",
+    position: [760, -82, -1260],
+    color: 0xf4a7ff,
+    visualOnly: true,
+    summary: "视觉星域：用于承载试探形式、共振检查和待定系数法。",
+  },
+  {
+    id: "ode_reducible_order",
+    title: "降阶结构星域",
+    position: [-720, -44, -1300],
+    color: 0x72e0b8,
+    visualOnly: true,
+    summary: "视觉星域：用于承载降阶、代换和隐藏的一阶结构。",
+  },
 ];
 
-const microTypes = [
+const nodeTypeDefinitions = [
   { type: "concept", title: "概念", color: 0x8fdcff },
   { type: "trigger", title: "题眼", color: 0xffd37c },
   { type: "method", title: "方法", color: 0x72e0b8 },
   { type: "transformation", title: "转化", color: 0x9fb5ff },
   { type: "calculation", title: "计算", color: 0xf4a7ff },
   { type: "expression", title: "表达", color: 0xff9cae },
+  { type: "condition", title: "条件", color: 0x93d5ff },
+  { type: "example", title: "例题", color: 0xd6b77a },
+  { type: "mistake", title: "易错", color: 0xff8fa3 },
+  { type: "proof", title: "证明", color: 0xb8d8ff },
+  { type: "comparison", title: "对比", color: 0xc8a7ff },
+  { type: "review", title: "复盘", color: 0x9ee6bd },
 ];
+
+const microTypes = nodeTypeDefinitions;
 
 const realisticBodyProfiles = [
   {
@@ -93,19 +141,19 @@ const compareDefinitions = [
   {
     id: "ode.compare.separable_vs_linear",
     title: "可分离 vs 一阶线性",
-    position: [-38, 34, -178],
+    position: [-120, 72, -380],
     color: 0xffd37c,
   },
   {
     id: "ode.compare.linear_vs_homogeneous",
     title: "一阶线性 vs 一阶齐次",
-    position: [48, 32, -272],
+    position: [230, 76, -610],
     color: 0xffd37c,
   },
   {
     id: "ode.compare.separable_vs_homogeneous",
     title: "可分离 vs 一阶齐次",
-    position: [8, -28, -236],
+    position: [90, -102, -560],
     color: 0xffd37c,
   },
 ];
@@ -114,13 +162,13 @@ const guideDefinitions = [
   {
     id: "ode.guide.first_order_foundation",
     title: "一阶方程入口锚点",
-    position: [-8, -18, -108],
+    position: [-260, -86, -170],
     color: 0x76e4ff,
   },
   {
     id: "ode.guide.boss_readiness_gate",
     title: "Boss 验收门槛",
-    position: [52, 6, -390],
+    position: [680, 30, -1420],
     color: 0xffffff,
   },
 ];
@@ -147,6 +195,8 @@ const state = {
   objects: [],
   objectById: new Map(),
   lines: [],
+  cosmicLayers: [],
+  nebulaSprites: [],
   nearest: null,
   activeObject: null,
   currentTaskId: null,
@@ -233,12 +283,12 @@ function createKnowledgeUniverse(THREE) {
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x020511);
-  scene.fog = new THREE.FogExp2(0x061022, 0.00155);
+  scene.fog = new THREE.FogExp2(0x061022, 0.00082);
 
-  const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 1400);
-  camera.position.set(-48, 13, -76);
+  const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 2600);
+  camera.position.set(-120, 36, 40);
   camera.rotation.order = "YXZ";
-  camera.lookAt(new THREE.Vector3(-72, 6, -136));
+  camera.lookAt(new THREE.Vector3(-210, 8, -260));
   state.yaw = camera.rotation.y;
   state.pitch = camera.rotation.x;
 
@@ -335,8 +385,8 @@ function buildOdeSector(THREE, scene) {
       ...macro,
       kind: "macro",
       role: "知识星体",
-      radius: 7.4,
-      interactionRadius: 42,
+      radius: 16,
+      interactionRadius: 70,
     });
     scene.add(macroObject.group);
     registerObject(macroObject);
@@ -345,10 +395,10 @@ function buildOdeSector(THREE, scene) {
     const satellitePositions = [];
     microTypes.forEach((micro, index) => {
       const angle = (Math.PI * 2 * index) / microTypes.length + 0.32;
-      const orbit = 24 + (index % 2) * 3;
+      const orbit = 58 + (index % 4) * 10;
       const position = [
         macro.position[0] + Math.cos(angle) * orbit,
-        macro.position[1] + Math.sin(index * 1.7) * 7,
+        macro.position[1] + Math.sin(index * 1.7) * 16,
         macro.position[2] + Math.sin(angle) * orbit,
       ];
       const object = createSpaceObject(THREE, {
@@ -358,8 +408,8 @@ function buildOdeSector(THREE, scene) {
         role: "能力卫星",
         position,
         color: micro.color,
-        radius: 2.7,
-        interactionRadius: 30,
+        radius: 4.2 + (index % 3) * 0.45,
+        interactionRadius: 36,
         summary: `${micro.title}能力点，靠近后可进入当前训练遭遇。`,
       });
       scene.add(object.group);
@@ -367,9 +417,12 @@ function buildOdeSector(THREE, scene) {
       satellitePositions.push(new THREE.Vector3(...position));
       addRoute(THREE, scene, macro.position, position, micro.color, 0.24);
       if (index > 0) addRoute(THREE, scene, satellitePositions[index - 1], position, 0x6f8ea8, 0.12);
+      if (index > 1 && index % 3 === 0) {
+        addRoute(THREE, scene, satellitePositions[index - 3], position, micro.color, 0.1);
+      }
     });
 
-    const bossPosition = [macro.position[0] + 12, macro.position[1] + 18, macro.position[2] - 42];
+    const bossPosition = [macro.position[0] + 34, macro.position[1] + 34, macro.position[2] - 92];
     const boss = createSpaceObject(THREE, {
       id: `${macro.id}.macro_challenge`,
       title: `${macro.title} · Boss 星门`,
@@ -377,8 +430,8 @@ function buildOdeSector(THREE, scene) {
       role: "综合星门",
       position: bossPosition,
       color: 0xb99cff,
-      radius: 6,
-      interactionRadius: 38,
+      radius: 9.4,
+      interactionRadius: 58,
       summary: "完成能力卫星后，通过 Boss 星门验证整条推理链。",
     });
     scene.add(boss.group);
@@ -402,8 +455,8 @@ function buildOdeSector(THREE, scene) {
       ...compare,
       kind: "compare",
       role: "易混双星",
-      radius: 3.4,
-      interactionRadius: 28,
+      radius: 5.2,
+      interactionRadius: 36,
       summary: "这里不是新题目，而是用来区分相邻入口和方法的对比航标。",
     });
     scene.add(object.group);
@@ -415,8 +468,8 @@ function buildOdeSector(THREE, scene) {
       ...guide,
       kind: "guide",
       role: "导航信标",
-      radius: 3.1,
-      interactionRadius: 28,
+      radius: 5,
+      interactionRadius: 36,
       summary: "导航信标帮助你理解星域结构，不消耗训练机会。",
     });
     scene.add(object.group);
@@ -555,7 +608,11 @@ function createSpaceObject(THREE, definition) {
   group.add(marker);
   materials.push(markerMaterial);
 
-  const pointLight = new THREE.PointLight(profile.atmosphere, definition.kind === "macro" ? 0.18 : 0.08, 64);
+  const pointLight = new THREE.PointLight(
+    profile.atmosphere,
+    definition.kind === "macro" ? 0.24 : 0.1,
+    definition.radius * 13,
+  );
   group.add(pointLight);
 
   return {
@@ -627,6 +684,18 @@ function createSolarLightSource(THREE, scene) {
   sun.position.set(-610, 78, -330);
   sun.scale.set(210, 210, 1);
   scene.add(sun);
+  state.nebulaSprites.push({
+    sprite: sun,
+    material,
+    baseOpacity: material.opacity,
+    baseY: sun.position.y,
+    pulseSpeed: 0.28,
+    pulseAmount: 0.08,
+    driftSpeed: 0.12,
+    driftAmount: 2.8,
+    rotationSpeed: 0.012,
+    phase: 0.4,
+  });
 
   const warmKey = new THREE.PointLight(0xffc48a, 2.1, 820);
   warmKey.position.copy(sun.position);
@@ -674,6 +743,18 @@ function createMilkyWayBackdrop(THREE, scene) {
   sprite.scale.set(1180, 310, 1);
   sprite.material.rotation = -0.18;
   scene.add(sprite);
+  state.nebulaSprites.push({
+    sprite,
+    material,
+    baseOpacity: material.opacity,
+    baseY: sprite.position.y,
+    pulseSpeed: 0.14,
+    pulseAmount: 0.035,
+    driftSpeed: 0.09,
+    driftAmount: 5.5,
+    rotationSpeed: 0.003,
+    phase: 1.2,
+  });
 
   addStarLayer(THREE, scene, {
     count: 1500,
@@ -707,6 +788,18 @@ function createCinematicNebulaField(THREE, scene) {
     sprite.position.set(...cloud.position);
     sprite.scale.set(...cloud.scale);
     scene.add(sprite);
+    state.nebulaSprites.push({
+      sprite,
+      material,
+      baseOpacity: material.opacity,
+      baseY: sprite.position.y,
+      pulseSpeed: 0.12 + (cloud.seed % 5) * 0.018,
+      pulseAmount: Math.min(0.045, cloud.opacity * 0.14),
+      driftSpeed: 0.06 + (cloud.seed % 7) * 0.01,
+      driftAmount: 4 + (cloud.seed % 3) * 1.6,
+      rotationSpeed: 0.002 * (cloud.rotation < 0 ? -1 : 1),
+      phase: cloud.seed * 0.017,
+    });
   }
 }
 
@@ -752,7 +845,13 @@ function addStarLayer(THREE, scene, options) {
     sizeAttenuation: false,
     vertexColors: true,
   });
-  scene.add(new THREE.Points(geometry, material));
+  const points = new THREE.Points(geometry, material);
+  scene.add(points);
+  state.cosmicLayers.push({
+    object: points,
+    rotationX: banded ? 0.0004 : 0.0009,
+    rotationY: banded ? 0.0016 : 0.0007,
+  });
 }
 
 function createStarTexture(THREE) {
@@ -1287,11 +1386,28 @@ function visualPalette(status, kind, fallbackColor) {
 function animate() {
   const delta = Math.min(state.clock.getDelta(), 0.05);
   updateFlight(delta);
+  updateCosmicMotion(delta);
   updateObjectMotion(delta);
   updateNearestObject();
   if (state.composer) state.composer.render(delta);
   else state.renderer.render(state.scene, state.camera);
   requestAnimationFrame(animate);
+}
+
+function updateCosmicMotion(delta) {
+  const time = performance.now() * 0.001;
+  for (const layer of state.cosmicLayers) {
+    layer.object.rotation.x += delta * layer.rotationX;
+    layer.object.rotation.y += delta * layer.rotationY;
+  }
+  for (const layer of state.nebulaSprites) {
+    layer.sprite.position.y = layer.baseY + Math.sin(time * layer.driftSpeed + layer.phase) * layer.driftAmount;
+    layer.material.opacity = Math.max(
+      0.02,
+      layer.baseOpacity + Math.sin(time * layer.pulseSpeed + layer.phase) * layer.pulseAmount,
+    );
+    if ("rotation" in layer.material) layer.material.rotation += delta * layer.rotationSpeed;
+  }
 }
 
 function updateFlight(delta) {
@@ -1316,7 +1432,7 @@ function updateFlight(delta) {
   if (state.keys.has("Space")) target.y += 1;
   if (state.keys.has("ControlLeft") || state.keys.has("ControlRight")) target.y -= 1;
 
-  const speed = state.keys.has("ShiftLeft") || state.keys.has("ShiftRight") ? 72 : 34;
+  const speed = state.keys.has("ShiftLeft") || state.keys.has("ShiftRight") ? 128 : 52;
   if (target.lengthSq() > 0) target.normalize().multiplyScalar(speed);
   state.velocity.lerp(target, 0.12);
   state.camera.position.addScaledVector(state.velocity, delta);
@@ -1339,17 +1455,20 @@ function updateObjectMotion(delta) {
 function updateNearestObject() {
   const cameraPosition = state.camera.position;
   let nearest = null;
+  let currentCandidate = null;
   let nearestRatio = Infinity;
 
   for (const object of state.objects) {
     const distance = cameraPosition.distanceTo(object.group.position);
     const ratio = distance / object.interactionRadius;
+    if (object.id === state.currentTaskId && ratio < 1.18) currentCandidate = object;
     if (ratio < 1 && ratio < nearestRatio) {
       nearest = object;
       nearestRatio = ratio;
     }
   }
 
+  if (currentCandidate) nearest = currentCandidate;
   if (nearest?.id !== state.nearest?.id) {
     state.nearest = nearest;
     updateNearestPanel();
@@ -1471,8 +1590,8 @@ function focusCurrentTask() {
 
 function flyToObject(object) {
   const THREE = state.THREE;
-  const approachDistance = Math.max(object.radius * 4.8, Math.min(object.interactionRadius * 0.86, 42));
-  const approachHeight = Math.max(7, Math.min(object.radius * 2, object.interactionRadius * 0.42));
+  const approachDistance = Math.max(object.radius * 4.8, Math.min(object.interactionRadius * 0.86, 120));
+  const approachHeight = Math.max(12, Math.min(object.radius * 2.2, object.interactionRadius * 0.46));
   const sideOffset = object.kind === "micro" ? object.radius * 1.9 : object.radius * 1.4;
   const offset = new THREE.Vector3(sideOffset, approachHeight, approachDistance);
   const destination = object.group.position.clone().add(offset);
