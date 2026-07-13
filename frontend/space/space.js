@@ -8,7 +8,7 @@ import {
   createRepairSingularity,
   detectQualityLevel,
   updateCelestialObject,
-} from "./singularity-renderer.js?v=20260713-portal-aperture-4";
+} from "./singularity-renderer.js?v=20260713-volumetric-portals-7";
 
 const apiBase = "/api/challenge/v1";
 const threeModuleUrl = "three";
@@ -265,10 +265,15 @@ function disposeObject(group) {
 function disposeMaterial(material) {
   if (!material) return;
   ["map", "alphaMap", "bumpMap", "normalMap", "roughnessMap", "emissiveMap"].forEach((key) => {
-    material[key]?.dispose?.();
+    disposeTexture(material[key]);
   });
-  Object.values(material.uniforms || {}).forEach((uniform) => uniform?.value?.dispose?.());
+  Object.values(material.uniforms || {}).forEach((uniform) => disposeTexture(uniform?.value));
   material.dispose?.();
+}
+
+function disposeTexture(texture) {
+  if (!texture || texture.userData?.sharedPortalTexture) return;
+  texture.dispose?.();
 }
 
 function addSemanticRoute(edge) {

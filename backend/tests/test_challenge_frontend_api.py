@@ -166,6 +166,41 @@ def test_space_trainer_uses_cinematic_rendering_pipeline() -> None:
     assert "qualityLevel" in renderer.text
 
 
+def test_space_trainer_builds_high_fidelity_volumetric_portals() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+    renderer = client.get("/trainer/space/singularity-renderer.js")
+    filament_veil = client.get("/trainer/space/assets/portal-energy-veil.png")
+
+    assert script.status_code == 200
+    assert renderer.status_code == 200
+    assert filament_veil.status_code == 200
+    assert filament_veil.content.startswith(b"\x89PNG\r\n\x1a\n")
+    assert int.from_bytes(filament_veil.content[16:20], "big") >= 1_500
+    assert int.from_bytes(filament_veil.content[20:24], "big") >= 1_000
+    assert "DOMAIN_WARP_GLSL" in renderer.text
+    assert "VOLUMETRIC_MANTLE_FRAGMENT_SHADER" in renderer.text
+    assert "BALANCED_VOLUMETRIC_MANTLE_FRAGMENT_SHADER" in renderer.text
+    assert "FILAMENT_VEIL_FRAGMENT_SHADER" in renderer.text
+    assert "FUNNEL_VERTEX_SHADER" in renderer.text
+    assert "createVolumetricMantle" in renderer.text
+    assert "createFilamentVeil" in renderer.text
+    assert "createEnergyFilaments" in renderer.text
+    assert "createEnergyGlints" in renderer.text
+    assert "addMeshes(group, arcs.meshes)" in renderer.text
+    assert "group.add(...arcs.meshes)" not in renderer.text
+    assert "sharedPortalTexture" in renderer.text
+    assert "sharedPortalTexture" in script.text
+    assert "polarNoise" in renderer.text
+    assert "braidFrequency" in renderer.text
+    assert "gl_PointSize = min" in renderer.text
+    assert "clamp(core + horizontal" in renderer.text
+    assert "domainWarp" in renderer.text
+    assert "fbm" in renderer.text
+    assert "highp float" in renderer.text
+
+
 def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
     client = TestClient(create_app("mixed"))
 

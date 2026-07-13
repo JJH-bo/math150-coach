@@ -1,4 +1,5 @@
 const PORTAL_VERTEX_SHADER = `
+  precision highp float;
   varying vec2 vUv;
   varying vec3 vPosition;
   void main() {
@@ -8,66 +9,276 @@ const PORTAL_VERTEX_SHADER = `
   }
 `;
 
+const DOMAIN_WARP_GLSL = `
+  float hash21(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+
+  float valueNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash21(i);
+    float b = hash21(i + vec2(1.0, 0.0));
+    float c = hash21(i + vec2(0.0, 1.0));
+    float d = hash21(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
+  float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    mat2 rotation = mat2(0.8, -0.6, 0.6, 0.8);
+    for (int octave = 0; octave < 5; octave += 1) {
+      value += valueNoise(p) * amplitude;
+      p = rotation * p * 2.03 + vec2(7.13, 3.71);
+      amplitude *= 0.5;
+    }
+    return value;
+  }
+
+  vec2 domainWarp(vec2 p, float seed, float motion) {
+    vec2 q = vec2(
+      fbm(p + vec2(seed * 9.7, motion * 0.13)),
+      fbm(p + vec2(5.2 - motion * 0.11, seed * 7.3))
+    );
+    vec2 r = vec2(
+      fbm(p + q * 3.1 + vec2(1.7, 9.2)),
+      fbm(p + q * 2.7 + vec2(8.3, 2.8))
+    );
+    return p + (q - 0.5) * 0.72 + (r - 0.5) * 0.46;
+  }
+`;
+
+const BALANCED_DOMAIN_WARP_GLSL = DOMAIN_WARP_GLSL.replace("octave < 5", "octave < 3");
+
 const APERTURE_FRAGMENT_SHADER = `
+  precision highp float;
   uniform vec3 accent;
   uniform vec3 coreColor;
   uniform float time;
   uniform float activity;
+  uniform float seed;
   varying vec2 vUv;
+  ${DOMAIN_WARP_GLSL}
+
   void main() {
     vec2 p = vUv * 2.0 - 1.0;
     float radius = length(p);
     float angle = atan(p.y, p.x);
-    float spiral = 0.5 + 0.5 * sin(angle * 7.0 - radius * 25.0 + time * (0.32 + activity * 0.28));
-    float fineSpiral = 0.5 + 0.5 * sin(angle * 13.0 + radius * 43.0 - time * 0.18);
-    float tunnel = pow(max(0.0, 1.0 - radius), 2.2);
-    float rim = smoothstep(0.58, 0.98, radius) * (1.0 - smoothstep(0.9, 1.0, radius));
-    float specks = pow(max(0.0, sin(p.x * 91.0 + time) * sin(p.y * 117.0 - time * 0.7)), 18.0);
-    vec3 color = coreColor;
-    color += accent * (spiral * 0.045 + fineSpiral * 0.018) * tunnel * activity;
-    color += accent * rim * (0.08 + spiral * 0.12) * activity;
-    color += accent * specks * 0.32 * activity;
+    vec2 warped = domainWarp(p * 2.8, seed, time * 0.24);
+    float warpedRadius = length(warped);
+    float vortexAngle = atan(warped.y, warped.x);
+    float spiral = pow(0.5 + 0.5 * sin(vortexAngle * 10.0 - log(radius + 0.075) * 29.0 + time * 0.34), 7.0);
+    float fineSpiral = pow(0.5 + 0.5 * sin(angle * 19.0 - radius * 62.0 - time * 0.17), 9.0);
+    float tunnel = smoothstep(0.05, 0.72, radius) * (1.0 - smoothstep(0.72, 1.0, radius));
+    float rim = smoothstep(0.55, 0.91, warpedRadius) * (1.0 - smoothstep(0.86, 1.02, radius));
+    vec2 cells = floor((warped + vec2(seed * 2.0)) * 78.0);
+    float stars = step(0.992, hash21(cells)) * pow(max(0.0, 1.0 - radius), 1.4);
+    float centralVoid = 1.0 - smoothstep(0.08, 0.48, radius);
+    vec3 color = coreColor * (0.72 + radius * 0.22);
+    color += accent * spiral * tunnel * (0.008 + activity * 0.012);
+    color += accent * fineSpiral * tunnel * 0.004;
+    color += accent * rim * (0.014 + spiral * 0.026) * activity;
+    color += mix(accent, vec3(1.0), 0.78) * stars * (0.38 + activity * 0.22);
+    color *= 1.0 - centralVoid * 0.82;
     float alpha = 1.0 - smoothstep(0.96, 1.0, radius);
     gl_FragColor = vec4(color, alpha);
   }
 `;
 
+const FUNNEL_VERTEX_SHADER = `
+  precision highp float;
+  uniform float time;
+  uniform float distortion;
+  uniform float seed;
+  varying vec2 vUv;
+  varying float vDepth;
+
+  void main() {
+    vUv = uv;
+    vDepth = uv.y;
+    vec3 transformed = position;
+    float wave = sin(uv.x * 31.4159 + seed * 9.0 + uv.y * 8.0 - time * 0.16);
+    wave += sin(uv.x * 69.115 + seed * 17.0 - uv.y * 15.0 + time * 0.11) * 0.36;
+    float depthProfile = sin(uv.y * 3.14159265);
+    transformed.xz *= 1.0 + wave * distortion * depthProfile;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
+  }
+`;
+
 const THROAT_FRAGMENT_SHADER = `
+  precision highp float;
   uniform vec3 accent;
   uniform vec3 coreColor;
   uniform float time;
   uniform float activity;
+  uniform float seed;
   varying vec2 vUv;
+  varying float vDepth;
+  ${DOMAIN_WARP_GLSL}
+
   void main() {
-    float lane = pow(max(0.0, sin(vUv.x * 38.0 - vUv.y * 20.0 + time * 0.32)), 10.0);
-    float depthFade = smoothstep(0.0, 0.82, vUv.y);
-    vec3 color = coreColor + accent * lane * (0.025 + activity * 0.045) * (1.0 - depthFade * 0.7);
-    color += accent * 0.018 * (1.0 - depthFade);
-    gl_FragColor = vec4(color, 1.0);
+    vec2 p = vec2(vUv.x * 7.0, vUv.y * 3.4);
+    vec2 warped = domainWarp(p, seed, time * 0.22);
+    float laneA = pow(0.5 + 0.5 * sin(warped.x * 18.0 - warped.y * 12.0 + time * 0.22), 14.0);
+    float laneB = pow(0.5 + 0.5 * sin(warped.x * 31.0 + warped.y * 17.0 - time * 0.15), 22.0);
+    float depthFade = smoothstep(0.0, 0.92, vDepth);
+    float edgeEnergy = smoothstep(0.0, 0.18, vDepth) * (1.0 - smoothstep(0.72, 1.0, vDepth));
+    float filaments = laneA * 0.72 + laneB * 0.36;
+    vec3 color = coreColor * (0.82 - depthFade * 0.28);
+    color += accent * filaments * edgeEnergy * (0.025 + activity * 0.055);
+    color += accent * fbm(warped * 1.7) * edgeEnergy * 0.012;
+    float alpha = 0.18 + edgeEnergy * 0.1 + filaments * activity * 0.055;
+    gl_FragColor = vec4(color, alpha);
   }
 `;
 
-const RIM_FRAGMENT_SHADER = `
+const VOLUMETRIC_MANTLE_FRAGMENT_SHADER = `
+  precision highp float;
   uniform vec3 accent;
+  uniform vec3 hotColor;
   uniform float time;
-  uniform float intensity;
-  uniform float irregularity;
+  uniform float activity;
+  uniform float seed;
+  uniform float layer;
+  uniform float bossMode;
   varying vec2 vUv;
+  ${DOMAIN_WARP_GLSL}
+
   void main() {
     vec2 p = vUv * 2.0 - 1.0;
     float radius = length(p);
     float angle = atan(p.y, p.x);
-    float rimWidth = mix(0.055, 0.032, irregularity);
-    float radial = 1.0 - smoothstep(rimWidth, rimWidth * 2.8, abs(radius - 0.9));
-    float breakup = sin(angle * 5.0 + time * 0.45) + 0.65 * sin(angle * 11.0 - time * 0.3);
-    float gaps = mix(0.72, smoothstep(-0.52, 0.42, breakup), irregularity);
-    float hot = 0.18 + 0.82 * pow(max(0.0, cos(angle - 0.72 - sin(time * 0.17) * 0.12)), 4.0);
-    hot += 0.34 * pow(max(0.0, cos(angle + 2.15)), 7.0);
-    vec3 color = accent * (0.45 + hot * intensity * 1.35);
-    float alpha = radial * gaps * (0.1 + intensity * (0.12 + hot * 0.34));
+    vec2 warped = domainWarp(p * (2.25 + layer * 0.31), seed + layer * 0.17, time * (0.13 + layer * 0.025));
+    float turbulence = fbm(warped * 2.35 + vec2(layer * 3.4));
+    float detail = fbm(warped * 5.7 - vec2(time * 0.025, seed * 4.0));
+    vec2 polarNoise = vec2(cos(angle), sin(angle)) * 3.1;
+    polarNoise += vec2(seed * 4.0 + layer * 1.7, layer * 2.7 + time * 0.035);
+    float boundaryNoise = fbm(polarNoise);
+    float innerRadius = mix(0.5, 0.58, layer) + (boundaryNoise - 0.5) * (0.13 + bossMode * 0.08);
+    float outerRadius = mix(0.76, 0.89, layer) + (turbulence - 0.5) * (0.17 + bossMode * 0.09);
+    float aperture = smoothstep(innerRadius - 0.075, innerRadius + 0.08, radius);
+    float outer = 1.0 - smoothstep(outerRadius - 0.13, outerRadius + 0.12, radius);
+    float mantle = aperture * outer;
+    float braidFrequency = 7.0 + floor(layer * 3.0 + 0.5) * 2.0;
+    float braided = pow(0.5 + 0.5 * sin(angle * braidFrequency - radius * 21.0 + warped.x * 9.0 - time * 0.13), 9.0);
+    float braidBreak = smoothstep(0.45, 0.77, fbm(warped * 3.8 + vec2(layer * 5.0, seed * 3.0)));
+    braided *= 0.12 + braidBreak * 0.88;
+    float hair = pow(0.5 + 0.5 * sin(angle * 17.0 + warped.y * 16.0 - radius * 39.0), 21.0);
+    hair *= smoothstep(0.38, 0.72, detail);
+    float cloud = smoothstep(0.48, 0.82, turbulence * 0.72 + detail * 0.46);
+    float innerEdge = 1.0 - smoothstep(0.018, 0.095, abs(radius - innerRadius));
+    innerEdge *= 0.25 + smoothstep(0.38, 0.74, detail) * 0.75;
+    float wisps = mantle * (cloud * 0.34 + braided * 0.34 + hair * 0.27 + innerEdge * 0.42);
+    float outsideWisp = (1.0 - smoothstep(0.66, 1.13, radius)) * smoothstep(0.31, 0.57, radius);
+    outsideWisp *= pow(max(0.0, turbulence - 0.43), 1.4) * (0.3 + braided * 0.7);
+    float hotspot = pow(max(0.0, cos(angle - 0.68 + seed * 2.4)), 13.0);
+    hotspot += 0.72 * pow(max(0.0, cos(angle + 2.2 + layer)), 18.0);
+    vec3 cold = accent * (0.2 + turbulence * 0.7);
+    vec3 color = mix(cold, hotColor, clamp(braided * 0.28 + hotspot * 0.7 + hair * 0.24 + innerEdge * 0.2, 0.0, 1.0));
+    color += hotColor * hotspot * (0.3 + bossMode * 0.16);
+    float alpha = (wisps * (0.09 + activity * 0.11) + outsideWisp * (0.04 + activity * 0.065));
+    alpha += hotspot * mantle * (0.055 + activity * 0.095);
+    alpha *= 1.0 - smoothstep(1.02, 1.2, radius);
+    if (alpha < 0.004) discard;
     gl_FragColor = vec4(color, alpha);
   }
 `;
+
+const FILAMENT_VEIL_FRAGMENT_SHADER = `
+  precision highp float;
+  uniform sampler2D veilMap;
+  uniform vec3 accent;
+  uniform vec3 hotColor;
+  uniform float opacity;
+  uniform float time;
+  uniform float seed;
+  varying vec2 vUv;
+
+  void main() {
+    vec4 sampleColor = texture2D(veilMap, vUv);
+    float luminance = dot(sampleColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    vec2 p = vUv * 2.0 - 1.0;
+    float radius = length(vec2(p.x * 1.5, p.y));
+    float edgeFade = 1.0 - smoothstep(0.72, 1.03, radius);
+    float energy = smoothstep(0.018, 0.72, luminance);
+    float strands = pow(energy, 1.05);
+    float shimmer = 0.94 + sin(time * 0.17 + seed * 9.0 + luminance * 8.0) * 0.06;
+    vec3 color = mix(accent, hotColor, smoothstep(0.28, 0.92, luminance));
+    float alpha = strands * edgeFade * opacity * shimmer;
+    if (alpha < 0.006) discard;
+    gl_FragColor = vec4(color, alpha);
+  }
+`;
+
+const RIM_FRAGMENT_SHADER = `
+  precision highp float;
+  uniform vec3 accent;
+  uniform float time;
+  uniform float intensity;
+  uniform float irregularity;
+  uniform float seed;
+  varying vec2 vUv;
+  ${DOMAIN_WARP_GLSL}
+
+  void main() {
+    vec2 p = vUv * 2.0 - 1.0;
+    float radius = length(p);
+    float angle = atan(p.y, p.x);
+    vec2 polarNoise = vec2(cos(angle), sin(angle)) * 3.4;
+    polarNoise += vec2(seed * 8.0, time * 0.055);
+    float noise = fbm(polarNoise);
+    float target = 0.89 + (noise - 0.5) * irregularity * 0.13;
+    float rimWidth = mix(0.022, 0.012, irregularity);
+    float radial = 1.0 - smoothstep(rimWidth, rimWidth * 4.8, abs(radius - target));
+    float breakup = sin(angle * 7.0 + noise * 8.0 + time * 0.18) + 0.54 * sin(angle * 17.0 - time * 0.12);
+    float gaps = mix(0.72, smoothstep(-0.12, 0.62, breakup), irregularity);
+    float hot = pow(max(0.0, cos(angle - 0.72 - sin(time * 0.1) * 0.08)), 10.0);
+    hot += 0.46 * pow(max(0.0, cos(angle + 2.15)), 15.0);
+    vec3 color = mix(accent, vec3(1.0), hot * 0.72) * (0.5 + hot * intensity * 1.7);
+    float alpha = radial * gaps * (0.07 + intensity * (0.11 + hot * 0.3));
+    gl_FragColor = vec4(color, alpha);
+  }
+`;
+
+const BALANCED_APERTURE_FRAGMENT_SHADER = APERTURE_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
+const BALANCED_THROAT_FRAGMENT_SHADER = THROAT_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
+const BALANCED_VOLUMETRIC_MANTLE_FRAGMENT_SHADER = VOLUMETRIC_MANTLE_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
+const BALANCED_RIM_FRAGMENT_SHADER = RIM_FRAGMENT_SHADER.replace(DOMAIN_WARP_GLSL, BALANCED_DOMAIN_WARP_GLSL);
+
+const GLINT_VERTEX_SHADER = `
+  precision highp float;
+  attribute float size;
+  attribute float energy;
+  varying float vEnergy;
+  void main() {
+    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_Position = projectionMatrix * viewPosition;
+    gl_PointSize = min(size * (360.0 / max(2.0, -viewPosition.z)), 24.0);
+    vEnergy = energy;
+  }
+`;
+
+const GLINT_FRAGMENT_SHADER = `
+  precision highp float;
+  uniform vec3 accent;
+  varying float vEnergy;
+  void main() {
+    vec2 p = abs(gl_PointCoord - vec2(0.5));
+    float core = 1.0 - smoothstep(0.0, 0.12, length(p));
+    float horizontal = exp(-p.y * 72.0) * (1.0 - smoothstep(0.04, 0.5, p.x));
+    float vertical = exp(-p.x * 72.0) * (1.0 - smoothstep(0.04, 0.5, p.y));
+    float diagonal = exp(-abs(p.x - p.y) * 54.0) * (1.0 - smoothstep(0.0, 0.32, length(p))) * 0.34;
+    float glow = clamp(core + horizontal * 0.82 + vertical * 0.82 + diagonal, 0.0, 1.0) * vEnergy;
+    if (glow < 0.01) discard;
+    gl_FragColor = vec4(mix(accent, vec3(1.0), 0.78), glow);
+  }
+`;
+
+let portalEnergyVeilTexture = null;
 
 const INFALL_VERTEX_SHADER = `
   attribute vec4 seed;
@@ -87,7 +298,7 @@ const INFALL_VERTEX_SHADER = `
     );
     vec4 viewPosition = modelViewMatrix * vec4(transformed, 1.0);
     gl_Position = projectionMatrix * viewPosition;
-    gl_PointSize = (1.8 + seed.z * 2.8) * (260.0 / max(2.0, -viewPosition.z));
+    gl_PointSize = (0.8 + seed.z * 1.55) * (260.0 / max(2.0, -viewPosition.z));
     vLife = sin(progress * 3.14159265);
   }
 `;
@@ -131,6 +342,21 @@ export function createKnowledgeSingularity(THREE, definition, qualityLevel = "hi
   });
   group.add(throat.group);
 
+  const mantle = createVolumetricMantle(THREE, definition.radius, accent, {
+    activity: 0.7 + difficulty * 0.5,
+    seed: hashAngle(definition.id),
+    qualityLevel,
+    scale: 2.12 + difficulty * 0.22,
+  });
+  group.add(mantle.group);
+  const veil = createFilamentVeil(THREE, definition.radius, accent, {
+    opacity: 0.72 + difficulty * 0.12,
+    seed: hashAngle(definition.id),
+    scale: 6.5 + difficulty * 0.45,
+    hotColor: accent.clone().lerp(new THREE.Color(0xffffff), 0.86),
+  });
+  group.add(veil.mesh);
+
   const rim = createDistortedRim(THREE, definition.radius, accent, {
     intensity: 0.46 + difficulty * 0.46,
     irregularity: 0.18 + difficulty * 0.46,
@@ -138,14 +364,19 @@ export function createKnowledgeSingularity(THREE, definition, qualityLevel = "hi
     seed: hashAngle(definition.id),
   });
   group.add(rim.mesh);
-  const arcs = createLensingArcs(THREE, definition.radius, accent, {
-    count: qualityLevel === "high" ? 2 + Math.round(difficulty * 2) : 2,
-    thickness: 0.007 + difficulty * 0.004,
-    intensity: 0.3 + difficulty * 0.2,
+  const arcs = createEnergyFilaments(THREE, definition.radius, accent, {
+    count: 0,
+    thickness: 0.0048 + difficulty * 0.002,
+    intensity: 0.4 + difficulty * 0.28,
     seed: hashAngle(definition.id),
     qualityLevel,
   });
-  group.add(...arcs.meshes);
+  addMeshes(group, arcs.meshes);
+  const glints = createEnergyGlints(THREE, definition.radius, accent, {
+    count: qualityLevel === "high" ? 5 + Math.round(difficulty * 3) : 4,
+    seed: hashAngle(definition.id),
+  });
+  group.add(glints.points);
 
   const infall = createInfallField(THREE, definition.radius, depth, accent, {
     count: qualityLevel === "high" ? 82 + Math.round(difficulty * 76) : 58,
@@ -168,8 +399,8 @@ export function createKnowledgeSingularity(THREE, definition, qualityLevel = "hi
   const node = finalizeNode(
     definition,
     group,
-    [...throat.materials, rim.material, infall.material],
-    [...arcs.meshes, infall.points],
+    [...throat.materials, ...mantle.materials, veil.material, rim.material, ...arcs.materials, glints.material, infall.material],
+    [...mantle.meshes, veil.mesh, ...arcs.meshes, infall.points],
     [mist, halo],
     beacon,
   );
@@ -185,11 +416,26 @@ export function createAuxiliaryStar(THREE, definition, qualityLevel = "high") {
     activity: 0.28,
     coreColor: 0x101a20,
     qualityLevel,
-    openness: 0.76,
+    openness: 0.86,
     seed: hashAngle(definition.id),
     distortion: 0.018,
   });
   group.add(throat.group);
+  const mantle = createVolumetricMantle(THREE, definition.radius, accent, {
+    activity: 0.34,
+    seed: hashAngle(definition.id),
+    qualityLevel,
+    scale: 1.78,
+    hotColor: accent.clone().lerp(new THREE.Color(0xffffff), 0.82),
+  });
+  group.add(mantle.group);
+  const veil = createFilamentVeil(THREE, definition.radius, accent, {
+    opacity: 0.34,
+    seed: hashAngle(definition.id),
+    scale: 5.25,
+    hotColor: accent.clone().lerp(new THREE.Color(0xffffff), 0.92),
+  });
+  group.add(veil.mesh);
   const rim = createDistortedRim(THREE, definition.radius, accent, {
     intensity: 0.35,
     irregularity: 0.08,
@@ -197,14 +443,19 @@ export function createAuxiliaryStar(THREE, definition, qualityLevel = "high") {
     seed: hashAngle(definition.id),
   });
   group.add(rim.mesh);
-  const arcs = createLensingArcs(THREE, definition.radius, accent, {
-    count: 1,
-    thickness: 0.006,
-    intensity: 0.2,
+  const arcs = createEnergyFilaments(THREE, definition.radius, accent, {
+    count: 0,
+    thickness: 0.004,
+    intensity: 0.26,
     seed: hashAngle(definition.id),
     qualityLevel,
   });
-  group.add(...arcs.meshes);
+  addMeshes(group, arcs.meshes);
+  const glints = createEnergyGlints(THREE, definition.radius, accent, {
+    count: qualityLevel === "high" ? 3 : 2,
+    seed: hashAngle(definition.id),
+  });
+  group.add(glints.points);
   const infall = createInfallField(THREE, definition.radius, depth, accent, {
     count: qualityLevel === "high" ? 34 : 22,
     speed: 0.045,
@@ -227,8 +478,8 @@ export function createAuxiliaryStar(THREE, definition, qualityLevel = "high") {
   const node = finalizeNode(
     definition,
     group,
-    [...throat.materials, rim.material, infall.material],
-    [...arcs.meshes, infall.points],
+    [...throat.materials, ...mantle.materials, veil.material, rim.material, ...arcs.materials, glints.material, infall.material],
+    [...mantle.meshes, veil.mesh, ...arcs.meshes, infall.points],
     [mist, halo],
     beacon,
   );
@@ -249,6 +500,21 @@ export function createRepairSingularity(THREE, definition, qualityLevel = "high"
     distortion: 0.085,
   });
   group.add(throat.group);
+  const mantle = createVolumetricMantle(THREE, definition.radius, accent, {
+    activity: 1.02,
+    seed: hashAngle(definition.id),
+    qualityLevel,
+    scale: 2.42,
+    hotColor: accent.clone().offsetHSL(-0.02, 0.04, 0.26),
+  });
+  group.add(mantle.group);
+  const veil = createFilamentVeil(THREE, definition.radius, accent, {
+    opacity: 0.72,
+    seed: hashAngle(definition.id),
+    scale: 7.15,
+    hotColor: accent.clone().lerp(new THREE.Color(0xffffff), 0.78),
+  });
+  group.add(veil.mesh);
   const rim = createDistortedRim(THREE, definition.radius, accent, {
     intensity: 0.94,
     irregularity: 0.92,
@@ -256,15 +522,20 @@ export function createRepairSingularity(THREE, definition, qualityLevel = "high"
     seed: hashAngle(definition.id),
   });
   group.add(rim.mesh);
-  const arcs = createLensingArcs(THREE, definition.radius, accent.clone().offsetHSL(-0.02, 0.06, 0.14), {
-    count: qualityLevel === "high" ? 5 : 3,
-    thickness: 0.012,
-    intensity: 0.44,
+  const arcs = createEnergyFilaments(THREE, definition.radius, accent.clone().offsetHSL(-0.02, 0.06, 0.14), {
+    count: qualityLevel === "high" ? 2 : 1,
+    thickness: 0.006,
+    intensity: 0.56,
     seed: hashAngle(definition.id),
     qualityLevel,
     fracture: true,
   });
-  group.add(...arcs.meshes);
+  addMeshes(group, arcs.meshes);
+  const glints = createEnergyGlints(THREE, definition.radius, accent, {
+    count: qualityLevel === "high" ? 8 : 5,
+    seed: hashAngle(definition.id),
+  });
+  group.add(glints.points);
   const infall = createInfallField(THREE, definition.radius, depth, accent, {
     count: qualityLevel === "high" ? 128 : 76,
     speed: 0.105,
@@ -280,8 +551,8 @@ export function createRepairSingularity(THREE, definition, qualityLevel = "high"
   const node = finalizeNode(
     definition,
     group,
-    [...throat.materials, rim.material, infall.material, ...arcs.materials],
-    [...arcs.meshes, infall.points],
+    [...throat.materials, ...mantle.materials, veil.material, rim.material, infall.material, ...arcs.materials, glints.material],
+    [...mantle.meshes, veil.mesh, ...arcs.meshes, infall.points],
     [halo],
     beacon,
   );
@@ -300,11 +571,28 @@ export function createBossCataclysm(THREE, definition, qualityLevel = "high") {
     activity: 1.45,
     coreColor: 0x030001,
     qualityLevel,
-    openness: 0.54,
+    openness: 0.72,
     seed: hashAngle(definition.id),
     distortion: 0.12,
   });
   group.add(throat.group);
+  const mantle = createVolumetricMantle(THREE, definition.radius, ember, {
+    activity: 1.48,
+    seed: hashAngle(definition.id),
+    qualityLevel,
+    scale: 2.76,
+    hotColor: whiteHeat,
+    boss: true,
+  });
+  group.add(mantle.group);
+  const veil = createFilamentVeil(THREE, definition.radius, ember, {
+    opacity: 0.78,
+    seed: hashAngle(definition.id),
+    scale: 8.45,
+    hotColor: whiteHeat,
+    boss: true,
+  });
+  group.add(veil.mesh);
   const rim = createDistortedRim(THREE, definition.radius, whiteHeat, {
     intensity: 1.08,
     irregularity: 0.98,
@@ -312,24 +600,32 @@ export function createBossCataclysm(THREE, definition, qualityLevel = "high") {
     seed: hashAngle(definition.id),
   });
   group.add(rim.mesh);
-  const innerArcs = createLensingArcs(THREE, definition.radius, whiteHeat, {
-    count: qualityLevel === "high" ? 5 : 3,
-    thickness: 0.012,
-    intensity: 0.58,
+  const innerArcs = createEnergyFilaments(THREE, definition.radius, whiteHeat, {
+    count: 0,
+    thickness: 0.0035,
+    intensity: 0.24,
     seed: hashAngle(definition.id),
     qualityLevel,
     fracture: true,
+    boss: true,
   });
-  group.add(...innerArcs.meshes);
-  const outerArcs = createLensingArcs(THREE, definition.radius * 1.38, ember, {
-    count: qualityLevel === "high" ? 3 : 2,
-    thickness: 0.008,
-    intensity: 0.26,
+  addMeshes(group, innerArcs.meshes);
+  const outerArcs = createEnergyFilaments(THREE, definition.radius * 1.36, ember, {
+    count: 0,
+    thickness: 0.003,
+    intensity: 0.18,
     seed: hashAngle(definition.id) + 0.37,
     qualityLevel,
     wide: true,
+    boss: true,
   });
-  group.add(...outerArcs.meshes);
+  addMeshes(group, outerArcs.meshes);
+  const glints = createEnergyGlints(THREE, definition.radius * 1.2, whiteHeat, {
+    count: qualityLevel === "high" ? 7 : 5,
+    seed: hashAngle(definition.id),
+    boss: true,
+  });
+  group.add(glints.points);
   const infall = createInfallField(THREE, definition.radius * 1.42, depth, whiteHeat, {
     count: qualityLevel === "high" ? 340 : 190,
     speed: 0.13,
@@ -339,7 +635,7 @@ export function createBossCataclysm(THREE, definition, qualityLevel = "high") {
 
   const gasEnvelope = createBossGasEnvelope(THREE, definition.radius, [bloodCloud, ember, whiteHeat], qualityLevel);
   group.add(...gasEnvelope.clouds);
-  const outerGasHalo = createGasCloudHalo(THREE, definition.radius * 6.7, bloodCloud, 0.78, {
+  const outerGasHalo = createGasCloudHalo(THREE, definition.radius * 6.7, bloodCloud, 0.22, {
     seed: hashAngle(definition.id),
     turbulence: 1.35,
     qualityLevel,
@@ -347,7 +643,7 @@ export function createBossCataclysm(THREE, definition, qualityLevel = "high") {
   });
   outerGasHalo.position.z = -depth * 0.52;
   outerGasHalo.rotation.z = 0.46;
-  const hotGasHalo = createGasCloudHalo(THREE, definition.radius * 4.8, whiteHeat, 0.42, {
+  const hotGasHalo = createGasCloudHalo(THREE, definition.radius * 4.8, whiteHeat, 0.15, {
     seed: hashAngle(definition.id) + 0.41,
     turbulence: 0.92,
     qualityLevel,
@@ -368,8 +664,8 @@ export function createBossCataclysm(THREE, definition, qualityLevel = "high") {
   const node = finalizeNode(
     definition,
     group,
-    [...throat.materials, rim.material, infall.material, ...innerArcs.materials, ...outerArcs.materials, ...gasEnvelope.materials],
-    [...innerArcs.meshes, ...outerArcs.meshes, infall.points, ...gasEnvelope.clouds],
+    [...throat.materials, ...mantle.materials, veil.material, rim.material, glints.material, infall.material, ...innerArcs.materials, ...outerArcs.materials, ...gasEnvelope.materials],
+    [...mantle.meshes, veil.mesh, ...innerArcs.meshes, ...outerArcs.meshes, infall.points, ...gasEnvelope.clouds],
     [outerGasHalo, hotGasHalo, halo, ...gasEnvelope.clouds],
     beacon,
   );
@@ -386,11 +682,26 @@ export function createKnowledgeDomain(THREE, definition, qualityLevel = "high") 
     activity: 0.22,
     coreColor: 0x03080c,
     qualityLevel,
-    openness: 0.8,
+    openness: 0.88,
     seed: hashAngle(definition.id),
     distortion: 0.028,
   });
   group.add(throat.group);
+  const mantle = createVolumetricMantle(THREE, definition.radius, accent, {
+    activity: 0.28,
+    seed: hashAngle(definition.id),
+    qualityLevel,
+    scale: 1.92,
+    hotColor: accent.clone().lerp(new THREE.Color(0xffffff), 0.72),
+  });
+  group.add(mantle.group);
+  const veil = createFilamentVeil(THREE, definition.radius, accent, {
+    opacity: 0.42,
+    seed: hashAngle(definition.id),
+    scale: 5.85,
+    hotColor: accent.clone().lerp(new THREE.Color(0xffffff), 0.82),
+  });
+  group.add(veil.mesh);
   const rim = createDistortedRim(THREE, definition.radius, accent, {
     intensity: 0.34,
     irregularity: 0.14,
@@ -398,15 +709,20 @@ export function createKnowledgeDomain(THREE, definition, qualityLevel = "high") 
     seed: hashAngle(definition.id),
   });
   group.add(rim.mesh);
-  const arcs = createLensingArcs(THREE, definition.radius * 1.12, accent, {
-    count: 2,
-    thickness: 0.012,
-    intensity: 0.2,
+  const arcs = createEnergyFilaments(THREE, definition.radius * 1.12, accent, {
+    count: 0,
+    thickness: 0.0045,
+    intensity: 0.26,
     seed: hashAngle(definition.id),
     qualityLevel,
     wide: true,
   });
-  group.add(...arcs.meshes);
+  addMeshes(group, arcs.meshes);
+  const glints = createEnergyGlints(THREE, definition.radius, accent, {
+    count: qualityLevel === "high" ? 4 : 2,
+    seed: hashAngle(definition.id),
+  });
+  group.add(glints.points);
   const halo = createCoronaSprite(THREE, definition.radius * 4.8, accent, 0.055);
   halo.position.z = -depth * 0.8;
   group.add(halo);
@@ -415,8 +731,8 @@ export function createKnowledgeDomain(THREE, definition, qualityLevel = "high") 
   const node = finalizeNode(
     definition,
     group,
-    [...throat.materials, rim.material, ...arcs.materials],
-    arcs.meshes,
+    [...throat.materials, ...mantle.materials, veil.material, rim.material, ...arcs.materials, glints.material],
+    [...mantle.meshes, veil.mesh, ...arcs.meshes],
     [halo],
     beacon,
   );
@@ -428,8 +744,9 @@ export function createKnowledgeDomain(THREE, definition, qualityLevel = "high") 
 export function createPortalThroat(THREE, radius, depth, accent, options = {}) {
   const group = new THREE.Group();
   const qualityLevel = options.qualityLevel || "high";
-  const segments = qualityLevel === "high" ? 96 : 56;
-  const openness = options.openness ?? 0.62;
+  const segments = qualityLevel === "high" ? 128 : 72;
+  const depthSegments = qualityLevel === "high" ? 34 : 18;
+  const openness = options.openness ?? 0.78;
   const coreColor = new THREE.Color(options.coreColor ?? 0x000205);
   const material = new THREE.ShaderMaterial({
     uniforms: {
@@ -437,13 +754,17 @@ export function createPortalThroat(THREE, radius, depth, accent, options = {}) {
       coreColor: { value: coreColor },
       time: { value: 0 },
       activity: { value: options.activity ?? 0.7 },
+      distortion: { value: options.distortion ?? 0.04 },
+      seed: { value: options.seed ?? 0 },
     },
-    vertexShader: PORTAL_VERTEX_SHADER,
-    fragmentShader: THROAT_FRAGMENT_SHADER,
+    vertexShader: FUNNEL_VERTEX_SHADER,
+    fragmentShader: qualityLevel === "high" ? THROAT_FRAGMENT_SHADER : BALANCED_THROAT_FRAGMENT_SHADER,
+    transparent: true,
+    depthWrite: false,
     side: THREE.BackSide,
     toneMapped: false,
   });
-  const wallGeometry = new THREE.CylinderGeometry(radius * 0.96, radius * openness, depth, segments, 6, true);
+  const wallGeometry = new THREE.CylinderGeometry(radius * 0.98, radius * openness, depth, segments, depthSegments, true);
   distortRadialGeometry(wallGeometry, "x", "z", options.distortion || 0, options.seed || 0);
   const wall = new THREE.Mesh(wallGeometry, material);
   wall.rotation.x = Math.PI * 0.5;
@@ -451,12 +772,13 @@ export function createPortalThroat(THREE, radius, depth, accent, options = {}) {
   wall.renderOrder = 1;
   group.add(wall);
 
-  const aperture = createPortalAperture(THREE, radius * openness, accent, {
+  const aperture = createPortalAperture(THREE, radius * Math.min(1.02, openness * 1.18), accent, {
     activity: options.activity,
     coreColor,
     qualityLevel,
+    seed: options.seed,
   });
-  aperture.mesh.position.z = -depth;
+  aperture.mesh.position.z = -depth * 0.58;
   group.add(aperture.mesh);
   return { group, materials: [material, aperture.material], wall, aperture: aperture.mesh };
 }
@@ -469,9 +791,10 @@ export function createPortalAperture(THREE, radius, accent, options = {}) {
       coreColor: { value: options.coreColor instanceof THREE.Color ? options.coreColor : new THREE.Color(options.coreColor ?? 0x000205) },
       time: { value: 0 },
       activity: { value: options.activity ?? 0.7 },
+      seed: { value: options.seed ?? 0 },
     },
     vertexShader: PORTAL_VERTEX_SHADER,
-    fragmentShader: APERTURE_FRAGMENT_SHADER,
+    fragmentShader: qualityLevel === "high" ? APERTURE_FRAGMENT_SHADER : BALANCED_APERTURE_FRAGMENT_SHADER,
     transparent: true,
     depthWrite: true,
     side: THREE.DoubleSide,
@@ -490,9 +813,10 @@ export function createDistortedRim(THREE, radius, accent, options = {}) {
       time: { value: 0 },
       intensity: { value: options.intensity ?? 0.8 },
       irregularity: { value: options.irregularity ?? 0.4 },
+      seed: { value: options.seed ?? 0 },
     },
     vertexShader: PORTAL_VERTEX_SHADER,
-    fragmentShader: RIM_FRAGMENT_SHADER,
+    fragmentShader: qualityLevel === "high" ? RIM_FRAGMENT_SHADER : BALANCED_RIM_FRAGMENT_SHADER,
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
@@ -507,54 +831,208 @@ export function createDistortedRim(THREE, radius, accent, options = {}) {
   return { mesh, material };
 }
 
-export function createLensingArcs(THREE, radius, accent, options = {}) {
+export function createVolumetricMantle(THREE, radius, accent, options = {}) {
+  const group = new THREE.Group();
+  const qualityLevel = options.qualityLevel || "high";
+  const boss = options.boss === true;
+  const layerCount = boss
+    ? (qualityLevel === "high" ? 4 : 2)
+    : (qualityLevel === "high" ? 3 : 1);
+  const materials = [];
+  const meshes = [];
+  const hotColor = options.hotColor instanceof THREE.Color
+    ? options.hotColor
+    : accent.clone().lerp(new THREE.Color(0xffffff), boss ? 0.34 : 0.5);
+  const geometry = new THREE.CircleGeometry(
+    radius * (options.scale ?? (boss ? 2.46 : 2.08)),
+    qualityLevel === "high" ? 160 : 96,
+  );
+  for (let layerIndex = 0; layerIndex < layerCount; layerIndex += 1) {
+    const layer = layerCount <= 1 ? 0 : layerIndex / (layerCount - 1);
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        accent: { value: accent },
+        hotColor: { value: hotColor },
+        time: { value: 0 },
+        activity: { value: options.activity ?? 0.8 },
+        seed: { value: (options.seed ?? 0) + layerIndex * 0.173 },
+        layer: { value: layer },
+        bossMode: { value: boss ? 1 : 0 },
+      },
+      vertexShader: PORTAL_VERTEX_SHADER,
+      fragmentShader: qualityLevel === "high"
+        ? VOLUMETRIC_MANTLE_FRAGMENT_SHADER
+        : BALANCED_VOLUMETRIC_MANTLE_FRAGMENT_SHADER,
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.z = (options.seed ?? 0) * Math.PI * 2 + layerIndex * 1.147;
+    mesh.scale.setScalar(0.93 + layer * 0.19);
+    mesh.position.z = radius * (-0.08 + layerIndex * 0.045);
+    mesh.renderOrder = 2 + layerIndex * 0.01;
+    group.add(mesh);
+    meshes.push(mesh);
+    materials.push(material);
+  }
+  return { group, meshes, materials };
+}
+
+export function createFilamentVeil(THREE, radius, accent, options = {}) {
+  if (!portalEnergyVeilTexture) {
+    portalEnergyVeilTexture = new THREE.TextureLoader().load("/trainer/space/assets/portal-energy-veil.png");
+    portalEnergyVeilTexture.colorSpace = THREE.SRGBColorSpace;
+    portalEnergyVeilTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    portalEnergyVeilTexture.magFilter = THREE.LinearFilter;
+    portalEnergyVeilTexture.userData.sharedPortalTexture = true;
+  }
+  const hotColor = options.hotColor instanceof THREE.Color
+    ? options.hotColor
+    : accent.clone().lerp(new THREE.Color(0xffffff), 0.72);
+  const material = new THREE.ShaderMaterial({
+    uniforms: {
+      veilMap: { value: portalEnergyVeilTexture },
+      accent: { value: accent },
+      hotColor: { value: hotColor },
+      opacity: { value: options.opacity ?? 0.58 },
+      time: { value: 0 },
+      seed: { value: options.seed ?? 0 },
+    },
+    vertexShader: PORTAL_VERTEX_SHADER,
+    fragmentShader: FILAMENT_VEIL_FRAGMENT_SHADER,
+    transparent: true,
+    depthWrite: false,
+    depthTest: true,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const width = radius * (options.scale ?? (options.boss ? 8.2 : 6.6));
+  const geometry = new THREE.PlaneGeometry(width, width / 1.5, 1, 1);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = radius * 0.06;
+  mesh.rotation.z = (options.seed ?? 0) * Math.PI * 0.7;
+  mesh.renderOrder = 3.6;
+  return { mesh, material };
+}
+
+export function createEnergyFilaments(THREE, radius, accent, options = {}) {
   const meshes = [];
   const materials = [];
-  const count = options.count || 2;
+  const count = options.count ?? 4;
   const seed = options.seed || 0;
   const qualityLevel = options.qualityLevel || "high";
   for (let index = 0; index < count; index += 1) {
-    const phase = seed * Math.PI * 2 + index * 1.73;
-    const span = options.wide ? 1.65 + (index % 2) * 0.72 : 0.78 + (index % 3) * 0.52;
-    const arcRadius = radius * (1.02 + ((index % 3) - 1) * 0.085 + (options.fracture ? (index % 2) * 0.11 : 0));
+    const randomA = pseudoRandom(seed * 1000 + index * 17 + 3);
+    const randomB = pseudoRandom(seed * 1000 + index * 29 + 11);
+    const randomC = pseudoRandom(seed * 1000 + index * 43 + 23);
+    const phase = seed * Math.PI * 2 + index * 1.79 + randomA * 0.72;
+    const span = options.boss
+      ? 0.34 + randomB * 0.88
+      : options.wide
+        ? 1.18 + randomB * 1.36
+        : 0.58 + randomB * 1.18;
+    const arcRadius = radius * (0.88 + randomA * (options.boss ? 0.82 : 0.54));
     const points = [];
-    const pointCount = qualityLevel === "high" ? 32 : 20;
+    const pointCount = qualityLevel === "high" ? 44 : 26;
     for (let pointIndex = 0; pointIndex <= pointCount; pointIndex += 1) {
       const t = pointIndex / pointCount;
       const angle = phase + t * span;
+      const taper = Math.sin(t * Math.PI);
       const distortion = 1
-        + Math.sin(angle * 2.7 + index) * (options.fracture ? 0.13 : 0.065)
-        + Math.sin(t * Math.PI * 5.0 + phase) * 0.026;
+        + Math.sin(angle * (2.2 + randomB) + index) * (options.fracture ? 0.16 : 0.075)
+        + Math.sin(t * Math.PI * (4.0 + randomC * 4.0) + phase) * (0.025 + taper * 0.045);
       points.push(new THREE.Vector3(
         Math.cos(angle) * arcRadius * distortion,
-        Math.sin(angle) * arcRadius * (0.82 + (index % 3) * 0.055),
-        Math.sin(angle * 1.7 + index) * radius * (0.12 + index * 0.015) + radius * 0.09,
+        Math.sin(angle) * arcRadius * (0.84 + randomC * 0.24) * distortion,
+        Math.sin(angle * (1.3 + randomA) + index) * radius * (0.055 + randomC * 0.095) + radius * (0.04 + taper * 0.1),
       ));
     }
     const curve = new THREE.CatmullRomCurve3(points);
-    const material = new THREE.MeshBasicMaterial({
+    const haloMaterial = new THREE.MeshBasicMaterial({
       color: accent,
       transparent: true,
-      opacity: options.intensity ?? 0.55,
+      opacity: (options.intensity ?? 0.48) * (0.1 + randomB * 0.09),
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       toneMapped: false,
     });
-    const mesh = new THREE.Mesh(
-      new THREE.TubeGeometry(
-        curve,
-        qualityLevel === "high" ? 72 : 42,
-        Math.max(radius * (options.thickness || 0.02), 0.06),
-        qualityLevel === "high" ? 7 : 5,
-        false,
-      ),
-      material,
+    const coreMaterial = new THREE.MeshBasicMaterial({
+      color: index % 3 === 0 ? accent.clone().lerp(new THREE.Color(0xffffff), 0.82) : accent,
+      transparent: true,
+      opacity: (options.intensity ?? 0.48) * (0.28 + randomC * 0.24),
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    const tubularSegments = qualityLevel === "high" ? 88 : 48;
+    const radialSegments = qualityLevel === "high" ? 6 : 4;
+    const thickness = radius * (options.thickness || 0.0065) * (0.7 + randomA * 0.65);
+    const haloGeometry = new THREE.TubeGeometry(
+      curve,
+      tubularSegments,
+      Math.max(thickness * 3.2, 0.018),
+      radialSegments,
+      false,
     );
-    mesh.renderOrder = 5;
-    meshes.push(mesh);
-    materials.push(material);
+    const coreGeometry = new THREE.TubeGeometry(
+      curve,
+      tubularSegments,
+      Math.max(thickness, 0.006),
+      radialSegments,
+      false,
+    );
+    const haloMesh = new THREE.Mesh(haloGeometry, haloMaterial);
+    const coreMesh = new THREE.Mesh(coreGeometry, coreMaterial);
+    haloMesh.renderOrder = 5;
+    coreMesh.renderOrder = 5.1;
+    meshes.push(haloMesh, coreMesh);
+    materials.push(haloMaterial, coreMaterial);
   }
   return { meshes, materials };
+}
+
+export function createLensingArcs(THREE, radius, accent, options = {}) {
+  return createEnergyFilaments(THREE, radius, accent, options);
+}
+
+export function createEnergyGlints(THREE, radius, accent, options = {}) {
+  const count = options.count || 5;
+  const seed = options.seed || 0;
+  const positions = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  const energies = new Float32Array(count);
+  for (let index = 0; index < count; index += 1) {
+    const randomA = pseudoRandom(seed * 1000 + index * 37 + 7);
+    const randomB = pseudoRandom(seed * 1000 + index * 53 + 19);
+    const angle = randomA * Math.PI * 2 + index * 1.41;
+    const orbit = radius * (0.82 + randomB * (options.boss ? 0.92 : 0.56));
+    positions[index * 3] = Math.cos(angle) * orbit;
+    positions[index * 3 + 1] = Math.sin(angle) * orbit * (0.86 + randomA * 0.2);
+    positions[index * 3 + 2] = radius * (0.1 + randomB * 0.16);
+    sizes[index] = radius * (options.boss ? 0.25 + randomA * 0.22 : 0.38 + randomA * 0.28);
+    energies[index] = options.boss ? 0.34 + randomB * 0.42 : 0.48 + randomB * 0.52;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
+  geometry.setAttribute("energy", new THREE.BufferAttribute(energies, 1));
+  const material = new THREE.ShaderMaterial({
+    uniforms: { accent: { value: accent } },
+    vertexShader: GLINT_VERTEX_SHADER,
+    fragmentShader: GLINT_FRAGMENT_SHADER,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const points = new THREE.Points(geometry, material);
+  points.renderOrder = 7;
+  return { points, material };
 }
 
 export function createInfallField(THREE, radius, depth, accent, options = {}) {
@@ -607,7 +1085,7 @@ export function createBossGasEnvelope(THREE, radius, colors, qualityLevel = "hig
       map: texture,
       color,
       transparent: true,
-      opacity: 0.2 + (index % 3) * 0.055,
+      opacity: 0.075 + (index % 3) * 0.025,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       toneMapped: false,
@@ -620,7 +1098,7 @@ export function createBossGasEnvelope(THREE, radius, colors, qualityLevel = "hig
       Math.sin(angle) * orbit * 0.82,
       radius * (-0.28 + pseudoRandom(index + 71) * 0.6),
     );
-    const scale = radius * (1.75 + pseudoRandom(index + 101) * 1.15);
+    const scale = radius * (1.48 + pseudoRandom(index + 101) * 0.92);
     cloud.scale.set(scale, scale * (0.62 + pseudoRandom(index + 47) * 0.46), 1);
     cloud.userData.baseOpacity = material.opacity;
     cloud.renderOrder = 2;
@@ -792,6 +1270,10 @@ function baseGroup(THREE, definition) {
   group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), approachDirection);
   group.rotateZ((hashAngle(definition.id) - 0.5) * 0.36);
   return group;
+}
+
+function addMeshes(group, meshes) {
+  if (meshes.length > 0) group.add(...meshes);
 }
 
 function distortRadialGeometry(geometry, axisA, axisB, amount, seed) {
