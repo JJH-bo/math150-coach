@@ -171,13 +171,27 @@ def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
 
     assert script.status_code == 200
     assert "createRealisticStarField" in script.text
-    assert "createMilkyWayBackdrop" in script.text
-    assert "createCinematicNebulaField" in script.text
+    assert "createWorldLockedSky" in script.text
     assert "createDeepSpaceTexture" in script.text
     assert "createSolarLightSource" in script.text
     assert "realisticBodyProfile" in script.text
     assert "preserveSurfaceColor" in script.text
     assert "addNebulaDust" not in script.text
+
+
+def test_space_trainer_uses_world_locked_equirectangular_sky() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+    panorama = client.get("/trainer/space/assets/milky-way-panorama.png")
+
+    assert script.status_code == 200
+    assert panorama.status_code == 200
+    assert "createWorldLockedSky" in script.text
+    assert "EquirectangularReflectionMapping" in script.text
+    assert '"/trainer/space/assets/milky-way-panorama.png"' in script.text
+    sky_source = script.text.split("function createWorldLockedSky", 1)[1].split("\n}", 1)[0]
+    assert "THREE.Sprite" not in sky_source
 
 
 def test_space_trainer_expands_to_large_dynamic_knowledge_galaxy() -> None:
@@ -190,7 +204,6 @@ def test_space_trainer_expands_to_large_dynamic_knowledge_galaxy() -> None:
     assert script.text.count("type:") >= 12
     assert "nodeTypeDefinitions" in script.text
     assert "updateCosmicMotion" in script.text
-    assert "state.cosmicLayers" in script.text
     assert "state.nebulaSprites" in script.text
     assert "currentCandidate" in script.text
     assert "radius: 16" in script.text

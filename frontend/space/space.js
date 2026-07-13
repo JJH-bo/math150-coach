@@ -195,7 +195,6 @@ const state = {
   objects: [],
   objectById: new Map(),
   lines: [],
-  cosmicLayers: [],
   nebulaSprites: [],
   nearest: null,
   activeObject: null,
@@ -300,9 +299,7 @@ function createKnowledgeUniverse(THREE) {
 
   addCinematicLighting(THREE, scene);
 
-  createDeepSpaceBackdrop(THREE, scene);
-  createMilkyWayBackdrop(THREE, scene);
-  createCinematicNebulaField(THREE, scene);
+  createWorldLockedSky(THREE, scene);
   createRealisticStarField(THREE, scene);
   createSolarLightSource(THREE, scene);
   buildOdeSector(THREE, scene);
@@ -666,8 +663,21 @@ function addRoute(THREE, scene, fromValue, toValue, color, opacity) {
   state.lines.push(halo);
 }
 
-function createDeepSpaceBackdrop(THREE, scene) {
+function createWorldLockedSky(THREE, scene) {
   scene.background = createDeepSpaceTexture(THREE);
+
+  const panorama = new THREE.TextureLoader().load(
+    "/trainer/space/assets/milky-way-panorama.png",
+    (texture) => {
+      scene.background = texture;
+    },
+  );
+  panorama.mapping = THREE.EquirectangularReflectionMapping;
+  panorama.colorSpace = THREE.SRGBColorSpace;
+  panorama.minFilter = THREE.LinearMipmapLinearFilter;
+  panorama.magFilter = THREE.LinearFilter;
+  panorama.generateMipmaps = true;
+  if (scene.backgroundRotation) scene.backgroundRotation.set(0.08, -0.58, -0.04);
 }
 
 function createSolarLightSource(THREE, scene) {
@@ -729,80 +739,6 @@ function createRealisticStarField(THREE, scene) {
   });
 }
 
-function createMilkyWayBackdrop(THREE, scene) {
-  const material = new THREE.SpriteMaterial({
-    map: createMilkyWayTexture(THREE),
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.42,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-  const sprite = new THREE.Sprite(material);
-  sprite.position.set(-155, 64, -610);
-  sprite.scale.set(1180, 310, 1);
-  sprite.material.rotation = -0.18;
-  scene.add(sprite);
-  state.nebulaSprites.push({
-    sprite,
-    material,
-    baseOpacity: material.opacity,
-    baseY: sprite.position.y,
-    pulseSpeed: 0.14,
-    pulseAmount: 0.035,
-    driftSpeed: 0.09,
-    driftAmount: 5.5,
-    rotationSpeed: 0.003,
-    phase: 1.2,
-  });
-
-  addStarLayer(THREE, scene, {
-    count: 1500,
-    minRadius: 180,
-    maxRadius: 620,
-    size: 0.95,
-    opacity: 0.16,
-    palette: [0xc7d2dd, 0xd8d4c8],
-    banded: true,
-  });
-}
-
-function createCinematicNebulaField(THREE, scene) {
-  const clouds = [
-    { seed: 221, colorA: 0x4f79b7, colorB: 0x9164a6, position: [250, -26, -640], scale: [460, 260, 1], opacity: 0.32, rotation: 0.28 },
-    { seed: 336, colorA: 0x204a6f, colorB: 0x7b4b89, position: [465, -128, -720], scale: [520, 300, 1], opacity: 0.22, rotation: -0.16 },
-    { seed: 447, colorA: 0x8b6f55, colorB: 0x4e5f82, position: [-380, 116, -680], scale: [520, 210, 1], opacity: 0.28, rotation: -0.1 },
-  ];
-
-  for (const cloud of clouds) {
-    const material = new THREE.SpriteMaterial({
-      map: createNebulaCloudTexture(THREE, cloud),
-      color: 0xffffff,
-      transparent: true,
-      opacity: cloud.opacity,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-    material.rotation = cloud.rotation;
-    const sprite = new THREE.Sprite(material);
-    sprite.position.set(...cloud.position);
-    sprite.scale.set(...cloud.scale);
-    scene.add(sprite);
-    state.nebulaSprites.push({
-      sprite,
-      material,
-      baseOpacity: material.opacity,
-      baseY: sprite.position.y,
-      pulseSpeed: 0.12 + (cloud.seed % 5) * 0.018,
-      pulseAmount: Math.min(0.045, cloud.opacity * 0.14),
-      driftSpeed: 0.06 + (cloud.seed % 7) * 0.01,
-      driftAmount: 4 + (cloud.seed % 3) * 1.6,
-      rotationSpeed: 0.002 * (cloud.rotation < 0 ? -1 : 1),
-      phase: cloud.seed * 0.017,
-    });
-  }
-}
-
 function addStarLayer(THREE, scene, options) {
   const {
     count,
@@ -847,11 +783,6 @@ function addStarLayer(THREE, scene, options) {
   });
   const points = new THREE.Points(geometry, material);
   scene.add(points);
-  state.cosmicLayers.push({
-    object: points,
-    rotationX: banded ? 0.0004 : 0.0009,
-    rotationY: banded ? 0.0016 : 0.0007,
-  });
 }
 
 function createStarTexture(THREE) {
@@ -938,53 +869,6 @@ function createDeepSpaceTexture(THREE) {
   return state.deepSpaceTexture;
 }
 
-function createNebulaCloudTexture(THREE, cloud) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 512;
-  const ctx = canvas.getContext("2d");
-  const rng = mulberry32(cloud.seed);
-  const colorA = new THREE.Color(cloud.colorA);
-  const colorB = new THREE.Color(cloud.colorB);
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let layer = 0; layer < 90; layer += 1) {
-    const x = canvas.width * (0.18 + rng() * 0.68);
-    const y = canvas.height * (0.2 + rng() * 0.62);
-    const radius = 40 + rng() * 170;
-    const color = rng() > 0.46 ? colorA : colorB;
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    gradient.addColorStop(0, colorStyle(color, 1.25, 0.11 + rng() * 0.12));
-    gradient.addColorStop(0.32, colorStyle(color, 0.82, 0.045 + rng() * 0.06));
-    gradient.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.ellipse(x, y, radius * (1.2 + rng() * 1.5), radius * (0.32 + rng() * 0.58), (rng() - 0.5) * 0.8, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.globalCompositeOperation = "destination-in";
-  const alphaMask = ctx.createRadialGradient(
-    canvas.width * 0.5,
-    canvas.height * 0.5,
-    canvas.width * 0.1,
-    canvas.width * 0.5,
-    canvas.height * 0.5,
-    canvas.width * 0.48,
-  );
-  alphaMask.addColorStop(0, "rgba(255,255,255,1)");
-  alphaMask.addColorStop(0.46, "rgba(255,255,255,0.88)");
-  alphaMask.addColorStop(0.72, "rgba(255,255,255,0.32)");
-  alphaMask.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = alphaMask;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.globalCompositeOperation = "source-over";
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
-
 function createSolarFlareTexture(THREE) {
   if (state.solarFlareTexture) return state.solarFlareTexture;
   const canvas = document.createElement("canvas");
@@ -1012,46 +896,6 @@ function createSolarFlareTexture(THREE) {
   state.solarFlareTexture = new THREE.CanvasTexture(canvas);
   state.solarFlareTexture.colorSpace = THREE.SRGBColorSpace;
   return state.solarFlareTexture;
-}
-
-function createMilkyWayTexture(THREE) {
-  if (state.milkyWayTexture) return state.milkyWayTexture;
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 256;
-  const ctx = canvas.getContext("2d");
-  const rng = mulberry32(187293);
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let band = 0; band < 9; band += 1) {
-    const y = canvas.height * (0.48 + (rng() - 0.5) * 0.18);
-    const height = 20 + rng() * 54;
-    const gradient = ctx.createLinearGradient(0, y - height, 0, y + height);
-    gradient.addColorStop(0, "rgba(0,0,0,0)");
-    gradient.addColorStop(0.44, `rgba(172,185,198,${0.025 + rng() * 0.04})`);
-    gradient.addColorStop(0.5, `rgba(230,226,210,${0.03 + rng() * 0.05})`);
-    gradient.addColorStop(0.56, `rgba(148,170,194,${0.02 + rng() * 0.035})`);
-    gradient.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.ellipse(canvas.width * 0.5, y, canvas.width * (0.42 + rng() * 0.16), height, (rng() - 0.5) * 0.06, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  for (let index = 0; index < 2200; index += 1) {
-    const x = rng() * canvas.width;
-    const y = canvas.height * (0.5 + (rng() - 0.5) * 0.42);
-    const alpha = 0.02 + rng() * 0.12;
-    const radius = 0.25 + rng() * 0.9;
-    ctx.fillStyle = `rgba(230,235,240,${alpha})`;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  state.milkyWayTexture = new THREE.CanvasTexture(canvas);
-  state.milkyWayTexture.colorSpace = THREE.SRGBColorSpace;
-  return state.milkyWayTexture;
 }
 
 function createPlanetTexture(THREE, profile, kind, seedValue) {
@@ -1396,10 +1240,6 @@ function animate() {
 
 function updateCosmicMotion(delta) {
   const time = performance.now() * 0.001;
-  for (const layer of state.cosmicLayers) {
-    layer.object.rotation.x += delta * layer.rotationX;
-    layer.object.rotation.y += delta * layer.rotationY;
-  }
   for (const layer of state.nebulaSprites) {
     layer.sprite.position.y = layer.baseY + Math.sin(time * layer.driftSpeed + layer.phase) * layer.driftAmount;
     layer.material.opacity = Math.max(
