@@ -172,6 +172,9 @@ def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
     assert script.status_code == 200
     assert "createRealisticStarField" in script.text
     assert "createMilkyWayBackdrop" in script.text
+    assert "createCinematicNebulaField" in script.text
+    assert "createDeepSpaceTexture" in script.text
+    assert "createSolarLightSource" in script.text
     assert "realisticBodyProfile" in script.text
     assert "preserveSurfaceColor" in script.text
     assert "addNebulaDust" not in script.text
