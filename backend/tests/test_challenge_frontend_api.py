@@ -170,7 +170,6 @@ def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
     script = client.get("/trainer/space/space.js")
 
     assert script.status_code == 200
-    assert "createRealisticStarField" in script.text
     assert "createWorldLockedSky" in script.text
     assert "createDeepSpaceTexture" in script.text
     assert "createSolarLightSource" in script.text
@@ -183,15 +182,34 @@ def test_space_trainer_uses_world_locked_equirectangular_sky() -> None:
     client = TestClient(create_app("mixed"))
 
     script = client.get("/trainer/space/space.js")
-    panorama = client.get("/trainer/space/assets/milky-way-panorama.png")
+    panorama = client.get("/trainer/space/assets/milky-way-eso-6000.jpg")
 
     assert script.status_code == 200
     assert panorama.status_code == 200
     assert "createWorldLockedSky" in script.text
     assert "EquirectangularReflectionMapping" in script.text
-    assert '"/trainer/space/assets/milky-way-panorama.png"' in script.text
+    assert '"/trainer/space/assets/milky-way-eso-6000.jpg"' in script.text
     sky_source = script.text.split("function createWorldLockedSky", 1)[1].split("\n}", 1)[0]
     assert "THREE.Sprite" not in sky_source
+
+
+def test_space_trainer_uses_high_resolution_observatory_panorama() -> None:
+    client = TestClient(create_app("mixed"))
+
+    page = client.get("/trainer/space/")
+    script = client.get("/trainer/space/space.js")
+    panorama = client.get("/trainer/space/assets/milky-way-eso-6000.jpg")
+
+    assert page.status_code == 200
+    assert "ESO/S. Brunier" in page.text
+    assert script.status_code == 200
+    assert '"/trainer/space/assets/milky-way-eso-6000.jpg"' in script.text
+    assert "createRealisticStarField" not in script.text
+    assert "scene.backgroundIntensity = 0.62" in script.text
+    assert "scene.backgroundRotation.set(-0.16, 0, -0.14)" in script.text
+    assert "0.32,\n    0.38,\n    0.72" in script.text
+    assert panorama.status_code == 200
+    assert len(panorama.content) > 6_000_000
 
 
 def test_space_trainer_expands_to_large_dynamic_knowledge_galaxy() -> None:

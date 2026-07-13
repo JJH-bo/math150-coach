@@ -514,3 +514,19 @@ button:disabled {
     animation-duration: 0.01ms !important;
   }
 }
+
+.sky-credit {
+  position: fixed;
+  z-index: 8;
+  bottom: 8px;
+  left: 10px;
+  color: rgba(205, 219, 235, 0.58);
+  font-size: 10px;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.sky-credit:hover,
+.sky-credit:focus-visible {
+  color: rgba(230, 240, 250, 0.9);
+}

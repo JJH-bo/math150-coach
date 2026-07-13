@@ -300,7 +300,6 @@ function createKnowledgeUniverse(THREE) {
   addCinematicLighting(THREE, scene);
 
   createWorldLockedSky(THREE, scene);
-  createRealisticStarField(THREE, scene);
   createSolarLightSource(THREE, scene);
   buildOdeSector(THREE, scene);
 
@@ -308,9 +307,9 @@ function createKnowledgeUniverse(THREE) {
   composer.addPass(new state.post.RenderPass(scene, camera));
   const bloomPass = new state.post.UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.44,
-    0.58,
-    0.23,
+    0.32,
+    0.38,
+    0.72,
   );
   composer.addPass(bloomPass);
   state.composer = composer;
@@ -667,7 +666,7 @@ function createWorldLockedSky(THREE, scene) {
   scene.background = createDeepSpaceTexture(THREE);
 
   const panorama = new THREE.TextureLoader().load(
-    "/trainer/space/assets/milky-way-panorama.png",
+    "/trainer/space/assets/milky-way-eso-6000.jpg",
     (texture) => {
       scene.background = texture;
     },
@@ -677,7 +676,8 @@ function createWorldLockedSky(THREE, scene) {
   panorama.minFilter = THREE.LinearMipmapLinearFilter;
   panorama.magFilter = THREE.LinearFilter;
   panorama.generateMipmaps = true;
-  if (scene.backgroundRotation) scene.backgroundRotation.set(0.08, -0.58, -0.04);
+  scene.backgroundIntensity = 0.62;
+  if (scene.backgroundRotation) scene.backgroundRotation.set(-0.16, 0, -0.14);
 }
 
 function createSolarLightSource(THREE, scene) {
@@ -710,97 +710,6 @@ function createSolarLightSource(THREE, scene) {
   const warmKey = new THREE.PointLight(0xffc48a, 2.1, 820);
   warmKey.position.copy(sun.position);
   scene.add(warmKey);
-}
-
-function createRealisticStarField(THREE, scene) {
-  addStarLayer(THREE, scene, {
-    count: 7600,
-    minRadius: 360,
-    maxRadius: 980,
-    size: 1,
-    opacity: 0.72,
-    palette: [0xf5f7ff, 0xd9e5ff, 0xfff2d2],
-  });
-  addStarLayer(THREE, scene, {
-    count: 1800,
-    minRadius: 250,
-    maxRadius: 760,
-    size: 1.25,
-    opacity: 0.34,
-    palette: [0xffffff, 0xd7e7ff, 0xffe3b3],
-  });
-  addStarLayer(THREE, scene, {
-    count: 420,
-    minRadius: 480,
-    maxRadius: 1100,
-    size: 1.55,
-    opacity: 0.22,
-    palette: [0xffffff, 0xe6efff],
-  });
-}
-
-function addStarLayer(THREE, scene, options) {
-  const {
-    count,
-    minRadius,
-    maxRadius,
-    size,
-    opacity,
-    palette,
-    banded = false,
-  } = options;
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  for (let index = 0; index < count; index += 1) {
-    const radius = minRadius + Math.random() * (maxRadius - minRadius);
-    const theta = Math.random() * Math.PI * 2;
-    const phi = banded
-      ? (Math.PI / 2) + (Math.random() - 0.5) * 0.32
-      : Math.acos(2 * Math.random() - 1);
-    positions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
-    positions[index * 3 + 1] = radius * Math.cos(phi) * (banded ? 0.26 : 0.72);
-    positions[index * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta) - 220;
-
-    const starColor = new THREE.Color(palette[index % palette.length]);
-    const brightness = 0.74 + Math.random() * 0.26;
-    colors[index * 3] = starColor.r * brightness;
-    colors[index * 3 + 1] = starColor.g * brightness;
-    colors[index * 3 + 2] = starColor.b * brightness;
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  const material = new THREE.PointsMaterial({
-    size,
-    map: createStarTexture(THREE),
-    transparent: true,
-    opacity,
-    depthWrite: false,
-    alphaTest: 0.04,
-    blending: THREE.AdditiveBlending,
-    sizeAttenuation: false,
-    vertexColors: true,
-  });
-  const points = new THREE.Points(geometry, material);
-  scene.add(points);
-}
-
-function createStarTexture(THREE) {
-  if (state.starTexture) return state.starTexture;
-  const canvas = document.createElement("canvas");
-  canvas.width = 64;
-  canvas.height = 64;
-  const ctx = canvas.getContext("2d");
-  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.16, "rgba(255,255,255,0.82)");
-  gradient.addColorStop(0.44, "rgba(255,255,255,0.16)");
-  gradient.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 64, 64);
-  state.starTexture = new THREE.CanvasTexture(canvas);
-  state.starTexture.colorSpace = THREE.SRGBColorSpace;
-  return state.starTexture;
 }
 
 function createDeepSpaceTexture(THREE) {
