@@ -16,11 +16,21 @@ async function loadRenderer() {
   return { renderer, source };
 }
 
-test("only the separable concept node enters the material proof", async () => {
+test("all six separable learning nodes become stars while the boss remains a singularity", async () => {
   const { renderer } = await loadRenderer();
-  assert.equal(renderer.isStellarMaterialPilotNode({ id: "ode_separable.concept", role: "training" }), true);
-  assert.equal(renderer.isStellarMaterialPilotNode({ id: "ode_separable.method", role: "training" }), false);
+  const learningIds = [
+    "ode_separable.concept",
+    "ode_separable.trigger",
+    "ode_separable.method",
+    "ode_separable.transformation",
+    "ode_separable.calculation",
+    "ode_separable.expression",
+  ];
+  learningIds.forEach((id) => {
+    assert.equal(renderer.isStellarMaterialPilotNode({ id, role: "training", kind: "micro" }), true, id);
+  });
   assert.equal(renderer.isStellarMaterialPilotNode({ id: "ode_separable.macro_challenge", role: "boss" }), false);
+  assert.equal(renderer.isStellarMaterialPilotNode({ id: "ode_first_order_linear.concept", role: "training" }), false);
 });
 
 test("stellar profiles are deterministic and balanced mode reduces cost without changing identity", async () => {
@@ -31,7 +41,7 @@ test("stellar profiles are deterministic and balanced mode reduces cost without 
   const balanced = renderer.stellarProfileFor(definition, "balanced");
 
   assert.deepEqual(highA, highB);
-  assert.equal(highA.radius, 23.8);
+  assert.ok(highA.radius >= 20 && highA.radius <= 29);
   assert.ok(highA.activity >= 0.55 && highA.activity <= 0.9);
   assert.equal(highA.noiseOctaves, 5);
   assert.equal(highA.surfaceDetail, 5);
@@ -44,6 +54,26 @@ test("stellar profiles are deterministic and balanced mode reduces cost without 
   assert.equal(balanced.coreColor, highA.coreColor);
   assert.equal(balanced.midColor, highA.midColor);
   assert.equal(balanced.edgeColor, highA.edgeColor);
+});
+
+test("the six-star family has deterministic but restrained scale and activity variation", async () => {
+  const { renderer } = await loadRenderer();
+  const definitions = [
+    ["ode_separable.concept", "concept", 0.24],
+    ["ode_separable.trigger", "trigger", 0.34],
+    ["ode_separable.method", "method", 0.48],
+    ["ode_separable.transformation", "transformation", 0.62],
+    ["ode_separable.calculation", "calculation", 0.74],
+    ["ode_separable.expression", "expression", 0.82],
+  ].map(([id, type, difficulty]) => ({ id, type, difficulty, radius: 14 }));
+  const profiles = definitions.map((definition) => renderer.stellarProfileFor(definition, "high"));
+
+  assert.ok(new Set(profiles.map((profile) => profile.radius)).size >= 4);
+  assert.ok(new Set(profiles.map((profile) => profile.activity)).size >= 4);
+  profiles.forEach((profile) => {
+    assert.ok(profile.radius >= 20 && profile.radius <= 29);
+    assert.ok(profile.activity >= 0.55 && profile.activity <= 0.9);
+  });
 });
 
 test("stellar renderer forbids conventional glossy or bitmap star materials", async () => {

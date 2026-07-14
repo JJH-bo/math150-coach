@@ -1,16 +1,34 @@
 const MATERIAL_PILOT_NODE_ID = "ode_separable.concept";
+const STELLAR_PILOT_NODE_IDS = new Set([
+  MATERIAL_PILOT_NODE_ID,
+  "ode_separable.trigger",
+  "ode_separable.method",
+  "ode_separable.transformation",
+  "ode_separable.calculation",
+  "ode_separable.expression",
+]);
+const STELLAR_PALETTES = Object.freeze({
+  concept: [0xffe6ac, 0xff862e, 0x9a2218],
+  trigger: [0xffdfa0, 0xff6b22, 0xa31c16],
+  method: [0xffedbf, 0xff9a38, 0x8c2418],
+  transformation: [0xffd9a3, 0xff7730, 0x852024],
+  calculation: [0xffc98c, 0xff5d22, 0x77131c],
+  expression: [0xffe8c4, 0xffa451, 0x91301d],
+});
 
 export function isStellarMaterialPilotNode(definition = {}) {
-  return definition.id === MATERIAL_PILOT_NODE_ID && definition.role === "training";
+  return STELLAR_PILOT_NODE_IDS.has(definition.id) && definition.role === "training";
 }
 
 export function stellarProfileFor(definition = {}, qualityLevel = "high") {
   const seed = hashUnit(definition.id || MATERIAL_PILOT_NODE_ID);
   const difficulty = clamp(Number(definition.difficulty ?? 0.24), 0, 1);
   const highQuality = qualityLevel === "high";
+  const palette = STELLAR_PALETTES[definition.type] || STELLAR_PALETTES.concept;
+  const baseRadius = Number(definition.radius || 14);
   return {
     seed,
-    radius: Number((Number(definition.radius || 14) * 1.7).toFixed(3)),
+    radius: Number((baseRadius * (1.48 + difficulty * 0.32 + seed * 0.12)).toFixed(3)),
     activity: Number((0.55 + difficulty * 0.22 + seed * 0.08).toFixed(4)),
     noiseOctaves: highQuality ? 5 : 3,
     surfaceDetail: highQuality ? 5 : 4,
@@ -22,9 +40,9 @@ export function stellarProfileFor(definition = {}, qualityLevel = "high") {
     surfaceExposure: 0.86,
     limbDarkening: 0.58,
     coronaAsymmetry: 0.78,
-    coreColor: 0xffe09a,
-    midColor: 0xff7924,
-    edgeColor: 0xa31c16,
+    coreColor: palette[0],
+    midColor: palette[1],
+    edgeColor: palette[2],
   };
 }
 
