@@ -59,10 +59,28 @@ test("living star contains independent photosphere, chromosphere, corona, promin
   assert.match(source, /createPhotosphere/);
   assert.match(source, /createChromosphere/);
   assert.match(source, /createCoronaLayers/);
+  assert.match(source, /createRadiativeHalo/);
   assert.match(source, /createProminences/);
   assert.match(source, /PointLight/);
   assert.match(source, /limb/);
   assert.match(source, /granulation/);
   assert.match(source, /convection/);
+  assert.match(source, /radialGlow/);
   assert.match(source, /userData\.stellar = true/);
+});
+
+test("visual safeguards preserve surface contrast and prevent concentric-shell corona", async () => {
+  const { renderer, source } = await loadRenderer();
+  const profile = renderer.stellarProfileFor(
+    { id: "ode_separable.concept", radius: 14, difficulty: 0.24 },
+    "high",
+  );
+
+  assert.ok(profile.surfaceExposure >= 0.8 && profile.surfaceExposure <= 0.92);
+  assert.ok(profile.limbDarkening >= 0.45 && profile.limbDarkening <= 0.75);
+  assert.ok(profile.coronaAsymmetry >= 0.65);
+  assert.ok(profile.granulationScale >= 10);
+  assert.match(source, /sectorMask/);
+  assert.match(source, /limbDarkening/);
+  assert.match(source, /surfaceExposure/);
 });

@@ -14,14 +14,17 @@ export function stellarProfileFor(definition = {}, qualityLevel = "high") {
     activity: Number((0.55 + difficulty * 0.22 + seed * 0.08).toFixed(4)),
     noiseOctaves: highQuality ? 5 : 3,
     surfaceDetail: highQuality ? 5 : 4,
-    granulationScale: Number((7.4 + seed * 2.1).toFixed(4)),
+    granulationScale: Number((10.8 + seed * 2.4).toFixed(4)),
     flowSpeed: Number((0.035 + difficulty * 0.025).toFixed(4)),
     coronaLayers: highQuality ? 3 : 2,
     prominenceCount: highQuality ? 4 : 2,
     lightIntensity: highQuality ? 13 : 8,
-    coreColor: 0xfff2cf,
-    midColor: 0xffa24a,
-    edgeColor: 0xd94820,
+    surfaceExposure: 0.86,
+    limbDarkening: 0.58,
+    coronaAsymmetry: 0.78,
+    coreColor: 0xffe09a,
+    midColor: 0xff7924,
+    edgeColor: 0xa31c16,
   };
 }
 
@@ -46,6 +49,8 @@ const PHOTOSPHERE_FRAGMENT_SHADER = `
   uniform float noiseOctaves;
   uniform float granulationScale;
   uniform float flowSpeed;
+  uniform float surfaceExposure;
+  uniform float limbDarkening;
   uniform vec3 coreColor;
   uniform vec3 midColor;
   uniform vec3 edgeColor;
@@ -101,31 +106,62 @@ const PHOTOSPHERE_FRAGMENT_SHADER = `
     float field = convection(p);
     float cells = valueNoise(p * 2.9 + field * 1.7);
     float fineCells = valueNoise(p * 6.3 - field * 0.8 + time * flowSpeed * 0.7);
-    float granulation = smoothstep(0.28, 0.78, cells + field * 0.34);
-    float darkLane = 1.0 - smoothstep(0.045, 0.18, abs(cells - 0.47));
+    float granulation = smoothstep(0.22, 0.82, cells + field * 0.31);
+    float darkLane = 1.0 - smoothstep(0.025, 0.11, abs(cells - 0.47));
     float filament = pow(abs(sin((cells + fineCells * 0.34) * 18.0)), 8.0);
+    float activeRegion = smoothstep(0.71, 0.88, valueNoise(p * 0.38 + seed * 13.0));
     float limb = clamp(dot(normalize(vViewNormal), normalize(vViewDirection)), 0.0, 1.0);
-    vec3 color = mix(edgeColor, midColor, pow(limb, 0.55));
-    color = mix(color, coreColor, granulation * 0.72 + fineCells * 0.12);
-    color *= 0.72 + field * 0.42 - darkLane * 0.16;
-    color += coreColor * filament * activity * 0.12;
-    color += edgeColor * pow(1.0 - limb, 3.4) * activity * 0.26;
+    float limbContour = mix(1.0 - limbDarkening, 1.0, pow(limb, 0.42));
+    float heat = clamp(0.34 + granulation * 0.46 + fineCells * 0.16, 0.0, 1.0);
+    vec3 hotCell = mix(midColor, coreColor, heat);
+    vec3 color = mix(edgeColor * 0.48, hotCell, 0.38 + pow(limb, 0.46) * 0.62);
+    color *= 0.78 + field * 0.2 - darkLane * 0.14;
+    color *= 1.0 - activeRegion * (0.17 + darkLane * 0.14);
+    color += coreColor * pow(fineCells, 6.0) * activity * 0.12;
+    color += midColor * filament * activity * 0.06;
+    color += edgeColor * pow(1.0 - limb, 3.4) * activity * 0.16;
     float slowPulse = 0.98 + sin(time * 0.43 + seed * 21.0) * 0.02;
-    gl_FragColor = vec4(color * slowPulse * 1.18, 1.0);
+    gl_FragColor = vec4(color * limbContour * surfaceExposure * slowPulse, 1.0);
   }
 `;
 
-const ATMOSPHERE_VERTEX_SHADER = PHOTOSPHERE_VERTEX_SHADER;
+const ATMOSPHERE_VERTEX_SHADER = `
+  uniform float time;
+  uniform float seed;
+  uniform float layer;
+  uniform float coronaAsymmetry;
+  varying vec3 vObjectNormal;
+  varying vec3 vViewNormal;
+  varying vec3 vViewDirection;
+  varying float vAsymmetry;
+
+  void main() {
+    vec3 direction = normalize(position);
+    float angle = atan(direction.y, direction.x);
+    float broadLobe = pow(0.5 + 0.5 * sin(angle * 3.0 + direction.z * 4.7 + seed * 17.0), 3.0);
+    float brokenEdge = sin(angle * 11.0 - direction.z * 13.0 + time * 0.09 + seed * 29.0);
+    float displacement = layer * coronaAsymmetry * (0.045 + broadLobe * 0.12 + brokenEdge * 0.018);
+    vec3 displaced = position * (1.0 + displacement);
+    vObjectNormal = direction;
+    vec4 viewPosition = modelViewMatrix * vec4(displaced, 1.0);
+    vViewNormal = normalize(normalMatrix * normal);
+    vViewDirection = normalize(-viewPosition.xyz);
+    vAsymmetry = broadLobe;
+    gl_Position = projectionMatrix * viewPosition;
+  }
+`;
 
 const ATMOSPHERE_FRAGMENT_SHADER = `
   uniform float time;
   uniform float seed;
   uniform float activity;
   uniform float layer;
+  uniform float coronaAsymmetry;
   uniform vec3 edgeColor;
   varying vec3 vObjectNormal;
   varying vec3 vViewNormal;
   varying vec3 vViewDirection;
+  varying float vAsymmetry;
 
   void main() {
     vec3 direction = normalize(vObjectNormal);
@@ -133,10 +169,11 @@ const ATMOSPHERE_FRAGMENT_SHADER = `
     float angle = atan(direction.y, direction.x);
     float broadFlow = sin(angle * (7.0 + layer * 3.0) + direction.z * 9.0 - time * (0.13 + activity * 0.04) + seed * 19.0);
     float fineFlow = sin(angle * (17.0 - layer * 2.0) - direction.z * 21.0 + time * 0.07 - seed * 11.0);
-    float turbulence = 0.6 + broadFlow * 0.24 + fineFlow * 0.16;
-    float plume = pow(max(0.0, broadFlow), 7.0) * (0.28 + activity * 0.16);
-    float alpha = pow(limb, 2.15 + layer * 0.48) * max(0.0, turbulence + plume);
-    alpha *= (0.2 + activity * 0.16) * (1.0 - layer * 0.23);
+    float turbulence = 0.52 + broadFlow * 0.28 + fineFlow * 0.2;
+    float plume = pow(max(0.0, broadFlow * 0.72 + vAsymmetry * coronaAsymmetry), 6.0) * (0.3 + activity * 0.18);
+    float sectorMask = mix(0.08, 1.0, smoothstep(-0.08, 0.58, broadFlow * 0.58 + fineFlow * 0.22 + vAsymmetry * 0.52));
+    float alpha = pow(limb, 2.35 + layer * 0.55) * max(0.0, turbulence + plume) * sectorMask;
+    alpha *= (0.12 + activity * 0.13) * (1.0 - layer * 0.28);
     vec3 glow = mix(edgeColor, vec3(1.0, 0.74, 0.38), plume * 0.55 + limb * 0.16);
     gl_FragColor = vec4(glow * (1.0 + activity * 0.38), alpha);
   }
@@ -193,6 +230,39 @@ const DUST_FRAGMENT_SHADER = `
   }
 `;
 
+const HALO_VERTEX_SHADER = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const HALO_FRAGMENT_SHADER = `
+  uniform float time;
+  uniform float seed;
+  uniform float activity;
+  uniform vec3 coreColor;
+  uniform vec3 midColor;
+  varying vec2 vUv;
+
+  void main() {
+    vec2 point = vUv - vec2(0.5);
+    float radius = length(point) * 2.0;
+    float angle = atan(point.y, point.x);
+    float edgeWarp = 0.78
+      + sin(angle * 5.0 + seed * 21.0 + time * 0.035) * 0.11
+      + sin(angle * 13.0 - seed * 37.0 - time * 0.021) * 0.07;
+    float radialGlow = pow(max(0.0, 1.0 - radius / edgeWarp), 1.55);
+    float rayField = pow(max(0.0, sin(angle * 9.0 + seed * 31.0 + time * 0.028)), 14.0);
+    float rays = rayField * pow(max(0.0, 1.0 - radius), 0.7) * smoothstep(0.22, 0.64, radius);
+    float cutoff = 1.0 - smoothstep(0.82, 1.0, radius);
+    float alpha = (radialGlow * 0.2 + rays * 0.085) * cutoff * (0.82 + activity * 0.2);
+    vec3 color = mix(midColor, coreColor, radialGlow * 0.72 + rays * 0.24);
+    gl_FragColor = vec4(color * 1.08, alpha);
+  }
+`;
+
 export function createKnowledgeStar(THREE, definition, qualityLevel = "high") {
   const profile = stellarProfileFor(definition, qualityLevel);
   const group = new THREE.Group();
@@ -204,12 +274,14 @@ export function createKnowledgeStar(THREE, definition, qualityLevel = "high") {
   const chromosphere = createChromosphere(THREE, profile);
   const corona = createCoronaLayers(THREE, profile);
   const prominences = createProminences(THREE, profile);
+  const halo = createRadiativeHalo(THREE, profile);
   const dust = createLocalDustField(THREE, profile, qualityLevel);
   const beacon = createStellarBeacon(THREE, profile.radius, new THREE.Color(profile.midColor));
   const light = new THREE.PointLight(profile.midColor, profile.lightIntensity, profile.radius * 18, 1.65);
   light.position.z = profile.radius * 0.35;
 
   group.add(
+    halo.mesh,
     photosphere.mesh,
     chromosphere.mesh,
     ...corona.meshes,
@@ -239,6 +311,7 @@ export function createKnowledgeStar(THREE, definition, qualityLevel = "high") {
         chromosphere.material,
         ...corona.materials,
         ...prominences.materials,
+        halo.material,
         dust.material,
       ],
       rotors: [],
@@ -263,7 +336,38 @@ function sharedUniforms(THREE, profile) {
     coreColor: { value: new THREE.Color(profile.coreColor) },
     midColor: { value: new THREE.Color(profile.midColor) },
     edgeColor: { value: new THREE.Color(profile.edgeColor) },
+    surfaceExposure: { value: profile.surfaceExposure },
+    limbDarkening: { value: profile.limbDarkening },
+    coronaAsymmetry: { value: profile.coronaAsymmetry },
   };
+}
+
+function createRadiativeHalo(THREE, profile) {
+  const uniforms = sharedUniforms(THREE, profile);
+  const material = new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader: HALO_VERTEX_SHADER,
+    fragmentShader: HALO_FRAGMENT_SHADER,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const geometry = new THREE.PlaneGeometry(profile.radius * 5.4, profile.radius * 5.4);
+  const mesh = new THREE.Mesh(geometry, material);
+  const cameraWorldQuaternion = new THREE.Quaternion();
+  const parentWorldQuaternion = new THREE.Quaternion();
+  mesh.onBeforeRender = (_renderer, _scene, camera) => {
+    camera.getWorldQuaternion(cameraWorldQuaternion);
+    mesh.parent?.getWorldQuaternion(parentWorldQuaternion);
+    mesh.quaternion
+      .copy(parentWorldQuaternion)
+      .invert()
+      .multiply(cameraWorldQuaternion);
+  };
+  mesh.renderOrder = 2;
+  mesh.frustumCulled = false;
+  return { mesh, material };
 }
 
 function createPhotosphere(THREE, profile) {
@@ -315,7 +419,7 @@ function createCoronaLayers(THREE, profile) {
       blending: THREE.AdditiveBlending,
       toneMapped: false,
     });
-    const scale = 1.18 + index * 0.17;
+    const scale = 1.14 + index * 0.19 + index * index * 0.045;
     const geometry = new THREE.IcosahedronGeometry(
       profile.radius * scale,
       Math.max(3, profile.surfaceDetail - 2),
