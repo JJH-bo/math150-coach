@@ -104,11 +104,13 @@ test("living star contains independent photosphere, chromosphere, corona, promin
   assert.match(source, /userData\.stellar = true/);
 });
 
-test("the stellar system owns a shared non-interactive dust belt and local haze", async () => {
+test("the stellar system owns two boss-centered dust lanes and a local focus field", async () => {
   const { source } = await loadRenderer();
   assert.match(source, /createStellarSystemEnvironment/);
-  assert.match(source, /createSystemDustBelt/);
-  assert.match(source, /SYSTEM_HAZE_FRAGMENT_SHADER/);
+  assert.match(source, /createSystemDustLanes/);
+  assert.match(source, /laneIndex/);
+  assert.match(source, /SYSTEM_FOCUS_FRAGMENT_SHADER/);
+  assert.match(source, /NormalBlending/);
   assert.match(source, /systemEnvironment/);
 });
 

@@ -268,7 +268,7 @@ def test_space_trainer_uses_realistic_deep_space_art_direction() -> None:
     assert "createDeepSpaceTexture" in script.text
     assert "createSolarLightSource" in script.text
     assert "createKnowledgeSingularity" in script.text
-    assert "createBossCataclysm" in script.text
+    assert "createBossBlackHole" in script.text
     assert "createPlanetSurfaceMaps" not in script.text
     assert "realisticBodyProfile" not in script.text
     assert "addNebulaDust" not in script.text
@@ -341,8 +341,8 @@ def test_space_trainer_uses_knowledge_singularities_and_semantic_routes() -> Non
     assert "createKnowledgeSingularity" in script.text
     assert "createAuxiliaryStar" in script.text
     assert "createRepairSingularity" in script.text
-    assert "createBossCataclysm" in script.text
-    assert "BOSS_SCALE = 3.8" in script.text
+    assert "createBossBlackHole" in script.text
+    assert "BOSS_SCALE = 1.6" in script.text
     assert "ShaderMaterial" in renderer.text
     assert "createPortalThroat" in renderer.text
     assert "createDistortedRim" in renderer.text
@@ -477,18 +477,28 @@ def test_space_trainer_stellar_system_uses_filaments_instead_of_permanent_tunnel
     page = client.get("/trainer/space/")
     script = client.get("/trainer/space/space.js")
     graph = client.get("/trainer/space/cosmos-graph.js")
+    stellar = client.get("/trainer/space/stellar-renderer.js")
+    black_hole = client.get("/trainer/space/black-hole-renderer.js")
 
     assert page.status_code == 200
     assert script.status_code == 200
     assert graph.status_code == 200
-    assert 'space.js?v=20260714-stellar-system-1' in page.text
-    assert 'cosmos-graph.js?v=20260714-stellar-system-1' in script.text
-    assert 'stellar-renderer.js?v=20260714-stellar-system-1' in script.text
+    assert stellar.status_code == 200
+    assert black_hole.status_code == 200
+    assert 'space.js?v=20260714-black-hole-focus-1' in page.text
+    assert 'cosmos-graph.js?v=20260714-black-hole-focus-1' in script.text
+    assert 'stellar-renderer.js?v=20260714-black-hole-focus-1' in script.text
+    assert 'from "./black-hole-renderer.js?v=20260714-black-hole-focus-1"' in script.text
+    assert "createBossBlackHole" in script.text
+    assert "updateBossBlackHole" in script.text
+    assert "createBossCataclysm" not in script.text
     assert "createStellarSystemEnvironment" in script.text
     assert "state.systemEnvironment" in script.text
+    assert "SYSTEM_FOCUS_FRAGMENT_SHADER" in stellar.text
     assert "buildStellarSystemPilotLayout" in graph.text
     assert 'presentationMode: stellarPilotLayout.active ? "stellar-system-pilot"' in graph.text
     assert "const lookAt = isEntry" in script.text
+    assert "bendFilamentTowardBlackHole" in script.text
     assert "createRapidTransitFilament" in script.text
     assert "createRapidTransitCorridor" not in script.text
     assert "new THREE.TubeGeometry" not in script.text

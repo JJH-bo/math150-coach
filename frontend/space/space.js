@@ -1,4 +1,4 @@
-import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260714-stellar-system-1";
+import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260714-black-hole-focus-1";
 import {
   buildCombinedTransitControlPoints,
   buildGuidedTransitWaypoints,
@@ -8,7 +8,6 @@ import {
 import {
   applyCelestialStatus,
   createAuxiliaryStar,
-  createBossCataclysm,
   createCelestialNode,
   createKnowledgeSingularity,
   createRepairSingularity,
@@ -19,11 +18,15 @@ import {
   createKnowledgeStar,
   createStellarSystemEnvironment,
   isStellarMaterialPilotNode,
-} from "./stellar-renderer.js?v=20260714-stellar-system-1";
+} from "./stellar-renderer.js?v=20260714-black-hole-focus-1";
+import {
+  createBossBlackHole,
+  updateBossBlackHole,
+} from "./black-hole-renderer.js?v=20260714-black-hole-focus-1";
 
 const apiBase = "/api/challenge/v1";
 const threeModuleUrl = "three";
-const BOSS_SCALE = 3.8;
+const BOSS_SCALE = 1.6;
 const PORTAL_APPROACH_DIRECTION = Object.freeze([0, 0, 1]);
 const MOVEMENT_KEYS = new Set([
   "KeyW", "KeyA", "KeyS", "KeyD", "Space", "ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight",
@@ -226,6 +229,9 @@ function createSolarLightSource(THREE, scene) {
 }
 
 function createRenderedKnowledgeObject(definition) {
+  if (definition.role === "boss") {
+    return createBossBlackHole(state.THREE, definition, state.qualityLevel);
+  }
   if (isStellarMaterialPilotNode(definition)) {
     return createKnowledgeStar(state.THREE, definition, state.qualityLevel);
   }
@@ -315,13 +321,16 @@ function addSemanticRoute(edge) {
   const start = source.group.position.clone();
   const end = target.group.position.clone();
   const rapid = isRapidTransitEdge(edge, start.toArray(), end.toArray());
-  const controlPoints = rapid
+  let controlPoints = rapid
     ? buildRapidTransitControlPoints(start.toArray(), end.toArray(), {
       sourceRadius: source.radius,
       targetRadius: target.radius,
       seed: ((edge.id?.length || 7) % 17) / 17,
     }).map((point) => new THREE.Vector3(...point))
     : null;
+  if (rapid && target.userData.blackHole) {
+    controlPoints = bendFilamentTowardBlackHole(THREE, controlPoints, target, ((edge.id?.length || 7) % 17) / 17);
+  }
   const curve = rapid
     ? new THREE.CatmullRomCurve3(controlPoints, false, "centripetal", 0.36)
     : createSemanticCurve(THREE, start, end);
@@ -451,6 +460,16 @@ function createRapidTransitFilament(THREE, curve, color, qualityLevel) {
   };
 }
 
+function bendFilamentTowardBlackHole(THREE, controlPoints, target, seed = 0.5) {
+  if (!controlPoints || controlPoints.length < 4 || !target?.userData?.blackHole) return controlPoints;
+  const bent = controlPoints.map((point) => point.clone());
+  const penultimate = bent.length - 2;
+  const inward = bent[penultimate].clone().sub(target.group.position).normalize();
+  const tangent = new THREE.Vector3(-inward.y, inward.x, inward.z * 0.16).normalize();
+  bent[penultimate].addScaledVector(tangent, target.radius * (0.16 + seed * 0.1));
+  return bent;
+}
+
 function routeColor(edgeType) {
   const colors = {
     progression: 0x77dff8,
@@ -566,7 +585,9 @@ function animate() {
 
 function updateCosmicMotion(elapsed, delta) {
   state.objects.forEach((object) => {
-    updateCelestialObject(object, elapsed, delta, object.id === state.nearest?.id || object.id === state.currentTaskId);
+    const focused = object.id === state.nearest?.id || object.id === state.currentTaskId;
+    if (object.userData.blackHole) updateBossBlackHole(object, elapsed, delta, focused);
+    else updateCelestialObject(object, elapsed, delta, focused);
   });
 }
 

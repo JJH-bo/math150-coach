@@ -283,7 +283,7 @@ const HALO_FRAGMENT_SHADER = `
   }
 `;
 
-const SYSTEM_HAZE_VERTEX_SHADER = `
+const SYSTEM_FOCUS_VERTEX_SHADER = `
   varying vec2 vUv;
   void main() {
     vUv = uv;
@@ -291,46 +291,47 @@ const SYSTEM_HAZE_VERTEX_SHADER = `
   }
 `;
 
-const SYSTEM_HAZE_FRAGMENT_SHADER = `
+const SYSTEM_FOCUS_FRAGMENT_SHADER = `
   uniform vec3 warmColor;
-  uniform vec3 coolColor;
   varying vec2 vUv;
 
   void main() {
     vec2 point = (vUv - vec2(0.5)) * vec2(2.0, 2.0);
-    float bentBand = point.y + sin(point.x * 4.2) * 0.075 + sin(point.x * 9.0) * 0.025;
-    float band = exp(-pow(bentBand * 4.4, 2.0));
-    float radial = 1.0 - smoothstep(0.18, 1.0, length(point * vec2(0.82, 1.35)));
-    float mottling = 0.68 + sin(point.x * 13.0 + point.y * 7.0) * 0.16
-      + sin(point.x * 29.0 - point.y * 11.0) * 0.08;
-    float alpha = max(0.0, band * radial * mottling) * 0.052;
-    vec3 color = mix(coolColor, warmColor, smoothstep(-0.7, 0.65, point.x));
+    float ellipticalRadius = length(point * vec2(0.78, 1.18));
+    float bentBand = point.y + sin(point.x * 3.7) * 0.09 + sin(point.x * 8.0) * 0.028;
+    float warmBand = exp(-pow(bentBand * 4.1, 2.0)) * (1.0 - smoothstep(0.18, 0.92, ellipticalRadius));
+    float outerFocus = smoothstep(0.4, 1.08, ellipticalRadius);
+    float mottling = 0.76 + sin(point.x * 12.0 + point.y * 8.0) * 0.12
+      + sin(point.x * 27.0 - point.y * 15.0) * 0.06;
+    vec3 color = mix(warmColor * 0.3, vec3(0.0), outerFocus);
+    float alpha = clamp(outerFocus * 0.34 + warmBand * mottling * 0.038, 0.0, 0.37);
     gl_FragColor = vec4(color, alpha);
   }
 `;
 
 export function createStellarSystemEnvironment(THREE, definitions = [], qualityLevel = "high") {
   const learningNodes = definitions.filter((definition) => definition.kind === "micro");
+  const boss = definitions.find((definition) => definition.role === "boss");
   const group = new THREE.Group();
   group.userData.systemEnvironment = true;
   if (!learningNodes.length) return group;
 
-  const center = learningNodes.reduce((total, definition) => [
-    total[0] + definition.position[0],
-    total[1] + definition.position[1],
-    total[2] + definition.position[2],
-  ], [0, 0, 0]).map((value) => value / learningNodes.length);
+  const center = boss?.position || learningNodes.reduce((total, definition) => [
+    total[0] + definition.position[0] / learningNodes.length,
+    total[1] + definition.position[1] / learningNodes.length,
+    total[2] + definition.position[2] / learningNodes.length,
+  ], [0, 0, 0]);
   group.position.set(...center);
   const seed = hashUnit(learningNodes.map((definition) => definition.id).join("|"));
-  const dust = createSystemDustBelt(THREE, seed, qualityLevel);
-  const haze = createSystemHaze(THREE);
-  group.add(haze.mesh, dust.points);
-  group.userData.materials = [haze.material, dust.material];
+  const dust = createSystemDustLanes(THREE, seed, qualityLevel);
+  const focus = createSystemFocusField(THREE);
+  group.add(focus.mesh, dust.points);
+  group.userData.materials = [focus.material, dust.material];
   return group;
 }
 
-function createSystemDustBelt(THREE, seed, qualityLevel) {
-  const count = qualityLevel === "high" ? 760 : 420;
+function createSystemDustLanes(THREE, seed, qualityLevel) {
+  const count = qualityLevel === "high" ? 1120 : 620;
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   const random = mulberry32(Math.floor(seed * 0xffffffff));
@@ -338,13 +339,20 @@ function createSystemDustBelt(THREE, seed, qualityLevel) {
   const cool = new THREE.Color(0x6e8fa4);
   const color = new THREE.Color();
   for (let index = 0; index < count; index += 1) {
-    const angle = random() * Math.PI * 2;
-    const radialNoise = (random() - 0.5) * 92;
-    const verticalNoise = (random() - 0.5) * 48;
-    positions[index * 3] = Math.cos(angle) * (355 + radialNoise);
-    positions[index * 3 + 1] = Math.sin(angle) * (155 + radialNoise * 0.28) + verticalNoise;
-    positions[index * 3 + 2] = Math.sin(angle * 2.0 + seed * 6.0) * 78 + (random() - 0.5) * 92;
-    color.copy(cool).lerp(warm, 0.28 + random() * 0.5);
+    const laneIndex = index % 2;
+    const laneProgress = random();
+    const gap = laneIndex === 0 ? 0.58 : 1.34;
+    const span = laneIndex === 0 ? Math.PI * 1.68 : Math.PI * 1.54;
+    const angle = gap + laneProgress * span + (laneIndex === 0 ? 0 : Math.PI * 0.46);
+    const radialNoise = (random() - 0.5) * (laneIndex === 0 ? 102 : 126);
+    const verticalNoise = (random() - 0.5) * (laneIndex === 0 ? 54 : 72);
+    const radiusX = laneIndex === 0 ? 430 : 640;
+    const radiusY = laneIndex === 0 ? 210 : 315;
+    positions[index * 3] = Math.cos(angle) * (radiusX + radialNoise) - laneIndex * 58;
+    positions[index * 3 + 1] = Math.sin(angle) * (radiusY + radialNoise * 0.34) + verticalNoise;
+    positions[index * 3 + 2] = Math.sin(angle * (laneIndex + 1.35) + seed * 6.0) * (laneIndex === 0 ? 72 : 118)
+      + (random() - 0.5) * 88;
+    color.copy(cool).lerp(warm, laneIndex === 0 ? 0.58 + random() * 0.32 : 0.26 + random() * 0.42);
     colors[index * 3] = color.r;
     colors[index * 3 + 1] = color.g;
     colors[index * 3 + 2] = color.b;
@@ -353,10 +361,10 @@ function createSystemDustBelt(THREE, seed, qualityLevel) {
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   const material = new THREE.PointsMaterial({
-    size: qualityLevel === "high" ? 1.15 : 0.9,
+    size: qualityLevel === "high" ? 1.28 : 0.96,
     vertexColors: true,
     transparent: true,
-    opacity: 0.22,
+    opacity: 0.28,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     toneMapped: false,
@@ -367,23 +375,22 @@ function createSystemDustBelt(THREE, seed, qualityLevel) {
   return { points, material };
 }
 
-function createSystemHaze(THREE) {
+function createSystemFocusField(THREE) {
   const material = new THREE.ShaderMaterial({
     uniforms: {
       warmColor: { value: new THREE.Color(0x8c3f26) },
-      coolColor: { value: new THREE.Color(0x31566a) },
     },
-    vertexShader: SYSTEM_HAZE_VERTEX_SHADER,
-    fragmentShader: SYSTEM_HAZE_FRAGMENT_SHADER,
+    vertexShader: SYSTEM_FOCUS_VERTEX_SHADER,
+    fragmentShader: SYSTEM_FOCUS_FRAGMENT_SHADER,
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    blending: THREE.NormalBlending,
     toneMapped: false,
   });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(900, 520), material);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1420, 900), material);
   const cameraWorldQuaternion = new THREE.Quaternion();
   const parentWorldQuaternion = new THREE.Quaternion();
-  mesh.position.z = -110;
+  mesh.position.z = -220;
   mesh.onBeforeRender = (_renderer, _scene, camera) => {
     camera.getWorldQuaternion(cameraWorldQuaternion);
     mesh.parent?.getWorldQuaternion(parentWorldQuaternion);
