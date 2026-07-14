@@ -16,48 +16,64 @@ async function loadRenderer() {
   return { renderer, source };
 }
 
-test("boss black hole is built from physical layers instead of portal internals", async () => {
+test("boss is built as a layered collapsing abyss instead of a black sphere", async () => {
   const { source } = await loadRenderer();
 
   assert.match(source, /createBossBlackHole/);
-  assert.match(source, /createEventHorizon/);
+  assert.match(source, /createCollapsingAbyss/);
   assert.match(source, /createPhotonRing/);
   assert.match(source, /createAccretionDisc/);
   assert.match(source, /createInfallField/);
-  assert.match(source, /createGravitationalStorm/);
+  assert.match(source, /createStormSheets/);
+  assert.match(source, /createShearFilaments/);
+  assert.match(source, /createStormCloudField/);
   assert.match(source, /updateBossBlackHole/);
-  assert.doesNotMatch(source, /createPortalThroat|createPortalAperture/);
-  assert.match(source, /color:\s*0x000000/);
+  assert.doesNotMatch(source, /SphereGeometry|createPortalThroat|createPortalAperture/);
+  assert.match(source, /ABYSS_FRAGMENT_SHADER/);
+  assert.match(source, /offsetCore/);
+  assert.match(source, /depthLayer/);
   assert.match(source, /depthWrite:\s*true/);
   assert.match(source, /userData\.blackHole = true/);
 });
 
 test("black hole profile preserves horizon scale while balanced mode reduces cost", async () => {
   const { renderer } = await loadRenderer();
-  const definition = { id: "ode_separable.macro_challenge", radius: 196 };
+  const definition = { id: "ode_separable.macro_challenge", radius: 224 };
   const high = renderer.blackHoleProfileFor(definition, "high");
   const balanced = renderer.blackHoleProfileFor(definition, "balanced");
 
-  assert.equal(high.horizonRadius, 196);
-  assert.equal(balanced.horizonRadius, high.horizonRadius);
-  assert.ok(high.photonRadius > high.horizonRadius);
+  assert.equal(high.abyssRadius, 224);
+  assert.equal(balanced.abyssRadius, high.abyssRadius);
+  assert.ok(high.photonRadius > high.abyssRadius);
   assert.ok(high.photonWidth <= 0.008);
-  assert.ok(high.discOuterRadius >= high.horizonRadius * 1.8);
+  assert.ok(high.discOuterRadius >= high.abyssRadius * 1.8);
   assert.ok(high.stormOuterRadius >= high.discOuterRadius * 1.25);
   assert.ok(high.infallCount > balanced.infallCount);
+  assert.ok(high.stormLayers >= 5);
   assert.ok(high.stormLayers > balanced.stormLayers);
+  assert.ok(high.filamentCount >= 18);
+  assert.ok(high.filamentCount > balanced.filamentCount);
+  assert.ok(high.stormCloudCount > balanced.stormCloudCount);
+  assert.equal(high.depthLayers, balanced.depthLayers);
   assert.ok(high.discTurbulenceOctaves > balanced.discTurbulenceOctaves);
 });
 
-test("event horizon remains opaque while emissive layers stay independently animated", async () => {
+test("abyss, storm sheets, filaments, and clouds remain independently animated", async () => {
   const { source } = await loadRenderer();
 
-  assert.match(source, /MeshBasicMaterial/);
-  assert.match(source, /transparent:\s*false/);
+  assert.match(source, /boundaryNoise/);
+  assert.match(source, /tornMask/);
+  assert.match(source, /fbm/);
   assert.match(source, /PHOTON_RING_FRAGMENT_SHADER/);
   assert.match(source, /ACCRETION_FRAGMENT_SHADER/);
   assert.match(source, /INFALL_VERTEX_SHADER/);
   assert.match(source, /GRAVITY_STORM_FRAGMENT_SHADER/);
+  assert.match(source, /STORM_CLOUD_VERTEX_SHADER/);
+  assert.match(source, /TubeGeometry/);
+  assert.match(source, /abyssLayers/);
+  assert.match(source, /abyssOffsets/);
+  assert.match(source, /shearFilaments/);
+  assert.match(source, /stormClouds/);
   assert.match(source, /frontDisc/);
   assert.match(source, /backDisc/);
   assert.match(source, /valueNoise2D/);
