@@ -14,6 +14,7 @@ env/
 training_sessions/
 backend/training_sessions/
 .superpowers/
+.worktrees/
 *.log
 uvicorn-*.out.log
 uvicorn-*.err.log
