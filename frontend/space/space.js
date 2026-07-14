@@ -1,4 +1,4 @@
-import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260714-black-hole-focus-2";
+import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260714-directional-abyss-1";
 import {
   buildCombinedTransitControlPoints,
   buildGuidedTransitWaypoints,
@@ -18,11 +18,11 @@ import {
   createKnowledgeStar,
   createStellarSystemEnvironment,
   isStellarMaterialPilotNode,
-} from "./stellar-renderer.js?v=20260714-black-hole-focus-2";
+} from "./stellar-renderer.js?v=20260714-directional-abyss-1";
 import {
   createBossBlackHole,
   updateBossBlackHole,
-} from "./black-hole-renderer.js?v=20260714-black-hole-focus-2";
+} from "./black-hole-renderer.js?v=20260714-directional-abyss-1";
 
 const apiBase = "/api/challenge/v1";
 const threeModuleUrl = "three";

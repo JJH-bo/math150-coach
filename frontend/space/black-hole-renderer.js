@@ -26,7 +26,10 @@ const PHOTON_RING_FRAGMENT_SHADER = `
     float beaming = 0.28 + 0.72 * smoothstep(-0.9, 0.78, p.x);
     float fractureWave = 0.5 + 0.5 * sin(angle * 13.0 - time * 0.26)
       + sin(angle * 31.0 + time * 0.12) * 0.18;
-    float fracture = 0.18 + 0.82 * smoothstep(0.18, 0.76, fractureWave);
+    float arcDropout = sin(angle * 3.0 + time * 0.045)
+      + sin(angle * 8.0 - time * 0.07) * 0.62;
+    float fracture = smoothstep(0.38, 0.82, fractureWave)
+      * smoothstep(-0.28, 0.34, arcDropout);
     float spark = pow(max(0.0, sin(angle * 37.0 + time * 0.18)), 24.0) * 0.22;
     vec3 color = mix(ember, whiteHeat, clamp(beaming * 0.72 + spark, 0.0, 1.0));
     float alpha = (ring + outerEcho) * beaming * fracture * 0.62;
@@ -91,27 +94,36 @@ const ABYSS_FRAGMENT_SHADER = `
     vec2 layerOffset = vec2(depthLayer * 0.055, sin(phase + time * 0.035) * 0.012 * depthLayer);
     vec2 depthPoint = (ellipsePoint - layerOffset) / (1.0 - depthLayer * 0.075);
     float depthRadius = length(depthPoint);
-    float angle = atan(depthPoint.y, depthPoint.x);
     float gas = abyssFbm(depthPoint * (5.4 + depthLayer * 2.2) + vec2(phase, -time * 0.022));
-    float contourWave = 0.5 + 0.5 * sin(
-      log(depthRadius + 0.075) * (18.0 + depthLayer * 4.0)
-      - angle * (3.0 + depthLayer * 2.0)
-      + time * (0.07 + depthLayer * 0.035)
-      + phase
-      + gas * 2.1
-    );
-    float contour = smoothstep(0.58, 0.88, contourWave) * (1.0 - smoothstep(0.58, 0.82, depthRadius));
     float curtain = smoothstep(0.18, 0.78, gas) * smoothstep(0.12, 0.72, depthRadius);
-    vec2 offsetCore = depthPoint - vec2(0.16 + depthLayer * 0.035, -0.025);
-    float core = 1.0 - smoothstep(0.18, 0.34, length(offsetCore));
+    vec2 offsetCore = depthPoint - vec2(0.2 + depthLayer * 0.052, -0.045 + depthLayer * 0.018);
+    float coreRadius = length(offsetCore * vec2(1.0, 1.18));
+    float coreNoise = (abyssFbm(offsetCore * 8.8 - vec2(time * 0.011, phase)) - 0.5) * 0.065;
+    float core = 1.0 - smoothstep(0.235 + coreNoise, 0.34 + coreNoise * 0.4, coreRadius);
+    float foldWave = 0.5 + 0.5 * sin(
+      coreRadius * (34.0 + depthLayer * 7.0)
+      + gas * 6.2
+      + phase * 1.7
+      - time * (0.025 + depthLayer * 0.012)
+    );
+    float tornFold = smoothstep(0.58, 0.9, foldWave)
+      * smoothstep(0.24, 0.39, coreRadius)
+      * (1.0 - smoothstep(0.63, 0.79, coreRadius));
+    float radialTear = smoothstep(
+      0.36,
+      0.76,
+      abyssFbm(offsetCore * 13.0 + vec2(phase * 3.0, time * 0.009))
+    );
+    float contour = tornFold * (0.28 + radialTear * 0.72);
+    if (depthLayer > 0.75 && core < 0.012 && contour < 0.05) discard;
     float fracturedRim = (1.0 - smoothstep(0.035, 0.11, abs(boundary - 0.79 - boundaryNoise)))
       * smoothstep(0.36, 0.83, gas);
 
-    vec3 color = mix(vec3(0.0), bloodCloud * (0.24 + curtain * 0.32), 1.0 - core);
-    color += ember * contour * (0.13 + (1.0 - depthLayer) * 0.11);
+    vec3 color = bloodCloud * (0.28 + curtain * 0.34) * (1.0 - core);
+    color += ember * contour * (0.08 + (1.0 - depthLayer) * 0.1);
     color += mix(ember, whiteHeat, gas) * fracturedRim * 0.22;
-    color *= 0.74 - depthLayer * 0.15;
-    float alpha = aperture * (0.52 + depthLayer * 0.17 + core * 0.3);
+    color *= 0.68 - depthLayer * 0.14;
+    float alpha = aperture * (0.24 + depthLayer * 0.1 + core * 0.68 + contour * 0.2);
     gl_FragColor = vec4(color, min(0.98, alpha));
   }
 `;
@@ -366,7 +378,7 @@ export function createBossBlackHole(THREE, definition, qualityLevel = "high") {
 
   const colors = {
     ember: new THREE.Color(0xc83b16),
-    whiteHeat: new THREE.Color(0xffbf72),
+    whiteHeat: new THREE.Color(0xff9858),
     bloodCloud: new THREE.Color(0x4d070b),
   };
   const storm = createStormSheets(THREE, profile, colors, definition.id);
@@ -427,7 +439,7 @@ export function createBossBlackHole(THREE, definition, qualityLevel = "high") {
 }
 
 export function createCollapsingAbyss(THREE, profile, colors) {
-  const diameter = profile.abyssRadius * 2.68;
+  const diameter = profile.abyssRadius * 2.18;
   const geometry = new THREE.PlaneGeometry(diameter, diameter, 1, 1);
   const meshes = [];
   const materials = [];
@@ -463,7 +475,7 @@ export function createCollapsingAbyss(THREE, profile, colors) {
     );
     mesh.position.copy(offset);
     mesh.scale.setScalar(1 - index * 0.055);
-    mesh.renderOrder = 4 + index * 0.25;
+    mesh.renderOrder = 4 + (profile.depthLayers - 1 - index) * 0.25;
     mesh.frustumCulled = false;
     meshes.push(mesh);
     materials.push(material);

@@ -485,10 +485,10 @@ def test_space_trainer_stellar_system_uses_filaments_instead_of_permanent_tunnel
     assert graph.status_code == 200
     assert stellar.status_code == 200
     assert black_hole.status_code == 200
-    assert 'space.js?v=20260714-black-hole-focus-2' in page.text
-    assert 'cosmos-graph.js?v=20260714-black-hole-focus-2' in script.text
-    assert 'stellar-renderer.js?v=20260714-black-hole-focus-2' in script.text
-    assert 'from "./black-hole-renderer.js?v=20260714-black-hole-focus-2"' in script.text
+    assert 'space.js?v=20260714-directional-abyss-1' in page.text
+    assert 'cosmos-graph.js?v=20260714-directional-abyss-1' in script.text
+    assert 'stellar-renderer.js?v=20260714-directional-abyss-1' in script.text
+    assert 'from "./black-hole-renderer.js?v=20260714-directional-abyss-1"' in script.text
     assert "createBossBlackHole" in script.text
     assert "updateBossBlackHole" in script.text
     assert "createBossCataclysm" not in script.text
