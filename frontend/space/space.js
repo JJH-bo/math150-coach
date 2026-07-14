@@ -315,7 +315,7 @@ function addSemanticRoute(edge) {
     : createSemanticCurve(THREE, start, end);
   const color = rapid ? (target.color || 0x77dff8) : routeColor(edge.edgeType);
   const visual = rapid
-    ? createRapidTransitCorridor(THREE, curve, color, state.qualityLevel)
+    ? createRapidTransitFilament(THREE, curve, color, state.qualityLevel)
     : createSemanticLine(THREE, curve, color, edge.edgeType);
 
   state.scene.add(visual.group);
@@ -352,54 +352,42 @@ function createSemanticLine(THREE, curve, color, edgeType) {
   };
 }
 
-function createRapidTransitCorridor(THREE, curve, color, qualityLevel) {
+function createRapidTransitFilament(THREE, curve, color, qualityLevel) {
   const group = new THREE.Group();
   const highQuality = qualityLevel === "high";
-  const segments = highQuality ? 76 : 42;
-  const radius = highQuality ? 9.4 : 8.2;
-  const outerMaterial = new THREE.MeshBasicMaterial({
+  const segments = highQuality ? 92 : 56;
+  const coreMaterial = new THREE.LineDashedMaterial({
     color,
     transparent: true,
-    opacity: 0.022,
+    opacity: 0.095,
+    dashSize: 3.8,
+    gapSize: 7.4,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    side: THREE.DoubleSide,
     toneMapped: false,
   });
-  const innerMaterial = highQuality
-    ? new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.025,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
-      toneMapped: false,
-    })
-    : null;
-  const outer = new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius, highQuality ? 10 : 6, false), outerMaterial);
-  const inner = innerMaterial
-    ? new THREE.Mesh(new THREE.TubeGeometry(curve, segments, radius * 0.34, 7, false), innerMaterial)
-    : null;
-  outer.renderOrder = 2;
-  group.add(outer);
-  if (inner) {
-    inner.renderOrder = 2;
-    group.add(inner);
-  }
+  const core = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(curve.getPoints(segments)),
+    coreMaterial,
+  );
+  core.computeLineDistances();
+  core.renderOrder = 3;
+  group.add(core);
 
   const frames = curve.computeFrenetFrames(segments, false);
   const strandPositions = [];
-  const strandCount = highQuality ? 8 : 4;
+  const strandCount = highQuality ? 4 : 2;
   for (let strand = 0; strand < strandCount; strand += 1) {
     const angle = (strand / strandCount) * Math.PI * 2;
     for (let index = 0; index < segments; index += 1) {
       [index, index + 1].forEach((sampleIndex) => {
         const t = sampleIndex / segments;
         const point = curve.getPointAt(t);
-        const offsetRadius = radius * (0.88 + Math.sin(t * Math.PI * 5 + angle) * 0.08);
-        point.addScaledVector(frames.normals[sampleIndex], Math.cos(angle) * offsetRadius);
-        point.addScaledVector(frames.binormals[sampleIndex], Math.sin(angle) * offsetRadius);
+        const envelope = Math.sin(Math.PI * t);
+        const drift = 0.72 + Math.sin(t * Math.PI * (5 + strand) + angle) * 0.34;
+        const offset = envelope * drift * (1.1 + strand * 0.26);
+        point.addScaledVector(frames.normals[sampleIndex], Math.cos(angle + t * 8.0) * offset);
+        point.addScaledVector(frames.binormals[sampleIndex], Math.sin(angle + t * 6.4) * offset);
         strandPositions.push(point.x, point.y, point.z);
       });
     }
@@ -409,7 +397,7 @@ function createRapidTransitCorridor(THREE, curve, color, qualityLevel) {
   const strandMaterial = new THREE.LineBasicMaterial({
     color,
     transparent: true,
-    opacity: 0.068,
+    opacity: 0.036,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     toneMapped: false,
@@ -418,64 +406,36 @@ function createRapidTransitCorridor(THREE, curve, color, qualityLevel) {
   strands.renderOrder = 3;
   group.add(strands);
 
-  const flowMaterial = new THREE.LineDashedMaterial({
-    color,
-    transparent: true,
-    opacity: 0.14,
-    dashSize: 6,
-    gapSize: 13,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    toneMapped: false,
-  });
-  const flowLine = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(curve.getPoints(segments)),
-    flowMaterial,
-  );
-  flowLine.computeLineDistances();
-  flowLine.renderOrder = 3;
-  group.add(flowLine);
-
-  const gateMaterial = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity: 0.085,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    toneMapped: false,
-  });
-  const gateCount = highQuality ? 6 : 3;
-  const gates = new THREE.InstancedMesh(
-    new THREE.TorusGeometry(radius * 0.84, Math.max(0.22, radius * 0.045), 7, 28),
-    gateMaterial,
-    gateCount,
-  );
-  const dummy = new THREE.Object3D();
-  const forward = new THREE.Vector3(0, 0, 1);
-  for (let index = 0; index < gateCount; index += 1) {
-    const t = (index + 1) / (gateCount + 1);
-    dummy.position.copy(curve.getPointAt(t));
-    dummy.quaternion.setFromUnitVectors(forward, curve.getTangentAt(t).normalize());
-    dummy.scale.setScalar(0.86 + Math.sin(index * 1.9) * 0.08);
-    dummy.updateMatrix();
-    gates.setMatrixAt(index, dummy.matrix);
+  const flowPoints = [];
+  for (let index = 2; index < segments; index += highQuality ? 4 : 6) {
+    const point = curve.getPointAt(index / segments);
+    flowPoints.push(point.x, point.y, point.z);
   }
-  gates.instanceMatrix.needsUpdate = true;
-  gates.renderOrder = 3;
-  group.add(gates);
+  const flowGeometry = new THREE.BufferGeometry();
+  flowGeometry.setAttribute("position", new THREE.Float32BufferAttribute(flowPoints, 3));
+  const flowMaterial = new THREE.PointsMaterial({
+    color,
+    size: highQuality ? 1.15 : 0.9,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 0.12,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const flow = new THREE.Points(flowGeometry, flowMaterial);
+  flow.renderOrder = 4;
+  group.add(flow);
 
   return {
     group,
-    line: flowLine,
-    gates,
+    line: core,
     layers: [
-      { material: outerMaterial, baseOpacity: 0.022, maxOpacity: 0.07 },
-      ...(innerMaterial ? [{ material: innerMaterial, baseOpacity: 0.025, maxOpacity: 0.08 }] : []),
-      { material: strandMaterial, baseOpacity: 0.068, maxOpacity: 0.2 },
-      { material: flowMaterial, baseOpacity: 0.14, maxOpacity: 0.42 },
-      { material: gateMaterial, baseOpacity: 0.085, maxOpacity: 0.26 },
+      { material: coreMaterial, baseOpacity: 0.095, maxOpacity: 0.34 },
+      { material: strandMaterial, baseOpacity: 0.036, maxOpacity: 0.17 },
+      { material: flowMaterial, baseOpacity: 0.12, maxOpacity: 0.38 },
     ],
-    baseOpacity: 0.1,
+    baseOpacity: 0.095,
   };
 }
 

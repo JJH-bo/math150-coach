@@ -462,3 +462,19 @@ def test_space_trainer_exposes_one_isolated_stellar_material_proof() -> None:
     assert "MeshPhongMaterial" not in star.text
     assert "MeshLambertMaterial" not in star.text
     assert "TextureLoader" not in star.text
+
+
+def test_space_trainer_stellar_system_uses_filaments_instead_of_permanent_tunnels() -> None:
+    client = TestClient(create_app("mixed"))
+
+    script = client.get("/trainer/space/space.js")
+    graph = client.get("/trainer/space/cosmos-graph.js")
+
+    assert script.status_code == 200
+    assert graph.status_code == 200
+    assert "buildStellarSystemPilotLayout" in graph.text
+    assert 'presentationMode: stellarPilotLayout.active ? "stellar-system-pilot"' in graph.text
+    assert "createRapidTransitFilament" in script.text
+    assert "createRapidTransitCorridor" not in script.text
+    assert "new THREE.TubeGeometry" not in script.text
+    assert "new THREE.TorusGeometry" not in script.text
