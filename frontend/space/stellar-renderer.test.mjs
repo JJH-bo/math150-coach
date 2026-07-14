@@ -29,6 +29,11 @@ test("all six separable learning nodes become stars while the boss remains a sin
   learningIds.forEach((id) => {
     assert.equal(renderer.isStellarMaterialPilotNode({ id, role: "training", kind: "micro" }), true, id);
   });
+  assert.equal(renderer.isStellarMaterialPilotNode({
+    id: "ode_separable.concept",
+    role: "repair",
+    kind: "micro",
+  }), true, "a repair-state learning node must remain a star");
   assert.equal(renderer.isStellarMaterialPilotNode({ id: "ode_separable.macro_challenge", role: "boss" }), false);
   assert.equal(renderer.isStellarMaterialPilotNode({ id: "ode_first_order_linear.concept", role: "training" }), false);
 });

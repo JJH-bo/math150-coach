@@ -17,7 +17,9 @@ const STELLAR_PALETTES = Object.freeze({
 });
 
 export function isStellarMaterialPilotNode(definition = {}) {
-  return STELLAR_PILOT_NODE_IDS.has(definition.id) && definition.role === "training";
+  return STELLAR_PILOT_NODE_IDS.has(definition.id)
+    && definition.kind === "micro"
+    && (definition.role === "training" || definition.role === "repair");
 }
 
 export function stellarProfileFor(definition = {}, qualityLevel = "high") {

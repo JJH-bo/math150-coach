@@ -75,7 +75,18 @@ test("ODE pilot projects one compact six-star system with exactly one oppressive
   assert.deepEqual(learningNodes.map((node) => node.id).sort(), [...SEPARABLE_LEARNING_IDS].sort());
   assert.equal(bosses.length, 1);
   assert.equal(bosses[0].id, "ode_separable.macro_challenge");
-  assert.ok(bosses[0].radius >= 110);
+  assert.ok(bosses[0].radius >= 188);
+  assert.ok(bosses[0].interactionRadius >= 520);
+  assert.ok(bosses[0].position[2] >= -980);
+  assert.ok(Math.abs(bosses[0].position[0]) <= 360);
+  learningNodes.forEach((node) => {
+    const distanceToBoss = Math.hypot(
+      node.position[0] - bosses[0].position[0],
+      node.position[1] - bosses[0].position[1],
+      node.position[2] - bosses[0].position[2],
+    );
+    assert.ok(distanceToBoss >= bosses[0].radius * 1.18, `${node.id} overlaps the boss horizon`);
+  });
   assert.ok(new Set(learningNodes.map((node) => node.position[0])).size >= 5);
   assert.ok(learningNodes.some((node) => node.position[1] < 0));
   assert.ok(learningNodes.some((node) => node.position[1] > 0));
