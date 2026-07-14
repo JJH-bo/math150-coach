@@ -79,7 +79,10 @@ test("ODE pilot projects one compact six-star system with exactly one oppressive
   assert.ok(new Set(learningNodes.map((node) => node.position[0])).size >= 5);
   assert.ok(learningNodes.some((node) => node.position[1] < 0));
   assert.ok(learningNodes.some((node) => node.position[1] > 0));
+  const learningYs = learningNodes.map((node) => node.position[1]);
+  assert.ok(Math.max(...learningYs) - Math.min(...learningYs) >= 320);
   assert.equal(graph.frontFrame.entryId, "ode_separable.concept");
+  assert.ok(graph.frontFrame.camera[2] <= -220);
   assert.ok(graph.frontFrame.camera[2] > graph.frontFrame.lookAt[2]);
 });
 

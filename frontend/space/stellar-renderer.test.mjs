@@ -41,7 +41,7 @@ test("stellar profiles are deterministic and balanced mode reduces cost without 
   const balanced = renderer.stellarProfileFor(definition, "balanced");
 
   assert.deepEqual(highA, highB);
-  assert.ok(highA.radius >= 20 && highA.radius <= 29);
+  assert.ok(highA.radius >= 26 && highA.radius <= 34);
   assert.ok(highA.activity >= 0.55 && highA.activity <= 0.9);
   assert.equal(highA.noiseOctaves, 5);
   assert.equal(highA.surfaceDetail, 5);
@@ -71,7 +71,7 @@ test("the six-star family has deterministic but restrained scale and activity va
   assert.ok(new Set(profiles.map((profile) => profile.radius)).size >= 4);
   assert.ok(new Set(profiles.map((profile) => profile.activity)).size >= 4);
   profiles.forEach((profile) => {
-    assert.ok(profile.radius >= 20 && profile.radius <= 29);
+    assert.ok(profile.radius >= 26 && profile.radius <= 34);
     assert.ok(profile.activity >= 0.55 && profile.activity <= 0.9);
   });
 });
@@ -97,6 +97,14 @@ test("living star contains independent photosphere, chromosphere, corona, promin
   assert.match(source, /convection/);
   assert.match(source, /radialGlow/);
   assert.match(source, /userData\.stellar = true/);
+});
+
+test("the stellar system owns a shared non-interactive dust belt and local haze", async () => {
+  const { source } = await loadRenderer();
+  assert.match(source, /createStellarSystemEnvironment/);
+  assert.match(source, /createSystemDustBelt/);
+  assert.match(source, /SYSTEM_HAZE_FRAGMENT_SHADER/);
+  assert.match(source, /systemEnvironment/);
 });
 
 test("visual safeguards preserve surface contrast and prevent concentric-shell corona", async () => {

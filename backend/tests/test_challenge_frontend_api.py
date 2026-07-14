@@ -239,7 +239,7 @@ def test_space_graph_is_front_facing_and_orders_each_boss_last() -> None:
     assert "approachDirection" not in renderer.text
 
 
-def test_space_progression_edges_render_and_travel_as_rapid_transit_corridors() -> None:
+def test_space_progression_edges_render_and_travel_as_rapid_transit_filaments() -> None:
     client = TestClient(create_app("mixed"))
 
     script = client.get("/trainer/space/space.js")
@@ -249,8 +249,9 @@ def test_space_progression_edges_render_and_travel_as_rapid_transit_corridors() 
     assert transit.status_code == 200
     assert "buildRapidTransitControlPoints" in script.text
     assert "buildGuidedTransitWaypoints" in script.text
-    assert "createRapidTransitCorridor" in script.text
-    assert "new THREE.TubeGeometry" in script.text
+    assert "createRapidTransitFilament" in script.text
+    assert "createRapidTransitCorridor" not in script.text
+    assert "new THREE.TubeGeometry" not in script.text
     assert "viaTunnelPath: choice.transitPath" in script.text
     assert "tween.path.getPointAt" in script.text
     assert "navigationTargetId" in script.text
@@ -437,7 +438,7 @@ def test_runtime_graph_exposes_visual_difficulty_to_the_portal_renderer() -> Non
     assert "difficulty:" in graph_adapter.text
 
 
-def test_space_trainer_exposes_one_isolated_stellar_material_proof() -> None:
+def test_space_trainer_exposes_complete_stellar_training_system() -> None:
     client = TestClient(create_app("mixed"))
 
     page = client.get("/trainer/space/")
@@ -453,7 +454,13 @@ def test_space_trainer_exposes_one_isolated_stellar_material_proof() -> None:
     assert "createRenderedKnowledgeObject" in script.text
     assert "isStellarMaterialPilotNode(definition)" in script.text
     assert "createKnowledgeStar" in script.text
-    assert 'MATERIAL_PILOT_NODE_ID = "ode_separable.concept"' in star.text
+    assert "STELLAR_PILOT_NODE_IDS" in star.text
+    assert '"ode_separable.concept"' in star.text
+    assert '"ode_separable.trigger"' in star.text
+    assert '"ode_separable.method"' in star.text
+    assert '"ode_separable.transformation"' in star.text
+    assert '"ode_separable.calculation"' in star.text
+    assert '"ode_separable.expression"' in star.text
     assert "ShaderMaterial" in star.text
     assert "createKnowledgeSingularity" in singularity.text
     assert "createBossCataclysm" in singularity.text
@@ -467,13 +474,21 @@ def test_space_trainer_exposes_one_isolated_stellar_material_proof() -> None:
 def test_space_trainer_stellar_system_uses_filaments_instead_of_permanent_tunnels() -> None:
     client = TestClient(create_app("mixed"))
 
+    page = client.get("/trainer/space/")
     script = client.get("/trainer/space/space.js")
     graph = client.get("/trainer/space/cosmos-graph.js")
 
+    assert page.status_code == 200
     assert script.status_code == 200
     assert graph.status_code == 200
+    assert 'space.js?v=20260714-stellar-system-1' in page.text
+    assert 'cosmos-graph.js?v=20260714-stellar-system-1' in script.text
+    assert 'stellar-renderer.js?v=20260714-stellar-system-1' in script.text
+    assert "createStellarSystemEnvironment" in script.text
+    assert "state.systemEnvironment" in script.text
     assert "buildStellarSystemPilotLayout" in graph.text
     assert 'presentationMode: stellarPilotLayout.active ? "stellar-system-pilot"' in graph.text
+    assert "const lookAt = isEntry" in script.text
     assert "createRapidTransitFilament" in script.text
     assert "createRapidTransitCorridor" not in script.text
     assert "new THREE.TubeGeometry" not in script.text

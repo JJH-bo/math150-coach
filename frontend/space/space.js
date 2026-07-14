@@ -1,4 +1,4 @@
-import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260713-depth-layout-9";
+import { buildCosmosGraph, deriveNextDestinations } from "./cosmos-graph.js?v=20260714-stellar-system-1";
 import {
   buildCombinedTransitControlPoints,
   buildGuidedTransitWaypoints,
@@ -17,8 +17,9 @@ import {
 } from "./singularity-renderer.js?v=20260713-depth-layout-8";
 import {
   createKnowledgeStar,
+  createStellarSystemEnvironment,
   isStellarMaterialPilotNode,
-} from "./stellar-renderer.js?v=20260714-stellar-material-proof-1";
+} from "./stellar-renderer.js?v=20260714-stellar-system-1";
 
 const apiBase = "/api/challenge/v1";
 const threeModuleUrl = "three";
@@ -42,6 +43,7 @@ const state = {
   objects: [],
   objectById: new Map(),
   routes: [],
+  systemEnvironment: null,
   graph: null,
   nearest: null,
   activeObject: null,
@@ -243,6 +245,14 @@ function rebuildKnowledgeUniverse(challenge) {
     state.objectById.set(node.id, node);
     applyCelestialStatus(state.THREE, node, definition.status, definition.id === state.currentTaskId);
   });
+  if (state.graph.presentationMode === "stellar-system-pilot") {
+    state.systemEnvironment = createStellarSystemEnvironment(
+      state.THREE,
+      state.graph.objects,
+      state.qualityLevel,
+    );
+    state.scene.add(state.systemEnvironment);
+  }
   if (state.navigationTargetId && !state.objectById.has(state.navigationTargetId)) {
     state.navigationTargetId = null;
   }
@@ -263,11 +273,13 @@ function rebuildKnowledgeUniverse(challenge) {
 }
 
 function clearKnowledgeUniverse() {
+  disposeObject(state.systemEnvironment);
   state.objects.forEach((object) => disposeObject(object.group));
   state.routes.forEach((route) => disposeObject(route.group || route.line));
   state.objects = [];
   state.objectById = new Map();
   state.routes = [];
+  state.systemEnvironment = null;
   state.nearest = null;
 }
 
@@ -896,9 +908,9 @@ function frameLearningPathFront(currentObject) {
   const cameraPosition = isEntry
     ? new THREE.Vector3(...frame.camera)
     : currentPosition.clone().add(new THREE.Vector3(-150, 72, 470));
-  const lookAt = nextTarget
-    ? currentPosition.clone().lerp(nextTarget, 0.54)
-    : isEntry ? new THREE.Vector3(...frame.lookAt) : currentPosition.clone();
+  const lookAt = isEntry
+    ? new THREE.Vector3(...frame.lookAt)
+    : nextTarget ? currentPosition.clone().lerp(nextTarget, 0.54) : currentPosition.clone();
   state.camera.position.copy(cameraPosition);
   state.camera.lookAt(lookAt);
   state.velocity?.set(0, 0, 0);

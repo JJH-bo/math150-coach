@@ -46,13 +46,13 @@ const STELLAR_PILOT_LEARNING_IDS = Object.freeze([
   "ode_separable.expression",
 ]);
 const STELLAR_SYSTEM_POSITIONS = new Map([
-  ["ode_separable.concept", [-260, 65, -680]],
-  ["ode_separable.trigger", [-80, -95, -740]],
-  ["ode_separable.method", [90, 95, -805]],
-  ["ode_separable.transformation", [220, -25, -870]],
-  ["ode_separable.calculation", [40, -145, -935]],
-  ["ode_separable.expression", [-150, 40, -1000]],
-  [STELLAR_PILOT_BOSS_ID, [430, 30, -1130]],
+  ["ode_separable.concept", [-330, 120, -700]],
+  ["ode_separable.trigger", [-150, -170, -735]],
+  ["ode_separable.method", [60, 160, -790]],
+  ["ode_separable.transformation", [250, -50, -850]],
+  ["ode_separable.calculation", [60, -190, -920]],
+  ["ode_separable.expression", [-190, 20, -990]],
+  [STELLAR_PILOT_BOSS_ID, [470, 30, -1100]],
 ]);
 
 export function buildStellarSystemPilotLayout(network = {}) {
@@ -84,8 +84,8 @@ export function buildStellarSystemPilotLayout(network = {}) {
       macroId: STELLAR_PILOT_MACRO_ID,
       entryId: STELLAR_PILOT_LEARNING_IDS[0],
       center: [0, -10, -860],
-      camera: [0, 80, 60],
-      lookAt: [20, -10, -860],
+      camera: [20, 100, -260],
+      lookAt: [45, -5, -860],
       width: 960,
       height: 650,
     },
