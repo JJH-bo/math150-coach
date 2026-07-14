@@ -75,11 +75,12 @@ test("ODE pilot projects one compact six-star system with exactly one oppressive
   assert.deepEqual(learningNodes.map((node) => node.id).sort(), [...SEPARABLE_LEARNING_IDS].sort());
   assert.equal(bosses.length, 1);
   assert.equal(bosses[0].id, "ode_separable.macro_challenge");
-  assert.ok(bosses[0].radius >= 188);
-  assert.ok(bosses[0].interactionRadius >= 520);
+  assert.ok(bosses[0].radius >= 220);
+  assert.ok(bosses[0].interactionRadius >= 620);
   assert.ok(bosses[0].position[2] >= -980);
-  assert.ok(Math.abs(bosses[0].position[0]) <= 360);
+  assert.ok(bosses[0].position[0] >= 360);
   learningNodes.forEach((node) => {
+    assert.ok(node.position[0] <= -220, `${node.id} must stay inside the left learning sector`);
     const distanceToBoss = Math.hypot(
       node.position[0] - bosses[0].position[0],
       node.position[1] - bosses[0].position[1],
@@ -92,6 +93,16 @@ test("ODE pilot projects one compact six-star system with exactly one oppressive
   assert.ok(learningNodes.some((node) => node.position[1] > 0));
   const learningYs = learningNodes.map((node) => node.position[1]);
   assert.ok(Math.max(...learningYs) - Math.min(...learningYs) >= 320);
+  const learningXs = learningNodes.map((node) => node.position[0]);
+  assert.ok(Math.max(...learningXs) - Math.min(...learningXs) <= 320);
+  assert.deepEqual(graph.edges.map((edge) => [edge.sourceId, edge.targetId]), [
+    ["ode_separable.concept", "ode_separable.trigger"],
+    ["ode_separable.trigger", "ode_separable.method"],
+    ["ode_separable.method", "ode_separable.transformation"],
+    ["ode_separable.transformation", "ode_separable.calculation"],
+    ["ode_separable.calculation", "ode_separable.expression"],
+    ["ode_separable.expression", "ode_separable.macro_challenge"],
+  ]);
   assert.equal(graph.frontFrame.entryId, "ode_separable.concept");
   assert.ok(graph.frontFrame.camera[2] <= -220);
   assert.ok(graph.frontFrame.camera[2] > graph.frontFrame.lookAt[2]);

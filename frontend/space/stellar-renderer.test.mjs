@@ -104,14 +104,24 @@ test("living star contains independent photosphere, chromosphere, corona, promin
   assert.match(source, /userData\.stellar = true/);
 });
 
-test("the stellar system owns two boss-centered dust lanes and a local focus field", async () => {
-  const { source } = await loadRenderer();
+test("the stellar system is learning-centered and sends one ambient gravity stream toward the boss", async () => {
+  const { renderer, source } = await loadRenderer();
+  const frame = renderer.stellarSystemFrameFor([
+    { kind: "micro", position: [-600, 100, -800] },
+    { kind: "micro", position: [-400, -100, -1000] },
+    { role: "boss", position: [400, 0, -900] },
+  ]);
+
+  assert.deepEqual(frame.learningCenter, [-500, 0, -900]);
+  assert.deepEqual(frame.bossOffset, [900, 0, 0]);
   assert.match(source, /createStellarSystemEnvironment/);
   assert.match(source, /createSystemDustLanes/);
+  assert.match(source, /createSystemGravityStream/);
   assert.match(source, /laneIndex/);
   assert.match(source, /SYSTEM_FOCUS_FRAGMENT_SHADER/);
   assert.match(source, /NormalBlending/);
   assert.match(source, /systemEnvironment/);
+  assert.doesNotMatch(source, /const center = boss\?\.position/);
 });
 
 test("visual safeguards preserve surface contrast and prevent concentric-shell corona", async () => {

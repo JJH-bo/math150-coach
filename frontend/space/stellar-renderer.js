@@ -311,23 +311,39 @@ const SYSTEM_FOCUS_FRAGMENT_SHADER = `
 
 export function createStellarSystemEnvironment(THREE, definitions = [], qualityLevel = "high") {
   const learningNodes = definitions.filter((definition) => definition.kind === "micro");
-  const boss = definitions.find((definition) => definition.role === "boss");
   const group = new THREE.Group();
   group.userData.systemEnvironment = true;
   if (!learningNodes.length) return group;
 
-  const center = boss?.position || learningNodes.reduce((total, definition) => [
-    total[0] + definition.position[0] / learningNodes.length,
-    total[1] + definition.position[1] / learningNodes.length,
-    total[2] + definition.position[2] / learningNodes.length,
-  ], [0, 0, 0]);
-  group.position.set(...center);
+  const frame = stellarSystemFrameFor(definitions);
+  group.position.set(...frame.learningCenter);
   const seed = hashUnit(learningNodes.map((definition) => definition.id).join("|"));
   const dust = createSystemDustLanes(THREE, seed, qualityLevel);
   const focus = createSystemFocusField(THREE);
+  const gravityStream = createSystemGravityStream(THREE, frame.bossOffset, seed, qualityLevel);
   group.add(focus.mesh, dust.points);
-  group.userData.materials = [focus.material, dust.material];
+  if (gravityStream) group.add(gravityStream.points);
+  group.userData.learningCenter = frame.learningCenter;
+  group.userData.bossOffset = frame.bossOffset;
+  group.userData.gravityStream = gravityStream?.points || null;
+  group.userData.materials = [focus.material, dust.material, gravityStream?.material].filter(Boolean);
   return group;
+}
+
+export function stellarSystemFrameFor(definitions = []) {
+  const learningNodes = definitions.filter((definition) => definition.kind === "micro");
+  const boss = definitions.find((definition) => definition.role === "boss");
+  const learningCenter = learningNodes.length
+    ? learningNodes.reduce((total, definition) => [
+      total[0] + definition.position[0] / learningNodes.length,
+      total[1] + definition.position[1] / learningNodes.length,
+      total[2] + definition.position[2] / learningNodes.length,
+    ], [0, 0, 0])
+    : [0, 0, 0];
+  const bossOffset = boss?.position
+    ? boss.position.map((coordinate, index) => coordinate - learningCenter[index])
+    : null;
+  return { learningCenter, bossOffset };
 }
 
 function createSystemDustLanes(THREE, seed, qualityLevel) {
@@ -344,10 +360,10 @@ function createSystemDustLanes(THREE, seed, qualityLevel) {
     const gap = laneIndex === 0 ? 0.58 : 1.34;
     const span = laneIndex === 0 ? Math.PI * 1.68 : Math.PI * 1.54;
     const angle = gap + laneProgress * span + (laneIndex === 0 ? 0 : Math.PI * 0.46);
-    const radialNoise = (random() - 0.5) * (laneIndex === 0 ? 102 : 126);
-    const verticalNoise = (random() - 0.5) * (laneIndex === 0 ? 54 : 72);
-    const radiusX = laneIndex === 0 ? 430 : 640;
-    const radiusY = laneIndex === 0 ? 210 : 315;
+    const radialNoise = (random() - 0.5) * (laneIndex === 0 ? 72 : 94);
+    const verticalNoise = (random() - 0.5) * (laneIndex === 0 ? 44 : 58);
+    const radiusX = laneIndex === 0 ? 245 : 355;
+    const radiusY = laneIndex === 0 ? 145 : 215;
     positions[index * 3] = Math.cos(angle) * (radiusX + radialNoise) - laneIndex * 58;
     positions[index * 3 + 1] = Math.sin(angle) * (radiusY + radialNoise * 0.34) + verticalNoise;
     positions[index * 3 + 2] = Math.sin(angle * (laneIndex + 1.35) + seed * 6.0) * (laneIndex === 0 ? 72 : 118)
@@ -375,6 +391,49 @@ function createSystemDustLanes(THREE, seed, qualityLevel) {
   return { points, material };
 }
 
+function createSystemGravityStream(THREE, bossOffset, seed, qualityLevel) {
+  if (!bossOffset) return null;
+  const count = qualityLevel === "high" ? 520 : 280;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const random = mulberry32(Math.floor(seed * 0xffffffff) ^ 0x7f4a7c15);
+  const cool = new THREE.Color(0x6c8292);
+  const warm = new THREE.Color(0xb84b2b);
+  const color = new THREE.Color();
+  for (let index = 0; index < count; index += 1) {
+    const progress = 0.12 + random() * 0.78;
+    const taper = Math.sin(progress * Math.PI);
+    const strand = index % 5;
+    const spread = (random() - 0.5) * (42 + taper * 68);
+    const verticalBow = Math.sin(progress * Math.PI) * (72 + strand * 8);
+    positions[index * 3] = bossOffset[0] * progress + spread * 0.24;
+    positions[index * 3 + 1] = bossOffset[1] * progress + verticalBow + spread;
+    positions[index * 3 + 2] = bossOffset[2] * progress
+      + Math.sin(progress * Math.PI * 2 + strand) * 44
+      + (random() - 0.5) * 46;
+    color.copy(cool).lerp(warm, progress * 0.72 + random() * 0.14);
+    colors[index * 3] = color.r;
+    colors[index * 3 + 1] = color.g;
+    colors[index * 3 + 2] = color.b;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const material = new THREE.PointsMaterial({
+    size: qualityLevel === "high" ? 1.5 : 1.05,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.2,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+  const points = new THREE.Points(geometry, material);
+  points.renderOrder = 1;
+  points.frustumCulled = false;
+  return { points, material };
+}
+
 function createSystemFocusField(THREE) {
   const material = new THREE.ShaderMaterial({
     uniforms: {
@@ -387,7 +446,7 @@ function createSystemFocusField(THREE) {
     blending: THREE.NormalBlending,
     toneMapped: false,
   });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1420, 900), material);
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(900, 650), material);
   const cameraWorldQuaternion = new THREE.Quaternion();
   const parentWorldQuaternion = new THREE.Quaternion();
   mesh.position.z = -220;

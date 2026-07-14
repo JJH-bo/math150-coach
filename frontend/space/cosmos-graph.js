@@ -45,14 +45,22 @@ const STELLAR_PILOT_LEARNING_IDS = Object.freeze([
   "ode_separable.calculation",
   "ode_separable.expression",
 ]);
+const STELLAR_PILOT_ROUTE_PAIRS = Object.freeze([
+  ["ode_separable.concept", "ode_separable.trigger"],
+  ["ode_separable.trigger", "ode_separable.method"],
+  ["ode_separable.method", "ode_separable.transformation"],
+  ["ode_separable.transformation", "ode_separable.calculation"],
+  ["ode_separable.calculation", "ode_separable.expression"],
+  ["ode_separable.expression", STELLAR_PILOT_BOSS_ID],
+]);
 const STELLAR_SYSTEM_POSITIONS = new Map([
-  ["ode_separable.concept", [-430, 140, -720]],
-  ["ode_separable.trigger", [-260, -230, -800]],
-  ["ode_separable.method", [-50, 210, -820]],
-  ["ode_separable.transformation", [50, -80, -760]],
-  ["ode_separable.calculation", [-20, -250, -950]],
-  ["ode_separable.expression", [-300, 10, -1040]],
-  [STELLAR_PILOT_BOSS_ID, [250, 20, -900]],
+  ["ode_separable.concept", [-540, 160, -720]],
+  ["ode_separable.trigger", [-470, -150, -790]],
+  ["ode_separable.method", [-350, 205, -820]],
+  ["ode_separable.transformation", [-260, -35, -770]],
+  ["ode_separable.calculation", [-330, -225, -910]],
+  ["ode_separable.expression", [-470, 5, -990]],
+  [STELLAR_PILOT_BOSS_ID, [390, 20, -880]],
 ]);
 
 export function buildStellarSystemPilotLayout(network = {}) {
@@ -83,11 +91,11 @@ export function buildStellarSystemPilotLayout(network = {}) {
     frontFrame: {
       macroId: STELLAR_PILOT_MACRO_ID,
       entryId: STELLAR_PILOT_LEARNING_IDS[0],
-      center: [0, -10, -860],
-      camera: [0, 110, -240],
-      lookAt: [-25, -10, -850],
-      width: 960,
-      height: 650,
+      center: [-40, -10, -860],
+      camera: [-20, 95, -220],
+      lookAt: [-35, -5, -865],
+      width: 1120,
+      height: 720,
     },
   };
 }
@@ -166,9 +174,9 @@ export function buildCosmosGraph(challenge = {}) {
         status: progress.status || "locked",
         position: progressionLayout.positions.get(boss.id)?.position
           || [center[0] + 370, center[1] + 56, center[2] - 510],
-        radius: stellarPilotLayout.active && boss.id === stellarPilotLayout.bossId ? 196 : BOSS_RADIUS,
+        radius: stellarPilotLayout.active && boss.id === stellarPilotLayout.bossId ? 224 : BOSS_RADIUS,
         difficulty: 1,
-        interactionRadius: stellarPilotLayout.active && boss.id === stellarPilotLayout.bossId ? 540 : 360,
+        interactionRadius: stellarPilotLayout.active && boss.id === stellarPilotLayout.bossId ? 640 : 360,
         color: 0x9f351d,
         macroId: macro.id,
         trainable: true,
@@ -289,7 +297,10 @@ export function buildCosmosGraph(challenge = {}) {
     .filter((edge) => edge.visible !== false)
     .map((edge) => normalizeEdge(edge))
     .filter((edge) => presentationById.has(edge.sourceId) && presentationById.has(edge.targetId));
-  const edges = dedupeEdges([...runtimeEdges, ...logicEdges]);
+  const normalizedEdges = dedupeEdges([...runtimeEdges, ...logicEdges]);
+  const edges = stellarPilotLayout.active
+    ? projectStellarPilotEdges(normalizedEdges)
+    : normalizedEdges;
   const presentedCurrentTaskId = presentationById.has(currentTaskId)
     ? currentTaskId
     : stellarPilotLayout.active ? stellarPilotLayout.frontFrame.entryId : currentTaskId;
@@ -424,6 +435,16 @@ function addObject(object, objects, byId) {
   if (!object?.id || byId.has(object.id)) return;
   objects.push(object);
   byId.set(object.id, object);
+}
+
+export function projectStellarPilotEdges(edges = []) {
+  const edgeByPair = new Map(edges.map((edge) => [
+    `${edge.sourceId}\u0000${edge.targetId}`,
+    edge,
+  ]));
+  return STELLAR_PILOT_ROUTE_PAIRS
+    .map(([sourceId, targetId]) => edgeByPair.get(`${sourceId}\u0000${targetId}`))
+    .filter(Boolean);
 }
 
 function normalizeEdge(edge) {
