@@ -435,3 +435,30 @@ def test_runtime_graph_exposes_visual_difficulty_to_the_portal_renderer() -> Non
     assert graph_adapter.status_code == 200
     assert "TYPE_DIFFICULTY" in graph_adapter.text
     assert "difficulty:" in graph_adapter.text
+
+
+def test_space_trainer_exposes_one_isolated_stellar_material_proof() -> None:
+    client = TestClient(create_app("mixed"))
+
+    page = client.get("/trainer/space/")
+    script = client.get("/trainer/space/space.js")
+    star = client.get("/trainer/space/stellar-renderer.js")
+    singularity = client.get("/trainer/space/singularity-renderer.js")
+
+    assert page.status_code == 200
+    assert script.status_code == 200
+    assert star.status_code == 200
+    assert singularity.status_code == 200
+    assert 'from "./stellar-renderer.js?v=' in script.text
+    assert "createRenderedKnowledgeObject" in script.text
+    assert "isStellarMaterialPilotNode(definition)" in script.text
+    assert "createKnowledgeStar" in script.text
+    assert 'MATERIAL_PILOT_NODE_ID = "ode_separable.concept"' in star.text
+    assert "ShaderMaterial" in star.text
+    assert "createKnowledgeSingularity" in singularity.text
+    assert "createBossCataclysm" in singularity.text
+    assert "MeshStandardMaterial" not in star.text
+    assert "MeshPhysicalMaterial" not in star.text
+    assert "MeshPhongMaterial" not in star.text
+    assert "MeshLambertMaterial" not in star.text
+    assert "TextureLoader" not in star.text

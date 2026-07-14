@@ -15,6 +15,10 @@ import {
   detectQualityLevel,
   updateCelestialObject,
 } from "./singularity-renderer.js?v=20260713-depth-layout-8";
+import {
+  createKnowledgeStar,
+  isStellarMaterialPilotNode,
+} from "./stellar-renderer.js?v=20260714-stellar-material-proof-1";
 
 const apiBase = "/api/challenge/v1";
 const threeModuleUrl = "three";
@@ -219,6 +223,13 @@ function createSolarLightSource(THREE, scene) {
   scene.add(light);
 }
 
+function createRenderedKnowledgeObject(definition) {
+  if (isStellarMaterialPilotNode(definition)) {
+    return createKnowledgeStar(state.THREE, definition, state.qualityLevel);
+  }
+  return createCelestialNode(state.THREE, definition, state.qualityLevel);
+}
+
 function rebuildKnowledgeUniverse(challenge) {
   clearKnowledgeUniverse();
   state.graph = buildCosmosGraph(challenge);
@@ -226,7 +237,7 @@ function rebuildKnowledgeUniverse(challenge) {
   dom.universeTitle.textContent = state.graph.title || "知识宇宙";
 
   state.graph.objects.forEach((definition) => {
-    const node = createCelestialNode(state.THREE, definition, state.qualityLevel);
+    const node = createRenderedKnowledgeObject(definition);
     state.scene.add(node.group);
     state.objects.push(node);
     state.objectById.set(node.id, node);
