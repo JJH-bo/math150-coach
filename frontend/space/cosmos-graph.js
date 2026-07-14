@@ -35,6 +35,62 @@ const PROGRESSION_CHAPTER_GAP = 220;
 const PROGRESSION_BOSS_APPROACH_GAP = 150;
 const PROGRESSION_ENTRY_Z = -520;
 const PROGRESSION_LANE_RADIUS = 220;
+const STELLAR_PILOT_MACRO_ID = "ode_separable";
+const STELLAR_PILOT_BOSS_ID = "ode_separable.macro_challenge";
+const STELLAR_PILOT_LEARNING_IDS = Object.freeze([
+  "ode_separable.concept",
+  "ode_separable.trigger",
+  "ode_separable.method",
+  "ode_separable.transformation",
+  "ode_separable.calculation",
+  "ode_separable.expression",
+]);
+const STELLAR_SYSTEM_POSITIONS = new Map([
+  ["ode_separable.concept", [-260, 65, -680]],
+  ["ode_separable.trigger", [-80, -95, -740]],
+  ["ode_separable.method", [90, 95, -805]],
+  ["ode_separable.transformation", [220, -25, -870]],
+  ["ode_separable.calculation", [40, -145, -935]],
+  ["ode_separable.expression", [-150, 40, -1000]],
+  [STELLAR_PILOT_BOSS_ID, [430, 30, -1130]],
+]);
+
+export function buildStellarSystemPilotLayout(network = {}) {
+  const macroExists = (network.macro_nodes || []).some((node) => node.id === STELLAR_PILOT_MACRO_ID);
+  const microIds = new Set((network.micro_nodes || []).map((node) => node.id));
+  const bossExists = (network.macro_challenges || []).some((node) => node.id === STELLAR_PILOT_BOSS_ID);
+  const active = macroExists
+    && bossExists
+    && STELLAR_PILOT_LEARNING_IDS.every((nodeId) => microIds.has(nodeId));
+  if (!active) return { active: false };
+
+  const visibleIds = new Set([...STELLAR_PILOT_LEARNING_IDS, STELLAR_PILOT_BOSS_ID]);
+  const positions = new Map(
+    [...STELLAR_SYSTEM_POSITIONS].map(([nodeId, position]) => [nodeId, {
+      position: [...position],
+      rank: STELLAR_PILOT_LEARNING_IDS.indexOf(nodeId),
+      row: 0,
+    }]),
+  );
+  return {
+    active: true,
+    macroId: STELLAR_PILOT_MACRO_ID,
+    learningIds: [...STELLAR_PILOT_LEARNING_IDS],
+    bossId: STELLAR_PILOT_BOSS_ID,
+    visibleIds,
+    positions,
+    progressionSequence: [...STELLAR_PILOT_LEARNING_IDS, STELLAR_PILOT_BOSS_ID],
+    frontFrame: {
+      macroId: STELLAR_PILOT_MACRO_ID,
+      entryId: STELLAR_PILOT_LEARNING_IDS[0],
+      center: [0, -10, -860],
+      camera: [0, 80, 60],
+      lookAt: [20, -10, -860],
+      width: 960,
+      height: 650,
+    },
+  };
+}
 
 export function buildCosmosGraph(challenge = {}) {
   const network = challenge.network || {};
@@ -48,7 +104,10 @@ export function buildCosmosGraph(challenge = {}) {
   const objects = [];
   const byId = new Map();
   const domains = [];
-  const progressionLayout = buildProgressionLayout(network);
+  const stellarPilotLayout = buildStellarSystemPilotLayout(network);
+  const progressionLayout = stellarPilotLayout.active
+    ? stellarPilotLayout
+    : buildProgressionLayout(network);
 
   macroSpecs.forEach((macro, macroIndex) => {
     const center = progressionLayout.positions.get(macro.id)?.position
@@ -107,7 +166,7 @@ export function buildCosmosGraph(challenge = {}) {
         status: progress.status || "locked",
         position: progressionLayout.positions.get(boss.id)?.position
           || [center[0] + 370, center[1] + 56, center[2] - 510],
-        radius: BOSS_RADIUS,
+        radius: stellarPilotLayout.active && boss.id === stellarPilotLayout.bossId ? 118 : BOSS_RADIUS,
         difficulty: 1,
         interactionRadius: 360,
         color: 0x9f351d,
@@ -216,25 +275,40 @@ export function buildCosmosGraph(challenge = {}) {
     }), objects, byId);
   });
 
+  const presentationObjects = stellarPilotLayout.active
+    ? objects.filter((object) => stellarPilotLayout.visibleIds.has(object.id))
+    : objects;
+  const presentationById = stellarPilotLayout.active
+    ? new Map(presentationObjects.map((object) => [object.id, object]))
+    : byId;
   const runtimeEdges = (network.typed_edges || [])
     .filter((edge) => edge.visible !== false)
     .map((edge) => normalizeEdge(edge))
-    .filter((edge) => byId.has(edge.sourceId) && byId.has(edge.targetId));
+    .filter((edge) => presentationById.has(edge.sourceId) && presentationById.has(edge.targetId));
   const logicEdges = (logicOverlay.logic_edges || [])
     .filter((edge) => edge.visible !== false)
     .map((edge) => normalizeEdge(edge))
-    .filter((edge) => byId.has(edge.sourceId) && byId.has(edge.targetId));
+    .filter((edge) => presentationById.has(edge.sourceId) && presentationById.has(edge.targetId));
   const edges = dedupeEdges([...runtimeEdges, ...logicEdges]);
+  const presentedCurrentTaskId = presentationById.has(currentTaskId)
+    ? currentTaskId
+    : stellarPilotLayout.active ? stellarPilotLayout.frontFrame.entryId : currentTaskId;
 
   return {
     chapterId: challenge.chapter_id || network.chapter_id || "knowledge-cosmos",
     title: network.title || "知识宇宙",
-    objects,
-    byId,
-    domains,
+    objects: presentationObjects,
+    byId: presentationById,
+    domains: stellarPilotLayout.active ? [] : domains,
     edges,
-    currentTaskId: challenge.current_task?.task_id || null,
+    currentTaskId: presentedCurrentTaskId,
     frontFrame: progressionLayout.frontFrame,
+    presentationMode: stellarPilotLayout.active ? "stellar-system-pilot" : "progression-layout",
+    systemMeta: stellarPilotLayout.active ? {
+      macroId: stellarPilotLayout.macroId,
+      learningIds: [...stellarPilotLayout.learningIds],
+      bossId: stellarPilotLayout.bossId,
+    } : null,
   };
 }
 

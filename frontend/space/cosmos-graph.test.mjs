@@ -6,7 +6,21 @@ const moduleUrl = new URL("./cosmos-graph.js", import.meta.url);
 const moduleSource = await readFile(moduleUrl, "utf8");
 const graphModule = await import(`data:text/javascript;base64,${Buffer.from(moduleSource).toString("base64")}`);
 
-const { buildProgressionLayout, deriveNextDestinations, orderProgressionNodes } = graphModule;
+const {
+  buildCosmosGraph,
+  buildProgressionLayout,
+  deriveNextDestinations,
+  orderProgressionNodes,
+} = graphModule;
+
+const SEPARABLE_LEARNING_IDS = [
+  "ode_separable.concept",
+  "ode_separable.trigger",
+  "ode_separable.method",
+  "ode_separable.transformation",
+  "ode_separable.calculation",
+  "ode_separable.expression",
+];
 
 function progressionEdge(sourceId, targetId) {
   return {
@@ -15,6 +29,59 @@ function progressionEdge(sourceId, targetId) {
     decision_role: "progression",
   };
 }
+
+test("ODE pilot projects one compact six-star system with exactly one oppressive boss", () => {
+  const macroIds = ["ode_separable", "ode_first_order_linear", "ode_homogeneous_first_order"];
+  const microNodes = [
+    ...SEPARABLE_LEARNING_IDS.map((id, index) => ({
+      id,
+      macro_node_id: "ode_separable",
+      type: ["concept", "trigger", "method", "transformation", "calculation", "expression"][index],
+      title: id,
+    })),
+    { id: "ode_first_order_linear.concept", macro_node_id: "ode_first_order_linear", type: "concept" },
+    { id: "ode_homogeneous_first_order.concept", macro_node_id: "ode_homogeneous_first_order", type: "concept" },
+  ];
+  const sequence = ["ode_separable", ...SEPARABLE_LEARNING_IDS, "ode_separable.macro_challenge"];
+  const challenge = {
+    chapter_id: "ode_network_mvp",
+    current_task: { task_id: "ode_separable.concept" },
+    network: {
+      chapter_id: "ode_network_mvp",
+      title: "ODE",
+      macro_nodes: macroIds.map((id) => ({ id, title: id })),
+      micro_nodes: microNodes,
+      macro_challenges: macroIds.map((macroId) => ({
+        id: `${macroId}.macro_challenge`,
+        macro_node_id: macroId,
+        title: `${macroId} boss`,
+      })),
+      typed_edges: sequence.slice(1).map((targetId, index) => ({
+        id: `edge-${index}`,
+        source_id: sequence[index],
+        target_id: targetId,
+        edge_type: index === sequence.length - 2 ? "synthesis" : "transfers_to",
+        decision_role: "progression",
+      })),
+    },
+  };
+
+  const graph = buildCosmosGraph(challenge);
+  const learningNodes = graph.objects.filter((node) => node.kind === "micro");
+  const bosses = graph.objects.filter((node) => node.role === "boss");
+
+  assert.equal(graph.presentationMode, "stellar-system-pilot");
+  assert.equal(graph.objects.length, 7);
+  assert.deepEqual(learningNodes.map((node) => node.id).sort(), [...SEPARABLE_LEARNING_IDS].sort());
+  assert.equal(bosses.length, 1);
+  assert.equal(bosses[0].id, "ode_separable.macro_challenge");
+  assert.ok(bosses[0].radius >= 110);
+  assert.ok(new Set(learningNodes.map((node) => node.position[0])).size >= 5);
+  assert.ok(learningNodes.some((node) => node.position[1] < 0));
+  assert.ok(learningNodes.some((node) => node.position[1] > 0));
+  assert.equal(graph.frontFrame.entryId, "ode_separable.concept");
+  assert.ok(graph.frontFrame.camera[2] > graph.frontFrame.lookAt[2]);
+});
 
 test("cross-chapter progression overrides reversed input and keeps each boss last", () => {
   const network = {
