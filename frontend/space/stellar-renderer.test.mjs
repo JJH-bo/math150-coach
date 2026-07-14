@@ -45,3 +45,24 @@ test("stellar profiles are deterministic and balanced mode reduces cost without 
   assert.equal(balanced.midColor, highA.midColor);
   assert.equal(balanced.edgeColor, highA.edgeColor);
 });
+
+test("stellar renderer forbids conventional glossy or bitmap star materials", async () => {
+  const { source } = await loadRenderer();
+  assert.match(source, /ShaderMaterial/);
+  assert.doesNotMatch(source, /MeshStandardMaterial|MeshPhysicalMaterial|MeshPhongMaterial|MeshLambertMaterial/);
+  assert.doesNotMatch(source, /TextureLoader|CanvasTexture/);
+});
+
+test("living star contains independent photosphere, chromosphere, corona, prominences, and local light", async () => {
+  const { source } = await loadRenderer();
+  assert.match(source, /createKnowledgeStar/);
+  assert.match(source, /createPhotosphere/);
+  assert.match(source, /createChromosphere/);
+  assert.match(source, /createCoronaLayers/);
+  assert.match(source, /createProminences/);
+  assert.match(source, /PointLight/);
+  assert.match(source, /limb/);
+  assert.match(source, /granulation/);
+  assert.match(source, /convection/);
+  assert.match(source, /userData\.stellar = true/);
+});
