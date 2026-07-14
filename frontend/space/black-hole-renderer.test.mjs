@@ -41,10 +41,12 @@ test("black hole profile preserves horizon scale while balanced mode reduces cos
   assert.equal(high.horizonRadius, 196);
   assert.equal(balanced.horizonRadius, high.horizonRadius);
   assert.ok(high.photonRadius > high.horizonRadius);
+  assert.ok(high.photonWidth <= 0.008);
   assert.ok(high.discOuterRadius >= high.horizonRadius * 1.8);
   assert.ok(high.stormOuterRadius >= high.discOuterRadius * 1.25);
   assert.ok(high.infallCount > balanced.infallCount);
   assert.ok(high.stormLayers > balanced.stormLayers);
+  assert.ok(high.discTurbulenceOctaves > balanced.discTurbulenceOctaves);
 });
 
 test("event horizon remains opaque while emissive layers stay independently animated", async () => {
@@ -58,5 +60,10 @@ test("event horizon remains opaque while emissive layers stay independently anim
   assert.match(source, /GRAVITY_STORM_FRAGMENT_SHADER/);
   assert.match(source, /frontDisc/);
   assert.match(source, /backDisc/);
+  assert.match(source, /valueNoise2D/);
+  assert.match(source, /fbm/);
+  assert.match(source, /float frontHalf = 1\.0 - split/);
+  assert.match(source, /backDisc\.rotation\.x = 1\.08/);
+  assert.match(source, /frontDisc\.rotation\.x = -1\.08/);
+  assert.doesNotMatch(source, /hash21\(floor/);
 });
-

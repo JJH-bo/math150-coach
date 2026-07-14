@@ -8,6 +8,7 @@ const PHOTON_RING_VERTEX_SHADER = `
 
 const PHOTON_RING_FRAGMENT_SHADER = `
   uniform float time;
+  uniform float ringWidth;
   uniform vec3 ember;
   uniform vec3 whiteHeat;
   varying vec2 vUv;
@@ -16,19 +17,21 @@ const PHOTON_RING_FRAGMENT_SHADER = `
     vec2 p = (vUv - vec2(0.5)) * 2.0;
     float radius = length(p);
     float angle = atan(p.y, p.x);
-    float irregularity = sin(angle * 7.0 + time * 0.16) * 0.012
-      + sin(angle * 17.0 - time * 0.09) * 0.006;
+    float irregularity = sin(angle * 7.0 + time * 0.16) * 0.0045
+      + sin(angle * 17.0 - time * 0.09) * 0.002;
     float ringRadius = 0.742 + irregularity;
-    float width = 0.014;
+    float width = ringWidth;
     float ring = 1.0 - smoothstep(width, width * 3.4, abs(radius - ringRadius));
-    float outerEcho = (1.0 - smoothstep(0.012, 0.034, abs(radius - ringRadius * 1.085))) * 0.2;
-    float beaming = 0.42 + 0.58 * smoothstep(-0.85, 0.72, p.x);
-    float fracture = 0.72 + 0.28 * sin(angle * 11.0 - time * 0.38);
-    float spark = pow(max(0.0, sin(angle * 29.0 + time * 0.22)), 18.0) * 0.38;
-    vec3 color = mix(ember, whiteHeat, clamp(beaming + spark, 0.0, 1.0));
-    float alpha = (ring + outerEcho) * beaming * fracture;
+    float outerEcho = (1.0 - smoothstep(0.007, 0.018, abs(radius - ringRadius * 1.055))) * 0.08;
+    float beaming = 0.28 + 0.72 * smoothstep(-0.9, 0.78, p.x);
+    float fractureWave = 0.5 + 0.5 * sin(angle * 13.0 - time * 0.26)
+      + sin(angle * 31.0 + time * 0.12) * 0.18;
+    float fracture = 0.18 + 0.82 * smoothstep(0.18, 0.76, fractureWave);
+    float spark = pow(max(0.0, sin(angle * 37.0 + time * 0.18)), 24.0) * 0.22;
+    vec3 color = mix(ember, whiteHeat, clamp(beaming * 0.72 + spark, 0.0, 1.0));
+    float alpha = (ring + outerEcho) * beaming * fracture * 0.62;
     if (alpha < 0.008) discard;
-    gl_FragColor = vec4(color * (1.2 + spark), alpha);
+    gl_FragColor = vec4(color * (0.74 + spark * 0.46), alpha);
   }
 `;
 
@@ -44,6 +47,7 @@ const ACCRETION_FRAGMENT_SHADER = `
   uniform float time;
   uniform float frontPass;
   uniform float phase;
+  uniform float noiseOctaves;
   uniform vec3 ember;
   uniform vec3 whiteHeat;
   uniform vec3 bloodCloud;
@@ -55,23 +59,49 @@ const ACCRETION_FRAGMENT_SHADER = `
     return fract(p.x * p.y);
   }
 
+  float valueNoise2D(vec2 p) {
+    vec2 cell = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash21(cell);
+    float b = hash21(cell + vec2(1.0, 0.0));
+    float c = hash21(cell + vec2(0.0, 1.0));
+    float d = hash21(cell + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
+  float fbm(vec2 p) {
+    float sum = 0.0;
+    float amplitude = 0.56;
+    for (int octave = 0; octave < 4; octave++) {
+      float enabled = step(float(octave) + 0.5, noiseOctaves);
+      sum += valueNoise2D(p) * amplitude * enabled;
+      p = p * 2.03 + vec2(13.7, -9.2);
+      amplitude *= 0.49;
+    }
+    return sum;
+  }
+
   void main() {
     vec2 p = (vUv - vec2(0.5)) * 2.0;
     float radius = length(p);
     float angle = atan(p.y, p.x);
     float annulus = smoothstep(0.34, 0.43, radius) * (1.0 - smoothstep(0.9, 1.0, radius));
     float innerHeat = 1.0 - smoothstep(0.36, 0.74, radius);
-    float spiral = 0.5 + 0.5 * sin(angle * 4.0 - log(radius + 0.08) * 18.0 - time * 0.34 + phase);
-    float fineBands = 0.5 + 0.5 * sin(radius * 96.0 - angle * 5.0 + time * 0.16);
-    float cells = hash21(floor(vec2(angle * 12.0, radius * 44.0)) + phase);
-    float broken = smoothstep(0.12, 0.88, spiral * 0.58 + fineBands * 0.23 + cells * 0.34);
+    vec2 swirlDirection = vec2(cos(angle), sin(angle));
+    float flowNoise = fbm(p * 8.5 + swirlDirection * (time * 0.07 + phase));
+    float fineNoise = fbm(p * 24.0 - swirlDirection * (time * 0.035 - phase * 0.4));
+    float spiral = 0.5 + 0.5 * sin(angle * 4.0 - log(radius + 0.08) * 17.0 - time * 0.24 + flowNoise * 2.4 + phase);
+    float fineBands = 0.5 + 0.5 * sin(radius * 118.0 - angle * 6.0 + time * 0.11 + fineNoise * 3.2);
+    float broken = smoothstep(0.24, 0.83, spiral * 0.42 + flowNoise * 0.4 + fineBands * 0.18 + fineNoise * 0.12);
     float split = smoothstep(-0.045, 0.075, p.y);
-    float sideMask = mix(1.0 - split, split, frontPass);
+    float frontHalf = 1.0 - split;
+    float sideMask = mix(split, frontHalf, frontPass);
     float beaming = 0.3 + 0.7 * smoothstep(-0.96, 0.82, p.x);
     vec3 color = mix(bloodCloud, ember, 0.48 + innerHeat * 0.32);
-    color = mix(color, whiteHeat, innerHeat * beaming * 0.78 + fineBands * 0.12);
-    float alpha = annulus * sideMask * broken * (0.34 + beaming * 0.62);
-    alpha *= 0.52 + innerHeat * 0.48;
+    color = mix(color, whiteHeat, innerHeat * beaming * 0.62 + fineBands * 0.07);
+    float alpha = annulus * sideMask * broken * (0.24 + beaming * 0.48);
+    alpha *= 0.44 + innerHeat * 0.42;
     if (alpha < 0.012) discard;
     gl_FragColor = vec4(color * (0.82 + beaming * 0.68), alpha);
   }
@@ -157,11 +187,13 @@ export function blackHoleProfileFor(definition = {}, qualityLevel = "high") {
   return {
     horizonRadius,
     photonRadius: horizonRadius * 1.09,
+    photonWidth: 0.006,
     discInnerRadius: horizonRadius * 1.08,
     discOuterRadius: horizonRadius * 2.02,
     stormOuterRadius: horizonRadius * 2.78,
     infallCount: highQuality ? 560 : 290,
     stormLayers: highQuality ? 3 : 2,
+    discTurbulenceOctaves: highQuality ? 4 : 3,
     segments: highQuality ? 96 : 64,
   };
 }
@@ -242,6 +274,7 @@ export function createPhotonRing(THREE, profile, colors) {
   const material = new THREE.ShaderMaterial({
     uniforms: {
       time: { value: 0 },
+      ringWidth: { value: profile.photonWidth },
       ember: { value: colors.ember },
       whiteHeat: { value: colors.whiteHeat },
     },
@@ -276,6 +309,7 @@ export function createAccretionDisc(THREE, profile, colors) {
       time: { value: 0 },
       phase: { value: phase },
       frontPass: { value: frontPass },
+      noiseOctaves: { value: profile.discTurbulenceOctaves },
     },
     vertexShader: ACCRETION_VERTEX_SHADER,
     fragmentShader: ACCRETION_FRAGMENT_SHADER,
@@ -290,8 +324,9 @@ export function createAccretionDisc(THREE, profile, colors) {
   const frontMaterial = materialFor(1, 2.41);
   const backDisc = new THREE.Mesh(geometry, backMaterial);
   const frontDisc = new THREE.Mesh(geometry.clone(), frontMaterial);
+  backDisc.rotation.x = 1.08;
+  frontDisc.rotation.x = -1.08;
   [backDisc, frontDisc].forEach((disc) => {
-    disc.rotation.x = 1.08;
     disc.rotation.z = -0.24;
     disc.scale.y = 0.78;
     disc.frustumCulled = false;
@@ -414,4 +449,3 @@ function mulberry32(seed) {
     return ((value ^ value >>> 14) >>> 0) / 4294967296;
   };
 }
-
