@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   createObservatoryCamera,
@@ -58,4 +59,13 @@ test('Boss observer comes from the shared camera position', () => {
   assert.ok(Math.abs(edge.boss.viewAzimuth - base.boss.viewAzimuth) > 20 * DEG);
   assert.ok(edge.boss.viewInclination > base.boss.viewInclination + 10 * DEG);
   assert.ok(edge.boss.observerRadiusIndex >= 0 && edge.boss.observerRadiusIndex <= 1000);
+});
+
+test('galaxy compositor has no Boss-only focus camera path', () => {
+  const galaxySource = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
+
+  assert.equal(galaxySource.includes('snapshot.focus'), false);
+  assert.equal(galaxySource.includes('Boss焦点'), false);
+  assert.equal(galaxySource.includes('sceneFrame.boss.observerRadiusIndex'), true);
+  assert.equal(galaxySource.includes('sceneFrame.boss.compositeScale'), true);
 });

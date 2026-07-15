@@ -134,7 +134,7 @@
   <div class="hud">
     <div><strong>Chapter Observatory / Fan Field</strong><br><span>3 core systems · 12 living stars · 15 field paths · 1 relativistic Boss</span></div>
   </div>
-  <div class="legend"><b>近景模块 · 中景模块 · 远景模块</b><br>拖动真实视差 · 滚轮推进Boss焦点 · 双击复位</div>
+  <div class="legend"><b>近景模块 · 中景模块 · 远景模块</b><br>拖动有限轨道观察 · 滚轮移动观察距离 · 双击复位</div>
 
   <div class="camera-state" id="camera-state">Bounded observatory · Drag · Wheel · Double-click reset</div>
 
@@ -552,10 +552,10 @@
           strength: sceneFrame.boss.lensStrength,
         });
         const active = Math.abs(snapshot.yaw) > 0.08 || Math.abs(snapshot.pitch - 0.5) > 0.08 ||
-          Math.abs(snapshot.focus - 0.28) > 0.01;
+          Math.abs(snapshot.distance - 10) > 0.01;
         cameraState.classList.toggle('active', active);
         cameraState.textContent =
-          `Observatory · yaw ${snapshot.yaw.toFixed(1)}° · pitch ${snapshot.pitch.toFixed(1)}° · focus ${Math.round(snapshot.focus * 100)}%`;
+          `Observatory · yaw ${snapshot.yaw.toFixed(1)}° · pitch ${snapshot.pitch.toFixed(1)}° · distance ${snapshot.distance.toFixed(2)}`;
       };
 
       window.observatoryCamera = {
@@ -593,8 +593,12 @@
           }
           if (source) {
             bossContext.clearRect(0, 0, width, height);
-            const destinationWidth = Math.round(bossFrame.clientWidth * dpr * sceneFrame.boss.scale);
-            const destinationHeight = Math.round(bossFrame.clientHeight * dpr * sceneFrame.boss.scale);
+            const destinationWidth = Math.round(
+              bossFrame.clientWidth * dpr * sceneFrame.boss.compositeScale
+            );
+            const destinationHeight = Math.round(
+              bossFrame.clientHeight * dpr * sceneFrame.boss.compositeScale
+            );
             const targetX = (innerWidth * 0.5 + sceneFrame.boss.center[0] * innerHeight * 0.5) * dpr;
             const targetY = (innerHeight * 0.5 - sceneFrame.boss.center[1] * innerHeight * 0.5) * dpr;
             const destinationX = Math.round(targetX - destinationWidth * 0.611);
