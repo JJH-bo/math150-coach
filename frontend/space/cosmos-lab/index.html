@@ -232,17 +232,21 @@
     float cloudDensity(vec3 point, vec3 center, vec3 radii, vec3 seed) {
       vec3 q = (point - center) / radii;
       float radiusSquared = dot(q, q);
-      float envelope = smoothstep(1.0, 0.54, radiusSquared) *
-                       smoothstep(0.0, 0.18, 1.0 - radiusSquared);
+      float boundaryWarp = fbm3(q * 1.72 + seed * 0.29) - 0.5;
+      float boundaryTear = noise3(q * 5.40 + seed.yzx * 0.73) - 0.5;
+      float brokenRadius = radiusSquared + boundaryWarp * 0.96 + boundaryTear * 0.24;
+      float envelope = (1.0 - smoothstep(0.35, 1.0, brokenRadius)) *
+                       smoothstep(0.0, 0.22, 1.0 - radiusSquared);
       if (envelope <= 0.0) return 0.0;
       vec3 drift = vec3(0.0, time * 0.0012, time * 0.0007);
       float macro = fbm3(point * 0.31 + seed + drift);
       float folded = 1.0 - abs(noise3(point * 1.78 + seed * 1.71) * 2.0 - 1.0);
       float filament = noise3(point * 4.60 + seed.yzx * 2.43);
       float structure = macro * 0.73 + folded * 0.20 + filament * 0.07;
-      float density = smoothstep(0.48, 0.78, structure);
+      float density = smoothstep(0.40, 0.71, structure);
       float tears = smoothstep(0.34, 0.68, noise3(point * 0.72 - seed * 0.61));
-      return density * envelope * (0.48 + tears * 0.52);
+      float pores = smoothstep(0.38, 0.69, fbm3(q * 3.25 + seed.zxy * 0.47));
+      return density * envelope * (0.18 + tears * 0.52 + pores * 0.30);
     }
 
     vec4 integrateCloud(vec3 origin, vec3 direction, vec3 center, vec3 radii,
@@ -268,9 +272,11 @@
         float localDepth = density * stepLength;
         float fiberHeat = smoothstep(0.58, 0.88, noise3(point * 2.35 + seed.zxy));
         vec3 tint = mix(coldTint, warmTint, fiberHeat * 0.34);
+        float veil = smoothstep(0.12, 0.42, density) *
+                     (1.0 - smoothstep(0.46, 0.86, density)) * fiberHeat;
         scattering += exp(-opticalDepth * 0.56) * tint * localDepth *
-                      (0.010 + forwardScatter * 0.015);
-        opticalDepth += localDepth * 0.92;
+                      veil * (0.070 + forwardScatter * 0.090);
+        opticalDepth += localDepth * 0.88;
       }
       return vec4(scattering, opticalDepth);
     }
@@ -279,9 +285,9 @@
       vec3 direction = cameraRay(gl_FragCoord.xy);
       vec2 uv = skyUv(direction);
 
-      vec3 catalog = pow(max(texture(starMap, uv).rgb, 0.0), vec3(2.2));
+      vec3 catalog = pow(max(texture(starMap, uv).rgb, 0.0), vec3(1.35));
       float catalogLuma = dot(catalog, vec3(0.2126, 0.7152, 0.0722));
-      float catalogGain = mix(0.28, 1.18, smoothstep(0.001, 0.24, catalogLuma));
+      float catalogGain = mix(0.34, 1.10, smoothstep(0.003, 0.34, catalogLuma));
       vec3 farField = catalog * catalogGain;
 
       float voidGradient = 0.5 + 0.5 * direction.y;
@@ -294,22 +300,22 @@
 
       vec4 cloudA = integrateCloud(
         cameraOffset, direction,
-        vec3(5.35, 1.75, -3.75), vec3(3.05, 1.55, 2.15), vec3(1.7, 4.2, 8.6),
+        vec3(4.10, 2.70, -6.15), vec3(3.60, 2.40, 2.30), vec3(1.7, 4.2, 8.6),
         vec3(0.026, 0.037, 0.058), vec3(0.082, 0.033, 0.020)
       );
       vec4 cloudB = integrateCloud(
         cameraOffset, direction,
-        vec3(6.60, -1.95, 2.65), vec3(2.35, 2.45, 1.70), vec3(7.4, 2.1, 3.9),
+        vec3(5.15, -1.05, 5.15), vec3(3.30, 2.40, 2.60), vec3(7.4, 2.1, 3.9),
         vec3(0.018, 0.032, 0.053), vec3(0.064, 0.026, 0.018)
       );
       vec4 cloudC = integrateCloud(
         cameraOffset, direction,
-        vec3(-3.55, 2.55, 8.10), vec3(2.75, 1.85, 2.30), vec3(3.2, 9.1, 5.6),
+        vec3(-5.00, 3.40, 7.80), vec3(3.10, 2.20, 2.55), vec3(3.2, 9.1, 5.6),
         vec3(0.022, 0.030, 0.047), vec3(0.050, 0.022, 0.019)
       );
 
       float opticalDepth = (cloudA.a + cloudB.a + cloudC.a) * cloudVisibility;
-      float transmittance = max(exp(-opticalDepth * 0.82), 0.24);
+      float transmittance = max(exp(-opticalDepth * 0.66), 0.34);
       vec3 inScatter = (cloudA.rgb + cloudB.rgb + cloudC.rgb) * cloudVisibility;
       vec3 color = farField * transmittance + inScatter + foreground;
 
@@ -374,7 +380,7 @@
       vec3 scene = texture(sceneTexture, vUv).rgb;
       vec3 bloom = texture(bloomTexture, vUv).rgb;
       vec3 color = aces((scene + bloom * 0.075) * exposure);
-      color = max(color - vec3(0.0014), 0.0);
+      color = max(color - vec3(0.00035), 0.0);
       float dither = (hash12(gl_FragCoord.xy) - 0.5) / 620.0;
       color = pow(max(color + dither, 0.0), vec3(1.0 / 2.2));
       vec2 centered = (vUv - 0.5) * vec2(1.08, 1.0);
@@ -557,9 +563,9 @@
       };
 
       const presets = {
-        abyss: { yaw: -0.58, pitch: 0.12, roll: -0.08, fov: 67, cloud: 0.78, exposure: 0.82 },
-        cloud: { yaw: 0.34, pitch: -0.08, roll: 0.05, fov: 61, cloud: 1.00, exposure: 0.78 },
-        remote: { yaw: 1.82, pitch: 0.22, roll: -0.03, fov: 73, cloud: 0.48, exposure: 0.88 },
+        abyss: { yaw: 1.82, pitch: 0.22, roll: -0.03, fov: 73, cloud: 0.48, exposure: 0.84 },
+        cloud: { yaw: 0.34, pitch: -0.08, roll: 0.05, fov: 61, cloud: 1.00, exposure: 0.80 },
+        remote: { yaw: -0.58, pitch: 0.12, roll: -0.08, fov: 67, cloud: 0.34, exposure: 0.80 },
       };
       let activeView = 'abyss';
       let view = { ...presets.abyss };
