@@ -391,6 +391,15 @@ body {
   z-index: 4;
   pointer-events: none;
 }
+body.embed .lab-hud,
+body.embed .lab-hint,
+body.embed .cv-copyright,
+body.embed #settings_panel,
+body.embed #orbit_panel,
+body.embed #cv_loading_panel,
+body.embed #cv_error_panel { display: none !important; }
+html.embed,
+body.embed { background: transparent !important; }
 
 .lab-title {
   position: absolute;
@@ -1065,6 +1074,7 @@ class UrlParams {
 window.addEventListener('DOMContentLoaded', () => new UrlParams(model));
 })(BlackHoleShaderDemoApp.model, BlackHoleShaderDemoApp.State);
 (function() {
+const EMBEDDED_MODE = new URLSearchParams(location.search).get('embed') === '1';
 const BLOOM_FILTERS = [
   600,
   [[0.537425,0.0200664,0.00720805,0.0015972,0.000907317,0.000275642],
@@ -1247,7 +1257,14 @@ const RENDER_SHADER =
     } else {
       color = toneMap(color);
     }
-    frag_color = vec4(color, 1.0);
+    vec2 horizon_delta = (source_uv - vec2(0.611, 0.455)) *
+        vec2(source_delta_uv.y / source_delta_uv.x, 1.0);
+    float horizon_alpha = 1.0 - smoothstep(0.115, 0.128, length(horizon_delta));
+    float light_alpha = smoothstep(
+        0.040, 0.160, max(max(color.r, color.g), color.b));
+    float final_alpha = ${EMBEDDED_MODE ?
+        'max(horizon_alpha, light_alpha)' : '1.0'};
+    frag_color = vec4(color * final_alpha, final_alpha);
   }`;
 
 const createShader = function(gl, type, source) {
@@ -2549,6 +2566,8 @@ BlackHoleShaderDemoApp.ShaderManager = ShaderManager;
 
 (function(model, Bloom, TextureManager, ShaderManager, RocketManager) {
 
+const embeddedMode = new URLSearchParams(location.search).get('embed') === '1';
+
 const createQuadVertexBuffer = function(gl) {
   const vertexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -2601,7 +2620,7 @@ class CameraView {
       }
     });
 
-    requestAnimationFrame(() => this.onRender());
+    if (!embeddedMode) requestAnimationFrame(() => this.onRender());
   }
 
   initGl() {
@@ -2622,12 +2641,12 @@ class CameraView {
   }
 
   onRender() {
-    if (this.hidden) {
+    if (this.hidden && !embeddedMode) {
       return;
     }
     const program = this.shaderManager.getProgram();
     if (!program) {
-      requestAnimationFrame(() => this.onRender());
+      if (!embeddedMode) requestAnimationFrame(() => this.onRender());
       return;
     }
     if (this.devicePixelRatio != this.getDevicePixelRatio()) {
@@ -2728,7 +2747,7 @@ class CameraView {
 
     this.model.updateOrbit(dTauSeconds);
 
-    requestAnimationFrame(() => this.onRender());
+    if (!embeddedMode) requestAnimationFrame(() => this.onRender());
     this.checkFrameRate();
   }
 
@@ -2798,7 +2817,7 @@ class CameraView {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  new CameraView(model, document.body);
+  window.bossCameraView = new CameraView(model, document.body);
 });
 })(BlackHoleShaderDemoApp.model,
     BlackHoleShaderDemoApp.Bloom,
@@ -3456,6 +3475,16 @@ window.addEventListener('DOMContentLoaded', () => {
     </script>
   </head>
   <body>
+    <script>
+      document.documentElement.classList.toggle(
+        'embed',
+        new URLSearchParams(location.search).get('embed') === '1'
+      );
+      document.body.classList.toggle(
+        'embed',
+        new URLSearchParams(location.search).get('embed') === '1'
+      );
+    </script>
     <div class="lab-hud" aria-label="Boss black hole visual laboratory">
       <div class="lab-title">
         <strong>Final Boss / Relativistic Abyss</strong>

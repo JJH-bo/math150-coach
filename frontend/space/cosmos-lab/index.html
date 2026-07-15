@@ -71,9 +71,19 @@
       font: 14px/1.6 sans-serif;
       text-align: center;
     }
+    body.embed canvas { cursor: default; }
+    body.embed .hud,
+    body.embed .hint,
+    body.embed .credit { display: none; }
   </style>
 </head>
 <body>
+  <script>
+    document.body.classList.toggle(
+      'embed',
+      new URLSearchParams(location.search).get('embed') === '1'
+    );
+  </script>
   <canvas id="cosmos" aria-label="冷暗深空星空画面验收"></canvas>
   <div class="hud">
     <div><strong>Cold Deep Space / Observatory Field</strong><br><span>catalog far field · bounded molecular clouds · HDR</span></div>
@@ -394,6 +404,7 @@
     (() => {
       const canvas = document.querySelector('#cosmos');
       const errorPanel = document.querySelector('#error');
+      const embeddedMode = document.body.classList.contains('embed');
       const gl = canvas.getContext('webgl2', {
         alpha: false,
         antialias: false,
@@ -624,7 +635,7 @@
           gl.viewport(0, 0, canvas.width, canvas.height);
           gl.clearColor(0, 0, 0, 1);
           gl.clear(gl.COLOR_BUFFER_BIT);
-          requestAnimationFrame(renderCosmos);
+          if (!embeddedMode) requestAnimationFrame(renderCosmos);
           return;
         }
 
@@ -659,12 +670,12 @@
         gl.uniform2f(finalUniforms.resolution, canvas.width, canvas.height);
         draw(null);
 
-        requestAnimationFrame(renderCosmos);
+        if (!embeddedMode) requestAnimationFrame(renderCosmos);
       };
 
       setView(new URLSearchParams(location.search).get('view') || 'abyss');
-      requestAnimationFrame(renderCosmos);
       window.renderCosmos = renderCosmos;
+      if (!embeddedMode) requestAnimationFrame(renderCosmos);
     })();
   </script>
 </body>

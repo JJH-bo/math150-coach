@@ -5,24 +5,43 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Single Learning System / Remastered Field</title>
   <style>
-    :root { color-scheme: dark; background: #010102; }
+    :root { color-scheme: dark; background: #000; }
     * { box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #010102; }
-    #boss-layer {
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+    #cosmos-layer {
       position: fixed;
       z-index: 0;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      pointer-events: none;
+      background: #000;
+    }
+    #boss-layer {
+      position: fixed;
+      z-index: -1;
       top: 0;
       left: 0;
       width: 130vw;
       height: 100vh;
       border: 0;
       pointer-events: none;
-      background: #010102;
+      background: transparent;
+      opacity: 0;
       transform-origin: 50% 50%;
+    }
+    #boss-composite-layer {
+      position: fixed;
+      z-index: 1;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
     }
     #system-layer {
       position: fixed;
-      z-index: 1;
+      z-index: 2;
       inset: 0;
       width: 100%;
       height: 100%;
@@ -77,7 +96,9 @@
   </style>
 </head>
 <body>
-  <iframe id="boss-layer" src="../boss-lab/?view=far" title="Approved relativistic Boss"></iframe>
+  <iframe id="cosmos-layer" src="../cosmos-lab/?view=abyss&amp;embed=1" title="Approved cold deep-space sky"></iframe>
+  <iframe id="boss-layer" src="../boss-lab/?view=far&amp;embed=1" title="Approved relativistic Boss"></iframe>
+  <canvas id="boss-composite-layer" aria-label="Relativistic Boss optical composite"></canvas>
   <canvas id="system-layer" aria-label="Four learning stars and remastered field links"></canvas>
   <div class="hud">
     <div><strong>Core Module / Field Remaster</strong><br><span>4 living stars · 5 plasma paths · 1 relativistic Boss</span></div>
@@ -407,7 +428,10 @@
   <script>
     (() => {
       const canvas = document.querySelector('#system-layer');
+      const cosmosFrame = document.querySelector('#cosmos-layer');
       const bossFrame = document.querySelector('#boss-layer');
+      const bossComposite = document.querySelector('#boss-composite-layer');
+      const bossContext = bossComposite.getContext('2d', { alpha: true });
       const gl = canvas.getContext('webgl2', {
         alpha: true,
         antialias: false,
@@ -425,6 +449,38 @@
           if (element) element.style.display = 'none';
         });
       });
+
+      const renderEmbeddedLayers = (milliseconds) => {
+        cosmosFrame.contentWindow?.renderCosmos?.(milliseconds);
+        const bossView = bossFrame.contentWindow?.bossCameraView;
+        if (bossView?.onRender) {
+          bossView.onRender();
+          const source = bossFrame.contentDocument?.querySelector('#camera_view');
+          const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+          const width = Math.max(2, Math.round(innerWidth * dpr));
+          const height = Math.max(2, Math.round(innerHeight * dpr));
+          if (bossComposite.width !== width || bossComposite.height !== height) {
+            bossComposite.width = width;
+            bossComposite.height = height;
+          }
+          if (source) {
+            bossContext.clearRect(0, 0, width, height);
+            bossContext.drawImage(
+              source,
+              0,
+              0,
+              source.width,
+              source.height,
+              0,
+              0,
+              Math.round(bossFrame.clientWidth * dpr),
+              Math.round(bossFrame.clientHeight * dpr)
+            );
+          }
+        }
+        requestAnimationFrame(renderEmbeddedLayers);
+      };
+      requestAnimationFrame(renderEmbeddedLayers);
 
       const source = (selector) => document.querySelector(selector).textContent.trimStart();
       const compile = (type, shaderSource) => {
