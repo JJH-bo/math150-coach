@@ -13,7 +13,7 @@ Replace the mixed screen-space composition with one bounded orbital camera. The 
 
 ## Camera Model
 
-The scene uses one fixed world-space observation target between the visible module group and the Boss. The camera orbits that target inside the existing bounded yaw and pitch envelope. Dragging changes only camera yaw and pitch. The fixed field of view is retained.
+The scene uses one fixed world-space observation target between the visible module group and the Boss. The camera orbits that target inside an expanded but still bounded envelope: yaw targets `-32deg..+32deg` and pitch targets `-16deg..+18deg`. Dragging changes only camera yaw and pitch. The fixed field of view is retained.
 
 The wheel performs a true dolly by changing the camera's orbital distance to the fixed target. It does not change a separate Boss focus value and does not freeze the planets in screen space. Because every object remains fixed in world space, perspective naturally changes apparent size, separation, occlusion, and parallax.
 
@@ -41,7 +41,7 @@ This replaces the art-directed yaw-to-inclination coupling. Limited orbiting can
 
 - Do not alter accepted material or shading functions.
 - Render the Boss source with enough overscan and pixel density for its largest allowed projected footprint; avoid enlarging a low-resolution cached frame.
-- Keep the ray-traced observer parameters inside ranges already known to render without missing geometry or white artifacts.
+- Keep the ray-traced observer parameters inside safe ranges. Inspect the newly exposed edge angles and, only where they reveal missing geometry, crop seams, white artifacts, or visibly degraded material, extend the Boss rendering/composite coverage for that angle instead of reducing the shared camera motion.
 - Derive the gravity-lens radius, route deflection envelope, and Boss composite footprint from the same projected world radius.
 - Use eased camera interpolation only; never interpolate object world positions.
 - Clamp camera distance before critical geometry crosses the near plane or exits the approved fan composition.
@@ -60,7 +60,7 @@ This replaces the art-directed yaw-to-inclination coupling. Limited orbiting can
 3. Planets, routes, Boss, lensing, and star field exhibit mutually consistent perspective and parallax.
 4. The Boss is not screen-pinned and shows a real bounded ray-traced viewpoint change.
 5. Dolly changes the apparent scale and separation of the whole fixed scene according to depth; it is not Boss-only scaling and does not freeze planets on screen.
-6. At every allowed yaw, pitch, and distance boundary, the Boss and planets remain visible without crop seams, white patches, missing surfaces, or low-resolution enlargement.
+6. At every allowed yaw (`-32deg..+32deg`), pitch (`-16deg..+18deg`), and distance boundary, the Boss and planets remain visible without crop seams, white patches, missing surfaces, or low-resolution enlargement.
 7. The change does not modify the accepted material shaders or add unrelated functionality.
 
 ## Focused Verification
