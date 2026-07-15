@@ -1,8 +1,8 @@
 const DEG = Math.PI / 180;
 
 export const OBSERVATORY_LIMITS = Object.freeze({
-  yaw: Object.freeze([-12 * DEG, 12 * DEG]),
-  pitch: Object.freeze([-7 * DEG, 9 * DEG]),
+  yaw: Object.freeze([-24 * DEG, 24 * DEG]),
+  pitch: Object.freeze([-12 * DEG, 14 * DEG]),
   distance: Object.freeze([8.6, 11.8]),
 });
 
@@ -136,6 +136,20 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
   const planets = [];
   const routes = [];
   const systems = [];
+  const bossProjection = projectPoint(BOSS_WORLD, basis);
+  const baseBossX = aspect * 0.76;
+  const bossCenter = [
+    clamp(
+      baseBossX + (bossProjection.point[0] - 1.01) * 0.22,
+      aspect * 0.72,
+      aspect * 0.90,
+    ),
+    clamp(bossProjection.point[1] * 0.44, -0.18, 0.22),
+  ];
+  const bossOffset = [
+    bossCenter[0] - bossProjection.point[0],
+    bossCenter[1] - bossProjection.point[1],
+  ];
 
   SYSTEMS.forEach((system, systemIndex) => {
     const worldPlanets = LOCAL_PLANETS.map((planet) => add(
@@ -184,22 +198,23 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
     const terminalLift = multiply(localUp, 0.34 - systemIndex * 0.11);
     const controlA = add(add(merge, multiply(towardBoss, 1.05)), terminalLift);
     const controlB = add(add(endpoint, multiply(towardBoss, -1.20)), multiply(terminalLift, -0.55));
-    routes.push(projectRoute(
+    const terminalRoute = projectRoute(
       [merge, controlA, controlB, endpoint],
       basis,
       system.seed + 6.7,
       1,
       system.energy,
-    ));
+    );
+    terminalRoute.b[0] += bossOffset[0] * 0.18;
+    terminalRoute.b[1] += bossOffset[1] * 0.18;
+    terminalRoute.c[0] += bossOffset[0] * 0.68;
+    terminalRoute.c[1] += bossOffset[1] * 0.68;
+    terminalRoute.d[0] += bossOffset[0];
+    terminalRoute.d[1] += bossOffset[1];
+    routes.push(terminalRoute);
   });
 
-  const bossProjection = projectPoint(BOSS_WORLD, basis);
-  const bossScale = clamp(10 / bossProjection.depth, 0.91, 1.12);
-  const safeHorizontal = Math.max(0.86, Math.min(1.20, aspect - 0.42));
-  const bossCenter = [
-    clamp(bossProjection.point[0], 0.74, safeHorizontal),
-    clamp(bossProjection.point[1], -0.16, 0.18),
-  ];
+  const bossScale = clamp(1.60 * 10 / bossProjection.depth, 1.42, 1.72);
 
   return {
     planets,
@@ -215,4 +230,3 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
     },
   };
 }
-

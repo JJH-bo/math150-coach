@@ -373,7 +373,7 @@
         surfaceColor += vec3(1.75, 0.060, 0.004) * pow(1.0 - mu, 7.0) * (0.46 + meso * 0.54);
 
         float edge = 1.0 - smoothstep(1.0 - 1.8 / max(radius * resolution.y, 1.0), 1.0, radial);
-        surfaceColor *= mix(0.78, 1.0, energyScale);
+        surfaceColor *= mix(0.62, 1.0, energyScale);
         emission = mix(emission, surfaceColor, edge);
         coverage = max(coverage, edge);
       }
