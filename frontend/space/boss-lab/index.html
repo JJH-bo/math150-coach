@@ -3934,7 +3934,7 @@ vec4 DiscColor(vec2 p, float t, bool top_side, float doppler_factor) {
   float p_phi = atan(p.y, p.x);
   float radial = clamp((OUTER_DISC_R - p_r) /
       (OUTER_DISC_R - INNER_DISC_R), 0.0, 1.0);
-  float flow_time = art_time * 0.055;
+  float flow_time = art_time * 0.082;
   float swirl_angle = -flow_time / (0.68 + p_r * 0.17);
   float swirl_cos = cos(swirl_angle);
   float swirl_sin = sin(swirl_angle);
@@ -3955,6 +3955,24 @@ vec4 DiscColor(vec2 p, float t, bool top_side, float doppler_factor) {
   float broken_density = 0.035 + storm * 1.18 +
       fissures * mix(0.06, 0.72, strata);
   broken_density *= mix(0.48, 1.0, smoothstep(0.18, 0.72, radial));
+
+  // Three compact plasma storms orbit at different relativistic rates. Their
+  // radial falloff keeps them embedded in the traced disc instead of reading
+  // as decorative sprites pasted over the Boss.
+  float orbital_clock = art_time * 0.46 /
+      pow(max(p_r / INNER_DISC_R, 1.0), 1.42);
+  float hot_phase_a = p_phi - orbital_clock;
+  float hot_phase_b = p_phi + orbital_clock * 0.62 + 2.18;
+  float hot_phase_c = p_phi - orbital_clock * 0.38 - 1.36;
+  float hot_arc_a = pow(max(0.0, 0.5 + 0.5 * cos(hot_phase_a * 2.0)), 16.0) *
+      exp(-pow((p_r - INNER_DISC_R * 1.54) / (INNER_DISC_R * 0.30), 2.0));
+  float hot_arc_b = pow(max(0.0, 0.5 + 0.5 * cos(hot_phase_b * 3.0)), 20.0) *
+      exp(-pow((p_r - INNER_DISC_R * 2.18) / (INNER_DISC_R * 0.44), 2.0));
+  float hot_arc_c = pow(max(0.0, 0.5 + 0.5 * cos(hot_phase_c * 2.0)), 24.0) *
+      exp(-pow((p_r - INNER_DISC_R * 2.92) / (INNER_DISC_R * 0.60), 2.0));
+  float hot_spots = (hot_arc_a + hot_arc_b * 0.62 + hot_arc_c * 0.34) *
+      smoothstep(0.30, 0.82, torn * 0.72 + ember * 0.28);
+  broken_density *= 1.0 + hot_spots * 0.62;
 
   const float temperature_profile_peak_r = 49.0 / 12.0;
   const float temperature_profile_peak =
@@ -3979,6 +3997,8 @@ vec4 DiscColor(vec2 p, float t, bool top_side, float doppler_factor) {
   vec3 palette = mix(blood, ember_red, smoothstep(0.06, 0.72, inner_heat));
   palette = mix(palette, molten, pow(inner_heat, 2.2) * 0.58);
   palette = mix(palette, white_hot, pow(relativistic_flare, 2.5));
+  palette = mix(palette, white_hot * 1.18,
+      clamp(hot_spots * (0.36 + inner_heat * 0.64), 0.0, 0.82));
 
   float underside = top_side ? 1.0 : 0.76;
   color.rgb = energy * palette * broken_density * underside;
@@ -3986,7 +4006,7 @@ vec4 DiscColor(vec2 p, float t, bool top_side, float doppler_factor) {
       smoothstep(INNER_DISC_R, INNER_DISC_R * 1.2, p_r) *
       smoothstep(OUTER_DISC_R, OUTER_DISC_R / 1.2, p_r);
   color.a = radial_alpha * mix(0.025, 0.86, storm) *
-      mix(0.42, 1.0, inner_heat);
+      mix(0.42, 1.0, inner_heat) * (1.0 + hot_spots * 0.16);
 #endif
   return vec4(density * color.rgb, opacity * color.a);
 }

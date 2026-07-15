@@ -130,18 +130,13 @@
   <iframe id="cosmos-layer" src="../cosmos-lab/?view=abyss&amp;embed=1" title="Approved cold deep-space sky"></iframe>
   <iframe id="boss-layer" src="../boss-lab/?view=far&amp;embed=1" title="Approved relativistic Boss"></iframe>
   <canvas id="boss-composite-layer" aria-label="Relativistic Boss optical composite"></canvas>
-  <canvas id="system-layer" aria-label="Four learning stars and remastered field links"></canvas>
+  <canvas id="system-layer" aria-label="Three fan-shaped learning systems and relativistic field links"></canvas>
   <div class="hud">
-    <div><strong>Core Module / Field Remaster</strong><br><span>4 living stars · 5 plasma paths · 1 relativistic Boss</span></div>
-    <div class="views" aria-label="验收视角">
-      <button type="button" data-view="overview" class="active">整体</button>
-      <button type="button" data-view="links">连线</button>
-      <button type="button" data-view="ingress">汇入</button>
-    </div>
+    <div><strong>Chapter Observatory / Fan Field</strong><br><span>3 core systems · 12 living stars · 15 field paths · 1 relativistic Boss</span></div>
   </div>
-  <div class="legend"><b>分流 → 汇合 → 验收</b><br>连续场连接，不是几何管道</div>
+  <div class="legend"><b>近景模块 · 中景模块 · 远景模块</b><br>拖动观测角度 · 滚轮调节距离 · 双击复位</div>
 
-  <div class="camera-state" id="camera-state">Drag · Wheel · WASD · Double-click reset</div>
+  <div class="camera-state" id="camera-state">Bounded observatory · Drag · Wheel · Double-click reset</div>
 
   <script type="x-shader/x-vertex" id="fullscreen-vertex">
     #version 300 es
@@ -159,8 +154,15 @@
     precision highp float;
     uniform vec2 resolution;
     uniform float time;
-    uniform float viewZoom;
-    uniform vec2 viewOffset;
+    uniform vec4 planetData[12];
+    uniform vec4 planetMeta[12];
+    uniform vec4 routeA[15];
+    uniform vec4 routeB[15];
+    uniform vec4 routeC[15];
+    uniform vec4 routeD[15];
+    uniform vec4 routeMeta[15];
+    uniform vec4 systemData[3];
+    uniform vec4 bossData;
     out vec4 fragColor;
 
     const float PI = 3.141592653589793;
@@ -229,13 +231,20 @@
     }
 
     void routeField(
-      vec2 p, vec2 a, vec2 b, vec2 c, vec2 d, float seed, float terminal,
+      vec2 p, vec2 a, vec2 b, vec2 c, vec2 d, float seed, float terminal, float energyScale,
       inout vec3 emission, inout float coverage
     ) {
+      vec2 boundsMin = min(min(a, b), min(c, d)) - vec2(0.16);
+      vec2 boundsMax = max(max(a, b), max(c, d)) + vec2(0.16);
+      if (p.x < boundsMin.x || p.y < boundsMin.y || p.x > boundsMax.x || p.y > boundsMax.y) return;
+
+      vec3 localEmission = vec3(0.0);
+      float localCoverage = 0.0;
       vec2 samplePoint = p;
-      vec2 boss = vec2(0.86, 0.02);
+      vec2 boss = bossData.xy;
       float bossDistance = length((p - boss) * vec2(1.0, 0.82));
-      float bend = terminal * (1.0 - smoothstep(0.25, 0.78, bossDistance)) * 0.30 / (bossDistance + 0.34);
+      float gravity = terminal * (1.0 - smoothstep(0.25, 0.90, bossDistance));
+      float bend = gravity * 0.32 / (bossDistance + 0.31);
       samplePoint = boss + rotate2(-bend) * (samplePoint - boss);
 
       vec2 warp = vec2(
@@ -267,19 +276,22 @@
       float fibers = (core * 0.76 + strandA * 0.45 + strandB * 0.25 + ribbons * 0.54) *
         edgeFade * (0.20 + breakup * 0.80);
 
-      float phase = fract(t * 2.6 - time * (0.10 + seed * 0.004) + seed * 0.21);
+      float flowT = mix(t, pow(max(t, 0.001), 0.62), gravity);
+      float phase = fract(flowT * 2.6 - time * (0.10 + seed * 0.004) * (1.0 + gravity * 2.4) + seed * 0.21);
       float pulse = exp(-pow((phase - 0.08) / 0.055, 2.0));
       pulse += 0.55 * exp(-pow((phase - 0.51) / 0.035, 2.0));
       pulse *= core * edgeFade * (0.52 + turbulence * 0.48);
 
       vec3 cool = vec3(0.075, 0.010, 0.004);
       vec3 warm = vec3(1.35, 0.21, 0.026);
+      vec3 redshifted = vec3(0.92, 0.012, 0.002);
       vec3 hot = vec3(5.4, 1.25, 0.20);
       vec3 routeColor = mix(cool, warm, smoothstep(0.12, 0.82, t + terminal * 0.26));
-      emission += routeColor * (lane * 0.52 + fibers * 0.86);
-      emission += hot * pulse * (0.68 + terminal * 0.42);
-      emission += vec3(0.42, 0.028, 0.006) * ribbons * (0.35 + terminal * 0.24);
-      coverage = max(coverage, clamp(lane * 0.24 + fibers * 0.58 + pulse * 0.46, 0.0, 0.78));
+      routeColor = mix(routeColor, redshifted, gravity * 0.76);
+      localEmission += routeColor * (lane * 0.52 + fibers * 0.86);
+      localEmission += mix(hot, vec3(2.8, 0.07, 0.006), gravity * 0.82) * pulse * (0.68 + terminal * 0.42);
+      localEmission += vec3(0.42, 0.028, 0.006) * ribbons * (0.35 + terminal * 0.24);
+      localCoverage = max(localCoverage, clamp(lane * 0.24 + fibers * 0.58 + pulse * 0.46, 0.0, 0.78));
 
       if (terminal > 0.5) {
         vec2 secondaryPoint = boss + rotate2(bend * 1.34) * (p - boss);
@@ -287,17 +299,17 @@
         float secondaryArc = exp(-secondary.x * secondary.x / 0.000020) *
           smoothstep(0.44, 0.86, secondary.y) * (1.0 - smoothstep(0.76, 0.92, secondary.y)) *
           (1.0 - smoothstep(0.31, 0.72, bossDistance));
-        emission += vec3(1.7, 0.19, 0.018) * secondaryArc * 0.30;
-        coverage = max(coverage, secondaryArc * 0.20);
+        localEmission += vec3(1.7, 0.19, 0.018) * secondaryArc * 0.30;
+        localCoverage = max(localCoverage, secondaryArc * 0.20);
       }
 
-      float horizonMask = smoothstep(0.22, 0.31, bossDistance);
-      emission *= mix(1.0, horizonMask, terminal);
-      coverage *= mix(1.0, horizonMask, terminal);
+      float horizonMask = mix(1.0, smoothstep(0.21, 0.30, bossDistance), terminal);
+      emission += localEmission * energyScale * horizonMask;
+      coverage = max(coverage, localCoverage * energyScale * horizonMask);
     }
 
     void starField(
-      vec2 p, vec2 center, float radius, float seed, float heat,
+      vec2 p, vec2 center, float radius, float seed, float heat, float energyScale,
       inout vec3 emission, inout float coverage
     ) {
       vec2 local = (p - center) / radius;
@@ -313,12 +325,12 @@
       float coronaFade = exp(-height * 4.9) * (1.0 - smoothstep(0.75, 1.28, height));
       float corona = coronaFade * smoothstep(0.30, 0.68, broad * 0.7 + fine * 0.3) * (0.055 + lobes * 0.20);
       vec3 coronaColor = mix(vec3(0.32, 0.006, 0.001), vec3(1.65, 0.20, 0.018), lobes);
-      emission += coronaColor * corona;
-      coverage = max(coverage, corona * 0.24);
+      emission += coronaColor * corona * energyScale;
+      coverage = max(coverage, corona * 0.24 * energyScale);
 
       float chromosphere = exp(-height * 65.0) * step(1.0, radial) * (0.40 + fine * 0.60);
-      emission += vec3(3.2, 0.12, 0.007) * chromosphere;
-      coverage = max(coverage, chromosphere * 0.58);
+      emission += vec3(3.2, 0.12, 0.007) * chromosphere * energyScale;
+      coverage = max(coverage, chromosphere * 0.58 * energyScale);
 
       if (radial < 1.0) {
         float z = sqrt(max(0.0, 1.0 - dot(local, local)));
@@ -361,6 +373,7 @@
         surfaceColor += vec3(1.75, 0.060, 0.004) * pow(1.0 - mu, 7.0) * (0.46 + meso * 0.54);
 
         float edge = 1.0 - smoothstep(1.0 - 1.8 / max(radius * resolution.y, 1.0), 1.0, radial);
+        surfaceColor *= mix(0.78, 1.0, energyScale);
         emission = mix(emission, surfaceColor, edge);
         coverage = max(coverage, edge);
       }
@@ -368,36 +381,75 @@
 
     void main() {
       vec2 p = (2.0 * gl_FragCoord.xy - resolution.xy) / resolution.y;
-      p = p / viewZoom + viewOffset;
-
-      vec2 entry = vec2(-1.19, -0.01);
-      vec2 upper = vec2(-0.89, 0.40);
-      vec2 lower = vec2(-0.83, -0.43);
-      vec2 merge = vec2(-0.43, 0.02);
-
       vec3 emission = vec3(0.0);
       float coverage = 0.0;
 
-      float dust = smoothstep(0.58, 0.91, fbm3(vec3(p * vec2(1.5, 2.2), time * 0.006))) *
-        exp(-pow((p.y + 0.05 + 0.08 * sin(p.x * 2.7)) / 0.48, 2.0));
-      float localEnvelope = exp(-dot((p - vec2(-0.80, -0.01)) / vec2(0.73, 0.67),
-                                     (p - vec2(-0.80, -0.01)) / vec2(0.73, 0.67)) * 1.45);
-      float cloudTear = smoothstep(0.46, 0.78,
-        fbm3(vec3(p * 2.7 + vec2(time * 0.008, -time * 0.004), 12.0)));
-      emission += vec3(0.16, 0.018, 0.004) * dust * localEnvelope * 0.28;
-      emission += vec3(0.11, 0.007, 0.002) * cloudTear * localEnvelope * 0.16;
-      coverage = max(coverage, (dust + cloudTear) * localEnvelope * 0.045);
+      for (int i = 0; i < 3; i++) {
+        vec2 center = systemData[i].xy;
+        float radius = max(systemData[i].z, 0.10);
+        float energyScale = systemData[i].w;
+        vec2 local = (p - center) / vec2(radius * 1.18, radius);
+        float envelope = exp(-dot(local, local) * 1.38);
+        float dust = smoothstep(0.58, 0.90,
+          fbm3(vec3(p * vec2(1.7, 2.5) + vec2(float(i) * 3.7), time * 0.006))) * envelope;
+        float cloudTear = smoothstep(0.49, 0.79,
+          fbm3(vec3(p * 2.9 + vec2(time * 0.007, -time * 0.004), 12.0 + float(i) * 5.0))) * envelope;
+        emission += vec3(0.16, 0.018, 0.004) * dust * energyScale * 0.22;
+        emission += vec3(0.11, 0.007, 0.002) * cloudTear * energyScale * 0.12;
+        coverage = max(coverage, (dust + cloudTear) * energyScale * 0.035);
+      }
 
-      routeField(p, entry, vec2(-1.14,0.19), vec2(-1.02,0.38), upper, 1.0, 0.0, emission, coverage);
-      routeField(p, entry, vec2(-1.10,-0.21), vec2(-0.99,-0.41), lower, 2.0, 0.0, emission, coverage);
-      routeField(p, upper, vec2(-0.75,0.39), vec2(-0.61,0.13), merge, 3.0, 0.0, emission, coverage);
-      routeField(p, lower, vec2(-0.70,-0.39), vec2(-0.59,-0.11), merge, 4.0, 0.0, emission, coverage);
-      routeField(p, merge, vec2(-0.15,0.05), vec2(0.24,0.33), vec2(0.60,0.18), 5.0, 1.0, emission, coverage);
+      for (int i = 0; i < 15; i++) {
+        routeField(
+          p,
+          routeA[i].xy,
+          routeB[i].xy,
+          routeC[i].xy,
+          routeD[i].xy,
+          routeMeta[i].x,
+          routeMeta[i].y,
+          routeMeta[i].z,
+          emission,
+          coverage
+        );
+      }
 
-      starField(p, entry, 0.142, 1.3, 0.58, emission, coverage);
-      starField(p, upper, 0.127, 3.7, 0.82, emission, coverage);
-      starField(p, lower, 0.134, 6.1, 0.42, emission, coverage);
-      starField(p, merge, 0.158, 8.4, 0.92, emission, coverage);
+      vec2 bossLocal = (p - bossData.xy) * vec2(1.0, 0.84);
+      float bossRadius = length(bossLocal);
+      float bossAngle = atan(bossLocal.y, bossLocal.x);
+      float spiralNoise = fbm3(vec3(
+        bossAngle * 0.92 - time * 0.075,
+        bossRadius * 5.6 - time * 0.046,
+        21.4
+      ));
+      float spiralBands = pow(max(0.0, 0.5 + 0.5 * sin(
+        bossAngle * 3.0 - bossRadius * 21.0 - time * 0.43 + spiralNoise * 5.4
+      )), 5.0);
+      float infallWindow = smoothstep(0.31, 0.47, bossRadius) *
+        (1.0 - smoothstep(1.18, 1.92, bossRadius));
+      float dustBreakup = smoothstep(0.57, 0.82, spiralNoise);
+      float infallDust = spiralBands * dustBreakup * infallWindow;
+      float inwardPulse = pow(max(0.0, 0.5 + 0.5 * sin(
+        bossRadius * 31.0 + time * 1.35 - bossAngle * 2.0
+      )), 9.0) * infallDust;
+      vec3 dustColor = mix(vec3(0.16, 0.006, 0.001), vec3(1.25, 0.13, 0.008),
+        1.0 - smoothstep(0.36, 1.35, bossRadius));
+      emission += dustColor * infallDust * 0.24;
+      emission += vec3(2.4, 0.34, 0.035) * inwardPulse * 0.22;
+      coverage = max(coverage, infallDust * 0.075);
+
+      for (int i = 0; i < 12; i++) {
+        starField(
+          p,
+          planetData[i].xy,
+          planetData[i].z,
+          planetMeta[i].x,
+          planetMeta[i].y,
+          planetData[i].w,
+          emission,
+          coverage
+        );
+      }
 
       vec2 pixelGrid = floor(gl_FragCoord.xy / 3.0);
       float sparkleSeed = hash13(vec3(pixelGrid, 18.2));
@@ -405,8 +457,10 @@
       emission += vec3(0.45, 0.25, 0.16) * sparkle * 0.18;
       coverage = max(coverage, sparkle * 0.16);
 
-      float vignette = 1.0 - smoothstep(0.75, 1.82, length(p * vec2(0.60, 1.0)));
+      float vignette = 1.0 - smoothstep(0.78, 1.92, length(p * vec2(0.60, 1.0)));
       emission *= 0.74 + vignette * 0.26;
+      if (any(isnan(emission)) || any(isinf(emission))) emission = vec3(0.0);
+      emission = max(emission, vec3(0.0));
       fragColor = vec4(emission, clamp(coverage, 0.0, 1.0));
     }
   </script>
@@ -458,7 +512,9 @@
     }
   </script>
 
-  <script>
+  <script type="module">
+    import { createObservatoryCamera, createSceneFrame } from './observatory-camera.mjs';
+
     (() => {
       const canvas = document.querySelector('#system-layer');
       const cosmosFrame = document.querySelector('#cosmos-layer');
@@ -475,66 +531,34 @@
       gl.getExtension('EXT_color_buffer_float');
 
       const cameraState = document.querySelector('#camera-state');
-      const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
-      const exploration = {
-        current: { x: 0, y: 0, zoom: 1 },
-        target: { x: 0, y: 0, zoom: 1 },
-        keys: new Set(),
-        dragging: false,
-        lastPointer: [0, 0],
-        lastTime: 0,
-      };
+      const observatory = createObservatoryCamera();
+      let sceneFrame = createSceneFrame(observatory, innerWidth / Math.max(innerHeight, 1));
+      const interaction = { dragging: false, lastPointer: [0, 0] };
 
-      const resetExploration = (immediate = false) => {
-        exploration.target.x = 0;
-        exploration.target.y = 0;
-        exploration.target.zoom = 1;
-        if (immediate) {
-          Object.assign(exploration.current, exploration.target);
-        }
-      };
-
-      const updateExploration = (milliseconds) => {
-        const deltaSeconds = exploration.lastTime
-          ? Math.min(0.05, (milliseconds - exploration.lastTime) * 0.001)
-          : 0;
-        exploration.lastTime = milliseconds;
-
-        const movement = 0.42 * deltaSeconds / exploration.current.zoom;
-        if (exploration.keys.has('a')) exploration.target.x -= movement;
-        if (exploration.keys.has('d')) exploration.target.x += movement;
-        if (exploration.keys.has('w')) exploration.target.y += movement;
-        if (exploration.keys.has('s')) exploration.target.y -= movement;
-        exploration.target.x = clamp(exploration.target.x, -0.48, 0.40);
-        exploration.target.y = clamp(exploration.target.y, -0.32, 0.32);
-        exploration.target.zoom = clamp(exploration.target.zoom, 0.80, 1.45);
-
-        const smoothing = 1 - Math.exp(-deltaSeconds * 10.5);
-        exploration.current.x += (exploration.target.x - exploration.current.x) * smoothing;
-        exploration.current.y += (exploration.target.y - exploration.current.y) * smoothing;
-        exploration.current.zoom += (exploration.target.zoom - exploration.current.zoom) * smoothing;
-
-        cosmosFrame.contentWindow?.cosmosCamera?.setExploration?.(exploration.current);
-
-        const active = Math.abs(exploration.current.x) > 0.004 ||
-          Math.abs(exploration.current.y) > 0.004 ||
-          Math.abs(exploration.current.zoom - 1) > 0.004;
+      const updateObservatory = (milliseconds) => {
+        observatory.update(milliseconds);
+        sceneFrame = createSceneFrame(observatory, innerWidth / Math.max(innerHeight, 1));
+        const snapshot = observatory.snapshot();
+        cosmosFrame.contentWindow?.cosmosCamera?.setObservatory?.({
+          yaw: observatory.current.yaw,
+          pitch: observatory.current.pitch,
+          distance: observatory.current.distance,
+        });
+        cosmosFrame.contentWindow?.cosmosCamera?.setGravityLens?.({
+          center: sceneFrame.boss.center,
+          radius: sceneFrame.boss.lensRadius,
+          strength: sceneFrame.boss.lensStrength,
+        });
+        const active = Math.abs(snapshot.yaw) > 0.08 || Math.abs(snapshot.pitch - 0.5) > 0.08 ||
+          Math.abs(snapshot.distance - 10) > 0.02;
         cameraState.classList.toggle('active', active);
-        cameraState.textContent = active
-          ? `Free camera · ${exploration.current.x.toFixed(2)} / ${exploration.current.y.toFixed(2)} · ×${exploration.current.zoom.toFixed(2)}`
-          : 'Drag · Wheel · WASD · Double-click reset';
+        cameraState.textContent =
+          `Observatory · yaw ${snapshot.yaw.toFixed(1)}° · pitch ${snapshot.pitch.toFixed(1)}° · ${snapshot.distance.toFixed(1)} au`;
       };
 
-      window.explorationCamera = {
-        reset: () => resetExploration(true),
-        snapshot: () => ({
-          x: Number(exploration.current.x.toFixed(4)),
-          y: Number(exploration.current.y.toFixed(4)),
-          zoom: Number(exploration.current.zoom.toFixed(4)),
-          targetX: Number(exploration.target.x.toFixed(4)),
-          targetY: Number(exploration.target.y.toFixed(4)),
-          targetZoom: Number(exploration.target.zoom.toFixed(4)),
-        }),
+      window.observatoryCamera = {
+        reset: () => observatory.reset(true),
+        snapshot: () => ({ ...observatory.snapshot(), boss: sceneFrame.boss.center.map((value) => Number(value.toFixed(4))) }),
       };
 
       bossFrame.addEventListener('load', () => {
@@ -547,7 +571,7 @@
       });
 
       const renderEmbeddedLayers = (milliseconds) => {
-        updateExploration(milliseconds);
+        updateObservatory(milliseconds);
         cosmosFrame.contentWindow?.renderCosmos?.(milliseconds);
         const bossView = bossFrame.contentWindow?.bossCameraView;
         if (bossView?.onRender) {
@@ -562,18 +586,12 @@
           }
           if (source) {
             bossContext.clearRect(0, 0, width, height);
-            const bossScale = (view?.bossScale || 1) * Math.pow(exploration.current.zoom, 0.55);
-            const bossShift = view?.bossShift || [0, 0];
-            const destinationWidth = Math.round(bossFrame.clientWidth * dpr * bossScale);
-            const destinationHeight = Math.round(bossFrame.clientHeight * dpr * bossScale);
-            const destinationX = Math.round(
-              (bossShift[0] * innerWidth - exploration.current.x * innerWidth * 0.28) * dpr -
-              (destinationWidth - bossFrame.clientWidth * dpr) * 0.5
-            );
-            const destinationY = Math.round(
-              (bossShift[1] * innerHeight + exploration.current.y * innerHeight * 0.18) * dpr -
-              (destinationHeight - bossFrame.clientHeight * dpr) * 0.5
-            );
+            const destinationWidth = Math.round(bossFrame.clientWidth * dpr * sceneFrame.boss.scale);
+            const destinationHeight = Math.round(bossFrame.clientHeight * dpr * sceneFrame.boss.scale);
+            const targetX = (innerWidth * 0.5 + sceneFrame.boss.center[0] * innerHeight * 0.5) * dpr;
+            const targetY = (innerHeight * 0.5 - sceneFrame.boss.center[1] * innerHeight * 0.5) * dpr;
+            const destinationX = Math.round(targetX - destinationWidth * 0.611);
+            const destinationY = Math.round(targetY - destinationHeight * 0.545);
             bossContext.drawImage(
               source,
               0,
@@ -659,8 +677,15 @@
       const systemUniforms = {
         resolution: uniform(systemProgram, 'resolution'),
         time: uniform(systemProgram, 'time'),
-        viewZoom: uniform(systemProgram, 'viewZoom'),
-        viewOffset: uniform(systemProgram, 'viewOffset'),
+        planetData: uniform(systemProgram, 'planetData[0]'),
+        planetMeta: uniform(systemProgram, 'planetMeta[0]'),
+        routeA: uniform(systemProgram, 'routeA[0]'),
+        routeB: uniform(systemProgram, 'routeB[0]'),
+        routeC: uniform(systemProgram, 'routeC[0]'),
+        routeD: uniform(systemProgram, 'routeD[0]'),
+        routeMeta: uniform(systemProgram, 'routeMeta[0]'),
+        systemData: uniform(systemProgram, 'systemData[0]'),
+        bossData: uniform(systemProgram, 'bossData'),
       };
       const blurUniforms = {
         source: uniform(blurProgram, 'source'),
@@ -673,49 +698,25 @@
         bloomTexture: uniform(compositeProgram, 'bloomTexture'),
       };
 
-      const presets = {
-        overview: { zoom: 1.0, offset: [0.0, 0.0], bossScale: 1.0, bossShift: [0.0, 0.0] },
-        links: { zoom: 1.13, offset: [-0.22, 0.0], bossScale: 1.13, bossShift: [0.07, 0.0] },
-        ingress: { zoom: 1.18, offset: [0.12, 0.015], bossScale: 1.18, bossShift: [-0.03, 0.0] },
-      };
-      let activeView = 'overview';
-      let view = presets.overview;
-      const setView = (name) => {
-        activeView = presets[name] ? name : 'overview';
-        view = presets[activeView];
-        resetExploration(true);
-        document.querySelectorAll('[data-view]').forEach((button) => {
-          button.classList.toggle('active', button.dataset.view === activeView);
-        });
-        const url = new URL(location.href);
-        url.searchParams.set('view', activeView);
-        history.replaceState(null, '', url);
-      };
-      document.querySelectorAll('[data-view]').forEach((button) => {
-        button.addEventListener('click', () => setView(button.dataset.view));
-      });
-
       const targetsControls = (event) => event.target instanceof Element &&
         Boolean(event.target.closest('button, a, input, select, textarea'));
       document.body.addEventListener('pointerdown', (event) => {
         if (event.button !== 0 || targetsControls(event)) return;
-        exploration.dragging = true;
-        exploration.lastPointer = [event.clientX, event.clientY];
+        interaction.dragging = true;
+        interaction.lastPointer = [event.clientX, event.clientY];
         document.body.classList.add('is-dragging');
         document.body.setPointerCapture?.(event.pointerId);
       });
       document.body.addEventListener('pointermove', (event) => {
-        if (!exploration.dragging) return;
-        const deltaX = event.clientX - exploration.lastPointer[0];
-        const deltaY = event.clientY - exploration.lastPointer[1];
-        exploration.lastPointer = [event.clientX, event.clientY];
-        const dragScale = 0.92 / Math.max(innerHeight, 1) / exploration.current.zoom;
-        exploration.target.x = clamp(exploration.target.x - deltaX * dragScale, -0.48, 0.40);
-        exploration.target.y = clamp(exploration.target.y + deltaY * dragScale, -0.32, 0.32);
+        if (!interaction.dragging) return;
+        const deltaX = event.clientX - interaction.lastPointer[0];
+        const deltaY = event.clientY - interaction.lastPointer[1];
+        interaction.lastPointer = [event.clientX, event.clientY];
+        observatory.rotate(deltaX, deltaY, innerHeight);
       });
       const endDrag = (event) => {
-        if (!exploration.dragging) return;
-        exploration.dragging = false;
+        if (!interaction.dragging) return;
+        interaction.dragging = false;
         document.body.classList.remove('is-dragging');
         if (event?.pointerId !== undefined && document.body.hasPointerCapture?.(event.pointerId)) {
           document.body.releasePointerCapture(event.pointerId);
@@ -723,31 +724,15 @@
       };
       document.body.addEventListener('pointerup', endDrag);
       document.body.addEventListener('pointercancel', endDrag);
-      window.addEventListener('blur', () => {
-        exploration.keys.clear();
-        endDrag();
-      });
+      window.addEventListener('blur', () => endDrag());
       window.addEventListener('wheel', (event) => {
         if (targetsControls(event)) return;
         event.preventDefault();
-        exploration.target.zoom = clamp(
-          exploration.target.zoom * Math.exp(-event.deltaY * 0.00075),
-          0.80,
-          1.45
-        );
+        observatory.dolly(event.deltaY);
       }, { passive: false });
-      window.addEventListener('keydown', (event) => {
-        const key = event.key.toLowerCase();
-        if (!['w', 'a', 's', 'd'].includes(key) || targetsControls(event)) return;
-        exploration.keys.add(key);
-        event.preventDefault();
-      });
-      window.addEventListener('keyup', (event) => {
-        exploration.keys.delete(event.key.toLowerCase());
-      });
       document.body.addEventListener('dblclick', (event) => {
         if (targetsControls(event)) return;
-        resetExploration(true);
+        observatory.reset();
       });
 
       const bindTexture = (value, unit) => {
@@ -769,6 +754,60 @@
         draw(destination);
       };
 
+      const packedFrame = {
+        planetData: new Float32Array(12 * 4),
+        planetMeta: new Float32Array(12 * 4),
+        routeA: new Float32Array(15 * 4),
+        routeB: new Float32Array(15 * 4),
+        routeC: new Float32Array(15 * 4),
+        routeD: new Float32Array(15 * 4),
+        routeMeta: new Float32Array(15 * 4),
+        systemData: new Float32Array(3 * 4),
+      };
+      const packPoint = (target, index, point) => {
+        target[index * 4] = point[0];
+        target[index * 4 + 1] = point[1];
+      };
+      const uploadSceneFrame = () => {
+        sceneFrame.planets.forEach((planet, index) => {
+          packPoint(packedFrame.planetData, index, planet.center);
+          packedFrame.planetData[index * 4 + 2] = planet.radius;
+          packedFrame.planetData[index * 4 + 3] = planet.energy;
+          packedFrame.planetMeta[index * 4] = planet.seed;
+          packedFrame.planetMeta[index * 4 + 1] = planet.heat;
+          packedFrame.planetMeta[index * 4 + 2] = planet.depth;
+        });
+        sceneFrame.routes.forEach((route, index) => {
+          packPoint(packedFrame.routeA, index, route.a);
+          packPoint(packedFrame.routeB, index, route.b);
+          packPoint(packedFrame.routeC, index, route.c);
+          packPoint(packedFrame.routeD, index, route.d);
+          packedFrame.routeMeta[index * 4] = route.seed;
+          packedFrame.routeMeta[index * 4 + 1] = route.terminal;
+          packedFrame.routeMeta[index * 4 + 2] = route.energy;
+        });
+        sceneFrame.systems.forEach((system, index) => {
+          packPoint(packedFrame.systemData, index, system.center);
+          packedFrame.systemData[index * 4 + 2] = system.radius;
+          packedFrame.systemData[index * 4 + 3] = system.energy;
+        });
+        gl.uniform4fv(systemUniforms.planetData, packedFrame.planetData);
+        gl.uniform4fv(systemUniforms.planetMeta, packedFrame.planetMeta);
+        gl.uniform4fv(systemUniforms.routeA, packedFrame.routeA);
+        gl.uniform4fv(systemUniforms.routeB, packedFrame.routeB);
+        gl.uniform4fv(systemUniforms.routeC, packedFrame.routeC);
+        gl.uniform4fv(systemUniforms.routeD, packedFrame.routeD);
+        gl.uniform4fv(systemUniforms.routeMeta, packedFrame.routeMeta);
+        gl.uniform4fv(systemUniforms.systemData, packedFrame.systemData);
+        gl.uniform4f(
+          systemUniforms.bossData,
+          sceneFrame.boss.center[0],
+          sceneFrame.boss.center[1],
+          sceneFrame.boss.scale,
+          sceneFrame.boss.lensStrength,
+        );
+      };
+
       const renderSystem = (milliseconds) => {
         resize();
         const seconds = milliseconds * 0.001;
@@ -777,10 +816,7 @@
         gl.useProgram(systemProgram);
         gl.uniform2f(systemUniforms.resolution, canvas.width, canvas.height);
         gl.uniform1f(systemUniforms.time, seconds);
-        gl.uniform1f(systemUniforms.viewZoom, view.zoom * exploration.current.zoom);
-        gl.uniform2f(systemUniforms.viewOffset,
-          view.offset[0] + exploration.current.x,
-          view.offset[1] + exploration.current.y);
+        uploadSceneFrame();
         draw(sceneTarget);
 
         blur(sceneTarget, bloomA, [1, 0], 0.75);
@@ -805,7 +841,6 @@
         requestAnimationFrame(renderSystem);
       };
 
-      setView(new URLSearchParams(location.search).get('view') || 'overview');
       requestAnimationFrame(renderSystem);
       window.renderSystem = renderSystem;
     })();

@@ -1,0 +1,218 @@
+const DEG = Math.PI / 180;
+
+export const OBSERVATORY_LIMITS = Object.freeze({
+  yaw: Object.freeze([-12 * DEG, 12 * DEG]),
+  pitch: Object.freeze([-7 * DEG, 9 * DEG]),
+  distance: Object.freeze([8.6, 11.8]),
+});
+
+const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 10.0 });
+const BOSS_WORLD = Object.freeze([3.92, 0.02, -0.10]);
+const BOSS_WORLD_RADIUS = 1.44;
+const FOV = 42 * DEG;
+
+const SYSTEMS = Object.freeze([
+  Object.freeze({ center: [-3.30, -0.78, 1.22], rotation: [-10, -7, 8], energy: 1.00, seed: 1.3 }),
+  Object.freeze({ center: [-1.28, 1.62, -0.42], rotation: [12, 13, -7], energy: 0.82, seed: 5.2 }),
+  Object.freeze({ center: [0.12, -1.48, -2.38], rotation: [-8, -18, 11], energy: 0.66, seed: 9.4 }),
+]);
+
+const LOCAL_PLANETS = Object.freeze([
+  Object.freeze({ point: [-0.88, 0.00, 0.00], radius: 0.46, heat: 0.58 }),
+  Object.freeze({ point: [0.00, 0.72, -0.10], radius: 0.42, heat: 0.82 }),
+  Object.freeze({ point: [0.00, -0.72, 0.12], radius: 0.44, heat: 0.42 }),
+  Object.freeze({ point: [0.88, 0.00, 0.18], radius: 0.50, heat: 0.92 }),
+]);
+
+const INTERNAL_LINKS = Object.freeze([
+  Object.freeze([0, 1, 0.18]),
+  Object.freeze([0, 2, -0.18]),
+  Object.freeze([1, 3, -0.14]),
+  Object.freeze([2, 3, 0.14]),
+]);
+
+const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const subtract = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const multiply = (value, scalar) => [value[0] * scalar, value[1] * scalar, value[2] * scalar];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+const length = (value) => Math.hypot(value[0], value[1], value[2]);
+const normalize = (value) => {
+  const magnitude = Math.max(length(value), 1e-6);
+  return multiply(value, 1 / magnitude);
+};
+const mix = (a, b, amount) => add(multiply(a, 1 - amount), multiply(b, amount));
+
+function rotatePoint(point, degrees) {
+  const [rx, ry, rz] = degrees.map((value) => value * DEG);
+  let [x, y, z] = point;
+  let c = Math.cos(rx), s = Math.sin(rx);
+  [y, z] = [y * c - z * s, y * s + z * c];
+  c = Math.cos(ry); s = Math.sin(ry);
+  [x, z] = [x * c + z * s, -x * s + z * c];
+  c = Math.cos(rz); s = Math.sin(rz);
+  [x, y] = [x * c - y * s, x * s + y * c];
+  return [x, y, z];
+}
+
+function cameraBasis(state) {
+  const cosPitch = Math.cos(state.pitch);
+  const position = [
+    Math.sin(state.yaw) * cosPitch * state.distance,
+    Math.sin(state.pitch) * state.distance,
+    Math.cos(state.yaw) * cosPitch * state.distance,
+  ];
+  const forward = normalize(multiply(position, -1));
+  const right = normalize(cross(forward, [0, 1, 0]));
+  const up = normalize(cross(right, forward));
+  return { position, forward, right, up };
+}
+
+function projectPoint(point, basis) {
+  const relative = subtract(point, basis.position);
+  const depth = Math.max(dot(relative, basis.forward), 0.25);
+  const tangent = Math.tan(FOV * 0.5);
+  return {
+    point: [dot(relative, basis.right) / (depth * tangent), dot(relative, basis.up) / (depth * tangent)],
+    depth,
+    scale: 1 / (depth * tangent),
+  };
+}
+
+function projectRoute(points, basis, seed, terminal, energy) {
+  const projected = points.map((point) => projectPoint(point, basis).point);
+  return { a: projected[0], b: projected[1], c: projected[2], d: projected[3], seed, terminal, energy };
+}
+
+export function createObservatoryCamera() {
+  const current = { ...DEFAULT_STATE };
+  const target = { ...DEFAULT_STATE };
+  let lastTime = 0;
+
+  return {
+    current,
+    target,
+    rotate(deltaX, deltaY, viewportHeight = 1) {
+      const scale = 0.72 / Math.max(viewportHeight, 1);
+      target.yaw = clamp(target.yaw - deltaX * scale, ...OBSERVATORY_LIMITS.yaw);
+      target.pitch = clamp(target.pitch + deltaY * scale, ...OBSERVATORY_LIMITS.pitch);
+    },
+    dolly(deltaY) {
+      target.distance = clamp(
+        target.distance * Math.exp(deltaY * 0.00072),
+        ...OBSERVATORY_LIMITS.distance,
+      );
+    },
+    reset(immediate = false) {
+      Object.assign(target, DEFAULT_STATE);
+      if (immediate) Object.assign(current, target);
+    },
+    update(milliseconds) {
+      const deltaSeconds = lastTime ? Math.min(0.05, (milliseconds - lastTime) * 0.001) : 0;
+      lastTime = milliseconds;
+      const smoothing = 1 - Math.exp(-deltaSeconds * 9.5);
+      current.yaw += (target.yaw - current.yaw) * smoothing;
+      current.pitch += (target.pitch - current.pitch) * smoothing;
+      current.distance += (target.distance - current.distance) * smoothing;
+      return current;
+    },
+    snapshot() {
+      return {
+        yaw: Number((current.yaw / DEG).toFixed(2)),
+        pitch: Number((current.pitch / DEG).toFixed(2)),
+        distance: Number(current.distance.toFixed(2)),
+      };
+    },
+  };
+}
+
+export function createSceneFrame(camera, aspect = 16 / 9) {
+  const basis = cameraBasis(camera.current);
+  const planets = [];
+  const routes = [];
+  const systems = [];
+
+  SYSTEMS.forEach((system, systemIndex) => {
+    const worldPlanets = LOCAL_PLANETS.map((planet) => add(
+      system.center,
+      rotatePoint(planet.point, system.rotation),
+    ));
+    const projectedCenter = projectPoint(system.center, basis);
+    systems.push({
+      center: projectedCenter.point,
+      radius: 1.18 * projectedCenter.scale,
+      energy: system.energy,
+      depth: projectedCenter.depth,
+    });
+
+    LOCAL_PLANETS.forEach((planet, planetIndex) => {
+      const projected = projectPoint(worldPlanets[planetIndex], basis);
+      planets.push({
+        center: projected.point,
+        radius: planet.radius * projected.scale,
+        seed: system.seed + planetIndex * 2.31,
+        heat: planet.heat,
+        energy: system.energy,
+        depth: projected.depth,
+      });
+    });
+
+    const localUp = normalize(rotatePoint([0, 1, 0], system.rotation));
+    INTERNAL_LINKS.forEach(([fromIndex, toIndex, bend], linkIndex) => {
+      const start = worldPlanets[fromIndex];
+      const end = worldPlanets[toIndex];
+      const chord = subtract(end, start);
+      const controlA = add(add(start, multiply(chord, 0.31)), multiply(localUp, bend));
+      const controlB = add(add(start, multiply(chord, 0.69)), multiply(localUp, bend));
+      routes.push(projectRoute(
+        [start, controlA, controlB, end],
+        basis,
+        system.seed + linkIndex * 1.17,
+        0,
+        system.energy,
+      ));
+    });
+
+    const merge = worldPlanets[3];
+    const towardBoss = normalize(subtract(BOSS_WORLD, merge));
+    const endpoint = add(BOSS_WORLD, multiply(towardBoss, -BOSS_WORLD_RADIUS));
+    const terminalLift = multiply(localUp, 0.34 - systemIndex * 0.11);
+    const controlA = add(add(merge, multiply(towardBoss, 1.05)), terminalLift);
+    const controlB = add(add(endpoint, multiply(towardBoss, -1.20)), multiply(terminalLift, -0.55));
+    routes.push(projectRoute(
+      [merge, controlA, controlB, endpoint],
+      basis,
+      system.seed + 6.7,
+      1,
+      system.energy,
+    ));
+  });
+
+  const bossProjection = projectPoint(BOSS_WORLD, basis);
+  const bossScale = clamp(10 / bossProjection.depth, 0.91, 1.12);
+  const safeHorizontal = Math.max(0.86, Math.min(1.20, aspect - 0.42));
+  const bossCenter = [
+    clamp(bossProjection.point[0], 0.74, safeHorizontal),
+    clamp(bossProjection.point[1], -0.16, 0.18),
+  ];
+
+  return {
+    planets,
+    routes,
+    systems,
+    boss: {
+      center: bossCenter,
+      projectedCenter: bossProjection.point,
+      scale: bossScale,
+      depth: bossProjection.depth,
+      lensRadius: 0.31 * bossScale,
+      lensStrength: 0.0105 * bossScale,
+    },
+  };
+}
+
