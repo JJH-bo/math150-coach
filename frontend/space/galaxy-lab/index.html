@@ -7,7 +7,16 @@
   <style>
     :root { color-scheme: dark; background: #000; }
     * { box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      cursor: grab;
+      touch-action: none;
+    }
+    body.is-dragging { cursor: grabbing; }
     #cosmos-layer {
       position: fixed;
       z-index: 0;
@@ -93,6 +102,28 @@
       text-shadow: 0 2px 14px #000;
     }
     .legend b { color: rgba(255, 218, 174, .72); font-weight: 500; }
+    .camera-state {
+      position: fixed;
+      z-index: 3;
+      right: 24px;
+      bottom: 22px;
+      padding: 8px 12px;
+      border: 1px solid rgba(179, 149, 122, .12);
+      border-radius: 999px;
+      color: rgba(186, 172, 158, .38);
+      background: rgba(4, 5, 8, .34);
+      backdrop-filter: blur(8px);
+      font: 10px/1 Inter, "Microsoft YaHei", sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      pointer-events: none;
+      transition: color .25s ease, border-color .25s ease, background .25s ease;
+    }
+    .camera-state.active {
+      color: rgba(255, 220, 177, .78);
+      border-color: rgba(255, 154, 70, .34);
+      background: rgba(66, 25, 10, .26);
+    }
   </style>
 </head>
 <body>
@@ -109,6 +140,8 @@
     </div>
   </div>
   <div class="legend"><b>分流 → 汇合 → 验收</b><br>连续场连接，不是几何管道</div>
+
+  <div class="camera-state" id="camera-state">Drag · Wheel · WASD · Double-click reset</div>
 
   <script type="x-shader/x-vertex" id="fullscreen-vertex">
     #version 300 es
@@ -441,6 +474,69 @@
       if (!gl) throw new Error('WebGL2 is required for the system field renderer.');
       gl.getExtension('EXT_color_buffer_float');
 
+      const cameraState = document.querySelector('#camera-state');
+      const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+      const exploration = {
+        current: { x: 0, y: 0, zoom: 1 },
+        target: { x: 0, y: 0, zoom: 1 },
+        keys: new Set(),
+        dragging: false,
+        lastPointer: [0, 0],
+        lastTime: 0,
+      };
+
+      const resetExploration = (immediate = false) => {
+        exploration.target.x = 0;
+        exploration.target.y = 0;
+        exploration.target.zoom = 1;
+        if (immediate) {
+          Object.assign(exploration.current, exploration.target);
+        }
+      };
+
+      const updateExploration = (milliseconds) => {
+        const deltaSeconds = exploration.lastTime
+          ? Math.min(0.05, (milliseconds - exploration.lastTime) * 0.001)
+          : 0;
+        exploration.lastTime = milliseconds;
+
+        const movement = 0.42 * deltaSeconds / exploration.current.zoom;
+        if (exploration.keys.has('a')) exploration.target.x -= movement;
+        if (exploration.keys.has('d')) exploration.target.x += movement;
+        if (exploration.keys.has('w')) exploration.target.y += movement;
+        if (exploration.keys.has('s')) exploration.target.y -= movement;
+        exploration.target.x = clamp(exploration.target.x, -0.48, 0.40);
+        exploration.target.y = clamp(exploration.target.y, -0.32, 0.32);
+        exploration.target.zoom = clamp(exploration.target.zoom, 0.80, 1.45);
+
+        const smoothing = 1 - Math.exp(-deltaSeconds * 10.5);
+        exploration.current.x += (exploration.target.x - exploration.current.x) * smoothing;
+        exploration.current.y += (exploration.target.y - exploration.current.y) * smoothing;
+        exploration.current.zoom += (exploration.target.zoom - exploration.current.zoom) * smoothing;
+
+        cosmosFrame.contentWindow?.cosmosCamera?.setExploration?.(exploration.current);
+
+        const active = Math.abs(exploration.current.x) > 0.004 ||
+          Math.abs(exploration.current.y) > 0.004 ||
+          Math.abs(exploration.current.zoom - 1) > 0.004;
+        cameraState.classList.toggle('active', active);
+        cameraState.textContent = active
+          ? `Free camera · ${exploration.current.x.toFixed(2)} / ${exploration.current.y.toFixed(2)} · ×${exploration.current.zoom.toFixed(2)}`
+          : 'Drag · Wheel · WASD · Double-click reset';
+      };
+
+      window.explorationCamera = {
+        reset: () => resetExploration(true),
+        snapshot: () => ({
+          x: Number(exploration.current.x.toFixed(4)),
+          y: Number(exploration.current.y.toFixed(4)),
+          zoom: Number(exploration.current.zoom.toFixed(4)),
+          targetX: Number(exploration.target.x.toFixed(4)),
+          targetY: Number(exploration.target.y.toFixed(4)),
+          targetZoom: Number(exploration.target.zoom.toFixed(4)),
+        }),
+      };
+
       bossFrame.addEventListener('load', () => {
         const doc = bossFrame.contentDocument;
         if (!doc) return;
@@ -451,6 +547,7 @@
       });
 
       const renderEmbeddedLayers = (milliseconds) => {
+        updateExploration(milliseconds);
         cosmosFrame.contentWindow?.renderCosmos?.(milliseconds);
         const bossView = bossFrame.contentWindow?.bossCameraView;
         if (bossView?.onRender) {
@@ -465,16 +562,28 @@
           }
           if (source) {
             bossContext.clearRect(0, 0, width, height);
+            const bossScale = (view?.bossScale || 1) * Math.pow(exploration.current.zoom, 0.55);
+            const bossShift = view?.bossShift || [0, 0];
+            const destinationWidth = Math.round(bossFrame.clientWidth * dpr * bossScale);
+            const destinationHeight = Math.round(bossFrame.clientHeight * dpr * bossScale);
+            const destinationX = Math.round(
+              (bossShift[0] * innerWidth - exploration.current.x * innerWidth * 0.28) * dpr -
+              (destinationWidth - bossFrame.clientWidth * dpr) * 0.5
+            );
+            const destinationY = Math.round(
+              (bossShift[1] * innerHeight + exploration.current.y * innerHeight * 0.18) * dpr -
+              (destinationHeight - bossFrame.clientHeight * dpr) * 0.5
+            );
             bossContext.drawImage(
               source,
               0,
               0,
               source.width,
               source.height,
-              0,
-              0,
-              Math.round(bossFrame.clientWidth * dpr),
-              Math.round(bossFrame.clientHeight * dpr)
+              destinationX,
+              destinationY,
+              destinationWidth,
+              destinationHeight
             );
           }
         }
@@ -565,16 +674,16 @@
       };
 
       const presets = {
-        overview: { zoom: 1.0, offset: [0.0, 0.0], bossTransform: 'translate3d(0,0,0) scale(1)' },
-        links: { zoom: 1.13, offset: [-0.22, 0.0], bossTransform: 'translate3d(7vw,0,0) scale(1.13)' },
-        ingress: { zoom: 1.18, offset: [0.12, 0.015], bossTransform: 'translate3d(-3vw,0,0) scale(1.18)' },
+        overview: { zoom: 1.0, offset: [0.0, 0.0], bossScale: 1.0, bossShift: [0.0, 0.0] },
+        links: { zoom: 1.13, offset: [-0.22, 0.0], bossScale: 1.13, bossShift: [0.07, 0.0] },
+        ingress: { zoom: 1.18, offset: [0.12, 0.015], bossScale: 1.18, bossShift: [-0.03, 0.0] },
       };
       let activeView = 'overview';
       let view = presets.overview;
       const setView = (name) => {
         activeView = presets[name] ? name : 'overview';
         view = presets[activeView];
-        bossFrame.style.transform = view.bossTransform;
+        resetExploration(true);
         document.querySelectorAll('[data-view]').forEach((button) => {
           button.classList.toggle('active', button.dataset.view === activeView);
         });
@@ -584,6 +693,61 @@
       };
       document.querySelectorAll('[data-view]').forEach((button) => {
         button.addEventListener('click', () => setView(button.dataset.view));
+      });
+
+      const targetsControls = (event) => event.target instanceof Element &&
+        Boolean(event.target.closest('button, a, input, select, textarea'));
+      document.body.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0 || targetsControls(event)) return;
+        exploration.dragging = true;
+        exploration.lastPointer = [event.clientX, event.clientY];
+        document.body.classList.add('is-dragging');
+        document.body.setPointerCapture?.(event.pointerId);
+      });
+      document.body.addEventListener('pointermove', (event) => {
+        if (!exploration.dragging) return;
+        const deltaX = event.clientX - exploration.lastPointer[0];
+        const deltaY = event.clientY - exploration.lastPointer[1];
+        exploration.lastPointer = [event.clientX, event.clientY];
+        const dragScale = 0.92 / Math.max(innerHeight, 1) / exploration.current.zoom;
+        exploration.target.x = clamp(exploration.target.x - deltaX * dragScale, -0.48, 0.40);
+        exploration.target.y = clamp(exploration.target.y + deltaY * dragScale, -0.32, 0.32);
+      });
+      const endDrag = (event) => {
+        if (!exploration.dragging) return;
+        exploration.dragging = false;
+        document.body.classList.remove('is-dragging');
+        if (event?.pointerId !== undefined && document.body.hasPointerCapture?.(event.pointerId)) {
+          document.body.releasePointerCapture(event.pointerId);
+        }
+      };
+      document.body.addEventListener('pointerup', endDrag);
+      document.body.addEventListener('pointercancel', endDrag);
+      window.addEventListener('blur', () => {
+        exploration.keys.clear();
+        endDrag();
+      });
+      window.addEventListener('wheel', (event) => {
+        if (targetsControls(event)) return;
+        event.preventDefault();
+        exploration.target.zoom = clamp(
+          exploration.target.zoom * Math.exp(-event.deltaY * 0.00075),
+          0.80,
+          1.45
+        );
+      }, { passive: false });
+      window.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+        if (!['w', 'a', 's', 'd'].includes(key) || targetsControls(event)) return;
+        exploration.keys.add(key);
+        event.preventDefault();
+      });
+      window.addEventListener('keyup', (event) => {
+        exploration.keys.delete(event.key.toLowerCase());
+      });
+      document.body.addEventListener('dblclick', (event) => {
+        if (targetsControls(event)) return;
+        resetExploration(true);
       });
 
       const bindTexture = (value, unit) => {
@@ -613,8 +777,10 @@
         gl.useProgram(systemProgram);
         gl.uniform2f(systemUniforms.resolution, canvas.width, canvas.height);
         gl.uniform1f(systemUniforms.time, seconds);
-        gl.uniform1f(systemUniforms.viewZoom, view.zoom);
-        gl.uniform2f(systemUniforms.viewOffset, view.offset[0], view.offset[1]);
+        gl.uniform1f(systemUniforms.viewZoom, view.zoom * exploration.current.zoom);
+        gl.uniform2f(systemUniforms.viewOffset,
+          view.offset[0] + exploration.current.x,
+          view.offset[1] + exploration.current.y);
         draw(sceneTarget);
 
         blur(sceneTarget, bloomA, [1, 0], 0.75);

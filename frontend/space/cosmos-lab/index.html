@@ -580,6 +580,7 @@
       };
       let activeView = 'abyss';
       let view = { ...presets.abyss };
+      const exploration = { x: 0, y: 0, zoom: 1 };
       const setView = (name) => {
         activeView = presets[name] ? name : 'abyss';
         view = { ...presets[activeView] };
@@ -644,12 +645,16 @@
         bind(starMap, 0);
         gl.uniform1i(skyUniforms.starMap, 0);
         gl.uniform2f(skyUniforms.resolution, sceneTarget.width, sceneTarget.height);
-        gl.uniform3f(skyUniforms.orientation, view.yaw, view.pitch, view.roll);
+        gl.uniform3f(skyUniforms.orientation,
+          view.yaw + exploration.x * 0.62,
+          view.pitch - exploration.y * 0.42,
+          view.roll + exploration.x * 0.025);
         gl.uniform3f(skyUniforms.cameraOffset,
           pointer[0] * 0.020,
           pointer[1] * 0.014,
           (pointer[0] - pointer[1]) * 0.004);
-        gl.uniform1f(skyUniforms.fov, view.fov);
+        gl.uniform1f(skyUniforms.fov,
+          Math.max(48, Math.min(86, view.fov / exploration.zoom)));
         gl.uniform1f(skyUniforms.time, seconds);
         gl.uniform1f(skyUniforms.cloudVisibility, view.cloud);
         draw(sceneTarget);
@@ -674,6 +679,18 @@
       };
 
       setView(new URLSearchParams(location.search).get('view') || 'abyss');
+      window.cosmosCamera = {
+        setExploration(next = {}) {
+          exploration.x = Number.isFinite(next.x) ? next.x : exploration.x;
+          exploration.y = Number.isFinite(next.y) ? next.y : exploration.y;
+          exploration.zoom = Number.isFinite(next.zoom) ? next.zoom : exploration.zoom;
+        },
+        reset() {
+          exploration.x = 0;
+          exploration.y = 0;
+          exploration.zoom = 1;
+        },
+      };
       window.renderCosmos = renderCosmos;
       if (!embeddedMode) requestAnimationFrame(renderCosmos);
     })();
