@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Single Learning System / Remastered Field</title>
+  <style>
+    :root { color-scheme: dark; background: #010102; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #010102; }
+    #boss-layer {
+      position: fixed;
+      z-index: 0;
+      top: 0;
+      left: 0;
+      width: 130vw;
+      height: 100vh;
+      border: 0;
+      pointer-events: none;
+      background: #010102;
+      transform-origin: 50% 50%;
+    }
+    #system-layer {
+      position: fixed;
+      z-index: 1;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .hud {
+      position: fixed;
+      z-index: 3;
+      left: 26px;
+      top: 24px;
+      display: grid;
+      gap: 11px;
+      color: rgba(236, 225, 207, .84);
+      font: 12px/1.35 Inter, "Microsoft YaHei", sans-serif;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      pointer-events: none;
+      text-shadow: 0 2px 20px #000;
+    }
+    .hud strong { font-size: 13px; color: rgba(255, 244, 222, .92); font-weight: 600; }
+    .hud span { color: rgba(198, 177, 157, .55); }
+    .views { display: flex; gap: 7px; pointer-events: auto; }
+    .views button {
+      border: 1px solid rgba(205, 151, 98, .18);
+      border-radius: 999px;
+      background: rgba(12, 8, 8, .42);
+      color: rgba(214, 193, 170, .54);
+      padding: 7px 12px;
+      cursor: pointer;
+      font: inherit;
+      letter-spacing: .05em;
+      backdrop-filter: blur(8px);
+    }
+    .views button.active {
+      border-color: rgba(255, 181, 98, .52);
+      color: #fff0d8;
+      background: rgba(86, 35, 16, .28);
+      box-shadow: 0 0 24px rgba(255, 92, 24, .08);
+    }
+    .legend {
+      position: fixed;
+      z-index: 3;
+      left: 28px;
+      bottom: 25px;
+      color: rgba(211, 187, 164, .45);
+      font: 11px/1.5 Inter, "Microsoft YaHei", sans-serif;
+      letter-spacing: .08em;
+      pointer-events: none;
+      text-shadow: 0 2px 14px #000;
+    }
+    .legend b { color: rgba(255, 218, 174, .72); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <iframe id="boss-layer" src="../boss-lab/?view=far" title="Approved relativistic Boss"></iframe>
+  <canvas id="system-layer" aria-label="Four learning stars and remastered field links"></canvas>
+  <div class="hud">
+    <div><strong>Core Module / Field Remaster</strong><br><span>4 living stars · 5 plasma paths · 1 relativistic Boss</span></div>
+    <div class="views" aria-label="验收视角">
+      <button type="button" data-view="overview" class="active">整体</button>
+      <button type="button" data-view="links">连线</button>
+      <button type="button" data-view="ingress">汇入</button>
+    </div>
+  </div>
+  <div class="legend"><b>分流 → 汇合 → 验收</b><br>连续场连接，不是几何管道</div>
+
+  <script type="x-shader/x-vertex" id="fullscreen-vertex">
+    #version 300 es
+    precision highp float;
+    out vec2 vUv;
+    void main() {
+      vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+      vUv = p;
+      gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="system-fragment">
+    #version 300 es
+    precision highp float;
+    uniform vec2 resolution;
+    uniform float time;
+    uniform float viewZoom;
+    uniform vec2 viewOffset;
+    out vec4 fragColor;
+
+    const float PI = 3.141592653589793;
+
+    mat2 rotate2(float a) {
+      float c = cos(a), s = sin(a);
+      return mat2(c, -s, s, c);
+    }
+
+    mat3 rotateY(float a) {
+      float c = cos(a), s = sin(a);
+      return mat3(c,0.0,s, 0.0,1.0,0.0, -s,0.0,c);
+    }
+
+    float hash13(vec3 p) {
+      p = fract(p * 0.1031);
+      p += dot(p, p.zyx + 31.32);
+      return fract((p.x + p.y) * p.z);
+    }
+
+    float noise3(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash13(i), hash13(i + vec3(1,0,0)), f.x),
+            mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x),
+            mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
+    }
+
+    float fbm3(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.52;
+      mat3 m = mat3(0.00,0.80,0.60, -0.80,0.36,-0.48, -0.60,-0.48,0.64);
+      for (int i = 0; i < 5; i++) {
+        value += noise3(p) * amplitude;
+        p = m * p * 2.03 + vec3(7.1, 11.7, 3.9);
+        amplitude *= 0.49;
+      }
+      return value;
+    }
+
+    vec2 cubicBezier(vec2 a, vec2 b, vec2 c, vec2 d, float t) {
+      float s = 1.0 - t;
+      return s*s*s*a + 3.0*s*s*t*b + 3.0*s*t*t*c + t*t*t*d;
+    }
+
+    vec2 curveDistance(vec2 p, vec2 a, vec2 b, vec2 c, vec2 d) {
+      float best = 100.0;
+      float bestT = 0.0;
+      vec2 previous = a;
+      for (int i = 1; i <= 24; i++) {
+        float t = float(i) / 24.0;
+        vec2 current = cubicBezier(a, b, c, d, t);
+        vec2 segment = current - previous;
+        float h = clamp(dot(p - previous, segment) / max(dot(segment, segment), 1e-6), 0.0, 1.0);
+        float distanceSquared = dot(p - previous - segment * h, p - previous - segment * h);
+        if (distanceSquared < best) {
+          best = distanceSquared;
+          bestT = (float(i - 1) + h) / 24.0;
+        }
+        previous = current;
+      }
+      return vec2(sqrt(best), bestT);
+    }
+
+    void routeField(
+      vec2 p, vec2 a, vec2 b, vec2 c, vec2 d, float seed, float terminal,
+      inout vec3 emission, inout float coverage
+    ) {
+      vec2 samplePoint = p;
+      vec2 boss = vec2(0.86, 0.02);
+      float bossDistance = length((p - boss) * vec2(1.0, 0.82));
+      float bend = terminal * (1.0 - smoothstep(0.25, 0.78, bossDistance)) * 0.30 / (bossDistance + 0.34);
+      samplePoint = boss + rotate2(-bend) * (samplePoint - boss);
+
+      vec2 warp = vec2(
+        fbm3(vec3(samplePoint * 2.9, seed + time * 0.021)),
+        fbm3(vec3(samplePoint.yx * 3.4, seed + 4.7 - time * 0.017))
+      ) - 0.5;
+      vec2 field = curveDistance(samplePoint + warp * 0.010, a, b, c, d);
+      float distanceToCurve = field.x;
+      float t = field.y;
+      float edgeFade = smoothstep(0.0, 0.10, t) * (1.0 - smoothstep(0.90, 1.0, t));
+      float turbulence = fbm3(vec3(t * 7.0, seed, time * 0.045));
+      float torn = smoothstep(0.24, 0.69, turbulence + 0.13 * sin(t * 53.0 + seed * 8.0));
+
+      float laneWidth = mix(0.088, 0.054, t) * (0.76 + turbulence * 0.50) * mix(1.0, 1.22, terminal);
+      float lane = exp(-distanceToCurve * distanceToCurve / max(laneWidth * laneWidth, 1e-5));
+      lane *= edgeFade * (0.14 + torn * 0.86);
+
+      float shearNoise = fbm3(vec3(t * 18.0, distanceToCurve * 34.0 + seed, time * 0.055));
+      float ribbonPhase = distanceToCurve * 188.0 + t * 41.0 + shearNoise * 8.0 + seed;
+      float ribbons = pow(max(0.0, 0.5 + 0.5 * sin(ribbonPhase)), 7.0);
+      ribbons *= exp(-distanceToCurve * distanceToCurve / 0.00115) * edgeFade;
+
+      float wiggleA = 0.0070 * sin(t * 61.0 + seed * 4.1 + time * 0.32);
+      float wiggleB = 0.0115 * sin(t * 37.0 - seed * 2.3 - time * 0.21);
+      float strandA = exp(-pow(abs(distanceToCurve - abs(wiggleA)), 2.0) / 0.000020);
+      float strandB = exp(-pow(abs(distanceToCurve - abs(wiggleB)), 2.0) / 0.000034);
+      float core = exp(-distanceToCurve * distanceToCurve / 0.000012);
+      float breakup = smoothstep(0.30, 0.66, fbm3(vec3(t * 13.0, seed + 9.0, time * 0.09)));
+      float fibers = (core * 0.76 + strandA * 0.45 + strandB * 0.25 + ribbons * 0.54) *
+        edgeFade * (0.20 + breakup * 0.80);
+
+      float phase = fract(t * 2.6 - time * (0.10 + seed * 0.004) + seed * 0.21);
+      float pulse = exp(-pow((phase - 0.08) / 0.055, 2.0));
+      pulse += 0.55 * exp(-pow((phase - 0.51) / 0.035, 2.0));
+      pulse *= core * edgeFade * (0.52 + turbulence * 0.48);
+
+      vec3 cool = vec3(0.075, 0.010, 0.004);
+      vec3 warm = vec3(1.35, 0.21, 0.026);
+      vec3 hot = vec3(5.4, 1.25, 0.20);
+      vec3 routeColor = mix(cool, warm, smoothstep(0.12, 0.82, t + terminal * 0.26));
+      emission += routeColor * (lane * 0.52 + fibers * 0.86);
+      emission += hot * pulse * (0.68 + terminal * 0.42);
+      emission += vec3(0.42, 0.028, 0.006) * ribbons * (0.35 + terminal * 0.24);
+      coverage = max(coverage, clamp(lane * 0.24 + fibers * 0.58 + pulse * 0.46, 0.0, 0.78));
+
+      if (terminal > 0.5) {
+        vec2 secondaryPoint = boss + rotate2(bend * 1.34) * (p - boss);
+        vec2 secondary = curveDistance(secondaryPoint, a, b, c, d);
+        float secondaryArc = exp(-secondary.x * secondary.x / 0.000020) *
+          smoothstep(0.44, 0.86, secondary.y) * (1.0 - smoothstep(0.76, 0.92, secondary.y)) *
+          (1.0 - smoothstep(0.31, 0.72, bossDistance));
+        emission += vec3(1.7, 0.19, 0.018) * secondaryArc * 0.30;
+        coverage = max(coverage, secondaryArc * 0.20);
+      }
+
+      float horizonMask = smoothstep(0.22, 0.31, bossDistance);
+      emission *= mix(1.0, horizonMask, terminal);
+      coverage *= mix(1.0, horizonMask, terminal);
+    }
+
+    void starField(
+      vec2 p, vec2 center, float radius, float seed, float heat,
+      inout vec3 emission, inout float coverage
+    ) {
+      vec2 local = (p - center) / radius;
+      float radial = length(local);
+      if (radial > 2.35) return;
+
+      float angle = atan(local.y, local.x);
+      float height = max(radial - 1.0, 0.0);
+      vec3 coronaDirection = vec3(cos(angle), sin(angle), seed * 0.13);
+      float broad = fbm3(coronaDirection * 2.6 + vec3(time * 0.012, -time * 0.009, seed));
+      float fine = fbm3(coronaDirection * 7.9 + vec3(-time * 0.018, time * 0.011, seed + 3.0));
+      float lobes = pow(max(0.0, 0.5 + 0.5 * sin(angle * (4.0 + mod(seed, 3.0)) + broad * 5.2)), 4.0);
+      float coronaFade = exp(-height * 4.9) * (1.0 - smoothstep(0.75, 1.28, height));
+      float corona = coronaFade * smoothstep(0.30, 0.68, broad * 0.7 + fine * 0.3) * (0.055 + lobes * 0.20);
+      vec3 coronaColor = mix(vec3(0.32, 0.006, 0.001), vec3(1.65, 0.20, 0.018), lobes);
+      emission += coronaColor * corona;
+      coverage = max(coverage, corona * 0.24);
+
+      float chromosphere = exp(-height * 65.0) * step(1.0, radial) * (0.40 + fine * 0.60);
+      emission += vec3(3.2, 0.12, 0.007) * chromosphere;
+      coverage = max(coverage, chromosphere * 0.58);
+
+      if (radial < 1.0) {
+        float z = sqrt(max(0.0, 1.0 - dot(local, local)));
+        vec3 normal = normalize(vec3(local, z));
+        vec3 surface = rotateY(seed + time * (0.024 + seed * 0.0008)) * normal;
+        vec3 warp = vec3(
+          fbm3(surface * 2.2 + vec3(time * 0.010, seed, 0.0)),
+          fbm3(surface * 2.4 + vec3(seed, -time * 0.008, 3.7)),
+          fbm3(surface * 2.1 + vec3(5.1, seed, time * 0.007))
+        ) - 0.5;
+        vec3 plasma = normalize(surface + warp * 0.20);
+
+        float convection = fbm3(plasma * 3.2 + vec3(time * 0.008, -time * 0.005, seed));
+        float meso = fbm3(plasma * 7.4 + warp * 1.8 - vec3(time * 0.012, seed, time * 0.007));
+        float granuleA = noise3(plasma * 34.0 + warp * 5.8 + vec3(time * 0.018, -time * 0.011, seed));
+        float granuleB = noise3(plasma * 72.0 - warp * 3.7 + vec3(-time * 0.025, time * 0.016, seed + 9.4));
+        float granuleField = granuleA * 0.62 + granuleB * 0.23 + meso * 0.15;
+        float granule = smoothstep(0.24, 0.74, granuleField);
+        float cellHeat = clamp(0.10 + granule * 0.59 + granuleB * 0.12 + meso * 0.18 + convection * 0.11, 0.0, 1.0);
+
+        vec3 spotAxis = normalize(vec3(sin(seed * 1.7), cos(seed * 2.1) * 0.55, 0.86));
+        float angular = 1.0 - dot(plasma, spotAxis);
+        float torn = fbm3(plasma * 7.0 + vec3(seed, -seed * .31, time * .01));
+        float spot = 1.0 - smoothstep(0.0045, 0.010, angular + (torn - 0.5) * 0.005);
+        float facula = smoothstep(0.018, 0.011, angular + (torn - 0.5) * 0.005) * (1.0 - spot);
+
+        float mu = clamp(z, 0.0, 1.0);
+        float limb = 0.27 + 0.73 * pow(mu, 0.46);
+        vec3 laneColor = vec3(0.052, 0.0010, 0.00035);
+        vec3 emberColor = mix(vec3(0.33, 0.011, 0.0007), vec3(0.48, 0.020, 0.0012), heat);
+        vec3 hotColor = mix(vec3(1.55, 0.17, 0.009), vec3(2.20, 0.34, 0.022), heat);
+        vec3 whiteHot = mix(vec3(3.5, 0.72, 0.07), vec3(5.4, 1.40, 0.18), heat);
+        vec3 surfaceColor = mix(laneColor, emberColor, smoothstep(0.08, 0.42, cellHeat));
+        surfaceColor = mix(surfaceColor, hotColor, smoothstep(0.40, 0.78, cellHeat));
+        surfaceColor = mix(surfaceColor, whiteHot, pow(smoothstep(0.75, 1.0, cellHeat), 2.2));
+        surfaceColor *= (0.56 + convection * 0.76) * (0.78 + meso * 0.32) * limb;
+        surfaceColor += vec3(0.90, 0.09, 0.004) * pow(granule, 3.0) * (0.48 + granuleB * 0.52);
+        surfaceColor = mix(surfaceColor, vec3(0.065, 0.0010, 0.0012), spot * 0.84);
+        surfaceColor += vec3(1.35, 0.12, 0.006) * facula * pow(1.0 - mu, 0.58);
+        surfaceColor += vec3(1.75, 0.060, 0.004) * pow(1.0 - mu, 7.0) * (0.46 + meso * 0.54);
+
+        float edge = 1.0 - smoothstep(1.0 - 1.8 / max(radius * resolution.y, 1.0), 1.0, radial);
+        emission = mix(emission, surfaceColor, edge);
+        coverage = max(coverage, edge);
+      }
+    }
+
+    void main() {
+      vec2 p = (2.0 * gl_FragCoord.xy - resolution.xy) / resolution.y;
+      p = p / viewZoom + viewOffset;
+
+      vec2 entry = vec2(-1.19, -0.01);
+      vec2 upper = vec2(-0.89, 0.40);
+      vec2 lower = vec2(-0.83, -0.43);
+      vec2 merge = vec2(-0.43, 0.02);
+
+      vec3 emission = vec3(0.0);
+      float coverage = 0.0;
+
+      float dust = smoothstep(0.58, 0.91, fbm3(vec3(p * vec2(1.5, 2.2), time * 0.006))) *
+        exp(-pow((p.y + 0.05 + 0.08 * sin(p.x * 2.7)) / 0.48, 2.0));
+      float localEnvelope = exp(-dot((p - vec2(-0.80, -0.01)) / vec2(0.73, 0.67),
+                                     (p - vec2(-0.80, -0.01)) / vec2(0.73, 0.67)) * 1.45);
+      float cloudTear = smoothstep(0.46, 0.78,
+        fbm3(vec3(p * 2.7 + vec2(time * 0.008, -time * 0.004), 12.0)));
+      emission += vec3(0.16, 0.018, 0.004) * dust * localEnvelope * 0.28;
+      emission += vec3(0.11, 0.007, 0.002) * cloudTear * localEnvelope * 0.16;
+      coverage = max(coverage, (dust + cloudTear) * localEnvelope * 0.045);
+
+      routeField(p, entry, vec2(-1.14,0.19), vec2(-1.02,0.38), upper, 1.0, 0.0, emission, coverage);
+      routeField(p, entry, vec2(-1.10,-0.21), vec2(-0.99,-0.41), lower, 2.0, 0.0, emission, coverage);
+      routeField(p, upper, vec2(-0.75,0.39), vec2(-0.61,0.13), merge, 3.0, 0.0, emission, coverage);
+      routeField(p, lower, vec2(-0.70,-0.39), vec2(-0.59,-0.11), merge, 4.0, 0.0, emission, coverage);
+      routeField(p, merge, vec2(-0.15,0.05), vec2(0.24,0.33), vec2(0.60,0.18), 5.0, 1.0, emission, coverage);
+
+      starField(p, entry, 0.142, 1.3, 0.58, emission, coverage);
+      starField(p, upper, 0.127, 3.7, 0.82, emission, coverage);
+      starField(p, lower, 0.134, 6.1, 0.42, emission, coverage);
+      starField(p, merge, 0.158, 8.4, 0.92, emission, coverage);
+
+      vec2 pixelGrid = floor(gl_FragCoord.xy / 3.0);
+      float sparkleSeed = hash13(vec3(pixelGrid, 18.2));
+      float sparkle = smoothstep(0.9991, 1.0, sparkleSeed) * (0.25 + 0.75 * hash13(vec3(pixelGrid.yx, 2.0)));
+      emission += vec3(0.45, 0.25, 0.16) * sparkle * 0.18;
+      coverage = max(coverage, sparkle * 0.16);
+
+      float vignette = 1.0 - smoothstep(0.75, 1.82, length(p * vec2(0.60, 1.0)));
+      emission *= 0.74 + vignette * 0.26;
+      fragColor = vec4(emission, clamp(coverage, 0.0, 1.0));
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="blur-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D source;
+    uniform vec2 texel;
+    uniform vec2 direction;
+    uniform float threshold;
+    in vec2 vUv;
+    out vec4 fragColor;
+    void main() {
+      vec3 sum = vec3(0.0);
+      float alpha = 0.0;
+      float weights[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+      vec4 center = texture(source, vUv);
+      sum += max(center.rgb - threshold, 0.0) * weights[0];
+      alpha = center.a;
+      for (int i = 1; i < 5; i++) {
+        vec2 offset = direction * texel * float(i);
+        vec4 a = texture(source, vUv + offset);
+        vec4 b = texture(source, vUv - offset);
+        sum += (max(a.rgb - threshold, 0.0) + max(b.rgb - threshold, 0.0)) * weights[i];
+        alpha = max(alpha, max(a.a, b.a) * 0.45);
+      }
+      fragColor = vec4(sum, alpha);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="composite-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D sceneTexture;
+    uniform sampler2D bloomTexture;
+    in vec2 vUv;
+    out vec4 fragColor;
+    vec3 aces(vec3 x) {
+      const float a = 2.51, b = 0.03, c = 2.43, d = 0.59, e = 0.14;
+      return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+    }
+    void main() {
+      vec4 scene = texture(sceneTexture, vUv);
+      vec3 bloom = texture(bloomTexture, vUv).rgb;
+      vec3 mapped = pow(aces(scene.rgb + bloom * 0.62), vec3(1.0 / 2.2));
+      float alpha = clamp(scene.a + max(max(bloom.r, bloom.g), bloom.b) * 0.055, 0.0, 1.0);
+      fragColor = vec4(mapped * alpha, alpha);
+    }
+  </script>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector('#system-layer');
+      const bossFrame = document.querySelector('#boss-layer');
+      const gl = canvas.getContext('webgl2', {
+        alpha: true,
+        antialias: false,
+        premultipliedAlpha: true,
+        powerPreference: 'high-performance',
+      });
+      if (!gl) throw new Error('WebGL2 is required for the system field renderer.');
+      gl.getExtension('EXT_color_buffer_float');
+
+      bossFrame.addEventListener('load', () => {
+        const doc = bossFrame.contentDocument;
+        if (!doc) return;
+        ['.lab-hud', '#settings_panel', '#orbit_panel', '#cv_error_panel'].forEach((selector) => {
+          const element = doc.querySelector(selector);
+          if (element) element.style.display = 'none';
+        });
+      });
+
+      const source = (selector) => document.querySelector(selector).textContent.trimStart();
+      const compile = (type, shaderSource) => {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, shaderSource);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
+        return shader;
+      };
+      const createProgram = (fragmentSource) => {
+        const value = gl.createProgram();
+        gl.attachShader(value, compile(gl.VERTEX_SHADER, source('#fullscreen-vertex')));
+        gl.attachShader(value, compile(gl.FRAGMENT_SHADER, fragmentSource));
+        gl.linkProgram(value);
+        if (!gl.getProgramParameter(value, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(value));
+        return value;
+      };
+
+      const systemProgram = createProgram(source('#system-fragment'));
+      const blurProgram = createProgram(source('#blur-fragment'));
+      const compositeProgram = createProgram(source('#composite-fragment'));
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+
+      const texture = (width, height) => {
+        const value = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, value);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        return value;
+      };
+      const target = (width, height) => {
+        const color = texture(width, height);
+        const framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, color, 0);
+        return { width, height, color, framebuffer };
+      };
+      const destroyTarget = (value) => {
+        if (!value) return;
+        gl.deleteTexture(value.color);
+        gl.deleteFramebuffer(value.framebuffer);
+      };
+
+      let sceneTarget;
+      let bloomA;
+      let bloomB;
+      const resize = () => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        const width = Math.max(2, Math.round(innerWidth * dpr));
+        const height = Math.max(2, Math.round(innerHeight * dpr));
+        if (canvas.width === width && canvas.height === height) return;
+        canvas.width = width;
+        canvas.height = height;
+        destroyTarget(sceneTarget);
+        destroyTarget(bloomA);
+        destroyTarget(bloomB);
+        sceneTarget = target(width, height);
+        bloomA = target(Math.max(2, width >> 2), Math.max(2, height >> 2));
+        bloomB = target(Math.max(2, width >> 2), Math.max(2, height >> 2));
+      };
+
+      const uniform = (program, name) => gl.getUniformLocation(program, name);
+      const systemUniforms = {
+        resolution: uniform(systemProgram, 'resolution'),
+        time: uniform(systemProgram, 'time'),
+        viewZoom: uniform(systemProgram, 'viewZoom'),
+        viewOffset: uniform(systemProgram, 'viewOffset'),
+      };
+      const blurUniforms = {
+        source: uniform(blurProgram, 'source'),
+        texel: uniform(blurProgram, 'texel'),
+        direction: uniform(blurProgram, 'direction'),
+        threshold: uniform(blurProgram, 'threshold'),
+      };
+      const compositeUniforms = {
+        sceneTexture: uniform(compositeProgram, 'sceneTexture'),
+        bloomTexture: uniform(compositeProgram, 'bloomTexture'),
+      };
+
+      const presets = {
+        overview: { zoom: 1.0, offset: [0.0, 0.0], bossTransform: 'translate3d(0,0,0) scale(1)' },
+        links: { zoom: 1.13, offset: [-0.22, 0.0], bossTransform: 'translate3d(7vw,0,0) scale(1.13)' },
+        ingress: { zoom: 1.18, offset: [0.12, 0.015], bossTransform: 'translate3d(-3vw,0,0) scale(1.18)' },
+      };
+      let activeView = 'overview';
+      let view = presets.overview;
+      const setView = (name) => {
+        activeView = presets[name] ? name : 'overview';
+        view = presets[activeView];
+        bossFrame.style.transform = view.bossTransform;
+        document.querySelectorAll('[data-view]').forEach((button) => {
+          button.classList.toggle('active', button.dataset.view === activeView);
+        });
+        const url = new URL(location.href);
+        url.searchParams.set('view', activeView);
+        history.replaceState(null, '', url);
+      };
+      document.querySelectorAll('[data-view]').forEach((button) => {
+        button.addEventListener('click', () => setView(button.dataset.view));
+      });
+
+      const bindTexture = (value, unit) => {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, value);
+      };
+      const draw = (destination) => {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, destination?.framebuffer || null);
+        gl.viewport(0, 0, destination?.width || canvas.width, destination?.height || canvas.height);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      };
+      const blur = (sourceTarget, destination, direction, threshold) => {
+        gl.useProgram(blurProgram);
+        bindTexture(sourceTarget.color, 0);
+        gl.uniform1i(blurUniforms.source, 0);
+        gl.uniform2f(blurUniforms.texel, 1 / sourceTarget.width, 1 / sourceTarget.height);
+        gl.uniform2f(blurUniforms.direction, direction[0], direction[1]);
+        gl.uniform1f(blurUniforms.threshold, threshold);
+        draw(destination);
+      };
+
+      const renderSystem = (milliseconds) => {
+        resize();
+        const seconds = milliseconds * 0.001;
+
+        gl.disable(gl.BLEND);
+        gl.useProgram(systemProgram);
+        gl.uniform2f(systemUniforms.resolution, canvas.width, canvas.height);
+        gl.uniform1f(systemUniforms.time, seconds);
+        gl.uniform1f(systemUniforms.viewZoom, view.zoom);
+        gl.uniform2f(systemUniforms.viewOffset, view.offset[0], view.offset[1]);
+        draw(sceneTarget);
+
+        blur(sceneTarget, bloomA, [1, 0], 0.75);
+        blur(bloomA, bloomB, [0, 1], 0.0);
+        blur(bloomB, bloomA, [2.4, 0], 0.0);
+        blur(bloomA, bloomB, [0, 2.4], 0.0);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.useProgram(compositeProgram);
+        bindTexture(sceneTarget.color, 0);
+        bindTexture(bloomB.color, 1);
+        gl.uniform1i(compositeUniforms.sceneTexture, 0);
+        gl.uniform1i(compositeUniforms.bloomTexture, 1);
+        draw(null);
+        gl.disable(gl.BLEND);
+
+        requestAnimationFrame(renderSystem);
+      };
+
+      setView(new URLSearchParams(location.search).get('view') || 'overview');
+      requestAnimationFrame(renderSystem);
+      window.renderSystem = renderSystem;
+    })();
+  </script>
+</body>
+</html>
