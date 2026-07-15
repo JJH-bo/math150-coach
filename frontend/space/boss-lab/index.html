@@ -3992,8 +3992,13 @@ vec4 DiscColor(vec2 p, float t, bool top_side, float doppler_factor) {
 }
 
 void main() {
-  frag_color.rgb =
+  vec3 scene_color =
       SceneColor(camera_position, p, k_s, e_tau, e_w, e_h, e_d, view_dir);
+  if (any(isnan(scene_color)) || any(isinf(scene_color))) {
+    scene_color = vec3(0.0);
+  }
+  scene_color = max(scene_color, vec3(0.0));
+  frag_color.rgb = scene_color;
   frag_color.a = 1.0;
 }
     </script>
