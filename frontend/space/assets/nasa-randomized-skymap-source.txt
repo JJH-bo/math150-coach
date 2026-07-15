@@ -1,0 +1,6 @@
+NASA Scientific Visualization Studio
+The Alternative Night Sky - Another Time - Another Place, ID 4451
+https://svs.gsfc.nasa.gov/4451/
+Source asset: RandomizedSkymap.t3_08192x04096.tif
+Visualizers: Tom Bridgman and Ernie Wright
+Catalog sources: Hipparcos and Tycho-2
