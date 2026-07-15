@@ -40,3 +40,49 @@ test('boundary Boss remains dominant and synchronized across the camera envelope
   }
 });
 
+test('wheel advances Boss focus without changing planet projection scale', () => {
+  const camera = createObservatoryCamera();
+  const initialDistance = camera.target.distance;
+  const farFrame = createSceneFrame(camera, 16 / 9);
+
+  camera.dolly(-900);
+
+  assert.equal(camera.target.distance, initialDistance);
+  assert.ok(camera.target.focus > camera.current.focus);
+
+  camera.current.focus = 1;
+  const closeFrame = createSceneFrame(camera, 16 / 9);
+  assert.equal(closeFrame.boss.scale, 2);
+  assert.deepEqual(
+    closeFrame.planets.map((planet) => planet.radius),
+    farFrame.planets.map((planet) => planet.radius),
+  );
+});
+
+test('fan angles map into the safe real Boss observer envelope', () => {
+  const camera = createObservatoryCamera();
+  Object.assign(camera.current, {
+    yaw: OBSERVATORY_LIMITS.yaw[1],
+    pitch: OBSERVATORY_LIMITS.pitch[1],
+  });
+
+  const frame = createSceneFrame(camera, 16 / 9);
+
+  assert.equal(Math.round(frame.boss.viewAzimuth / DEG), 9);
+  assert.ok(frame.boss.viewInclination / DEG <= 27.3);
+  assert.ok(frame.boss.viewInclination / DEG >= 27.0);
+});
+
+test('horizontal observation creates a visible but bounded disc inclination change', () => {
+  const camera = createObservatoryCamera();
+  Object.assign(camera.current, {
+    yaw: OBSERVATORY_LIMITS.yaw[1],
+    pitch: 0,
+  });
+
+  const frame = createSceneFrame(camera, 16 / 9);
+  const inclinationDegrees = frame.boss.viewInclination / DEG;
+
+  assert.ok(inclinationDegrees >= 25.3);
+  assert.ok(inclinationDegrees <= 25.6);
+});

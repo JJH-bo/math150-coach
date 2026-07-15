@@ -6,7 +6,7 @@ export const OBSERVATORY_LIMITS = Object.freeze({
   distance: Object.freeze([8.6, 11.8]),
 });
 
-const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 10.0 });
+const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 10.0, focus: 0.28 });
 const BOSS_WORLD = Object.freeze([3.92, 0.02, -0.10]);
 const BOSS_WORLD_RADIUS = 1.44;
 const FOV = 42 * DEG;
@@ -103,10 +103,7 @@ export function createObservatoryCamera() {
       target.pitch = clamp(target.pitch + deltaY * scale, ...OBSERVATORY_LIMITS.pitch);
     },
     dolly(deltaY) {
-      target.distance = clamp(
-        target.distance * Math.exp(deltaY * 0.00072),
-        ...OBSERVATORY_LIMITS.distance,
-      );
+      target.focus = clamp(target.focus - deltaY * 0.00072, 0, 1);
     },
     reset(immediate = false) {
       Object.assign(target, DEFAULT_STATE);
@@ -119,6 +116,7 @@ export function createObservatoryCamera() {
       current.yaw += (target.yaw - current.yaw) * smoothing;
       current.pitch += (target.pitch - current.pitch) * smoothing;
       current.distance += (target.distance - current.distance) * smoothing;
+      current.focus += (target.focus - current.focus) * smoothing;
       return current;
     },
     snapshot() {
@@ -126,6 +124,7 @@ export function createObservatoryCamera() {
         yaw: Number((current.yaw / DEG).toFixed(2)),
         pitch: Number((current.pitch / DEG).toFixed(2)),
         distance: Number(current.distance.toFixed(2)),
+        focus: Number(current.focus.toFixed(3)),
       };
     },
   };
@@ -136,8 +135,9 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
   const planets = [];
   const routes = [];
   const systems = [];
+  const focus = clamp(camera.current.focus ?? DEFAULT_STATE.focus, 0, 1);
   const bossProjection = projectPoint(BOSS_WORLD, basis);
-  const baseBossX = aspect * 0.76;
+  const baseBossX = aspect * (0.76 + focus * 0.04);
   const bossCenter = [
     clamp(
       baseBossX + (bossProjection.point[0] - 1.01) * 0.22,
@@ -214,7 +214,14 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
     routes.push(terminalRoute);
   });
 
-  const bossScale = clamp(1.60 * 10 / bossProjection.depth, 1.42, 1.72);
+  const bossScale = 1.42 + focus * 0.58;
+  const viewAzimuth = clamp(camera.current.yaw * 0.375, -9 * DEG, 9 * DEG);
+  const viewInclination = clamp(
+    20.2 * DEG + camera.current.yaw * 0.22 + camera.current.pitch * 0.25,
+    14 * DEG,
+    27.3 * DEG,
+  );
+  const observerRadiusIndex = Math.round(620 - (focus - DEFAULT_STATE.focus) * 42);
 
   return {
     planets,
@@ -225,6 +232,10 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
       projectedCenter: bossProjection.point,
       scale: bossScale,
       depth: bossProjection.depth,
+      focus,
+      viewAzimuth,
+      viewInclination,
+      observerRadiusIndex,
       lensRadius: 0.31 * bossScale,
       lensStrength: 0.0105 * bossScale,
     },

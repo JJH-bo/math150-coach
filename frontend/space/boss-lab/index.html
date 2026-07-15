@@ -616,6 +616,7 @@ class Model {
     this.stars =
         new BooleanValue(this, true);
     this.starsMatrix = undefined;
+    this.observatoryAzimuth = 0;
 
     // The current state of the camera (i.e. the observer) motion.
     this.state = State.STOPPED;
@@ -779,8 +780,9 @@ class Model {
     }
     const ci = Math.cos(this.orbitInclination.getValue());
     const si = Math.sin(this.orbitInclination.getValue());
-    const cphi = Math.cos(this.phi);
-    const sphi = Math.sin(this.phi);
+    const observerPhi = this.phi + this.observatoryAzimuth;
+    const cphi = Math.cos(observerPhi);
+    const sphi = Math.sin(observerPhi);
     this.worldTheta = Math.acos(cphi * si);
     this.worldPhi = Math.atan2(sphi, cphi * ci);
   }
@@ -4887,6 +4889,29 @@ Shortcut: CTRL + mouse drag">
           model.startRadius.setIndex(next);
         }, { passive: true });
         applyPreset(new URLSearchParams(location.search).get('view') || 'close');
+        const BOSS_DEG = Math.PI / 180;
+        let lastEmbeddedObserverState = '';
+        window.bossObservatory = {
+          setState({
+            azimuth = 0,
+            inclination = 20.2 * BOSS_DEG,
+            radiusIndex = 620,
+          } = {}) {
+            const azimuthStep = Math.max(-450, Math.min(450,
+              Math.round(azimuth / BOSS_DEG * 50)));
+            const inclinationIndex = Math.max(0, Math.min(1799,
+              Math.round((inclination / Math.PI + 0.5) * 1799)));
+            const safeRadiusIndex = Math.max(0, Math.min(1000, Math.round(radiusIndex)));
+            const stateKey = `${azimuthStep}:${inclinationIndex}:${safeRadiusIndex}`;
+            if (stateKey === lastEmbeddedObserverState) return;
+            lastEmbeddedObserverState = stateKey;
+
+            model.observatoryAzimuth = azimuthStep / 50 * BOSS_DEG;
+            model.orbitInclination.index = inclinationIndex;
+            model.startRadius.index = safeRadiusIndex;
+            model.updateDerivedValues();
+          },
+        };
         window.setTimeout(() => {
           document.querySelector('#cv_loading_panel')?.classList.add('cv-loaded');
         }, 4500);

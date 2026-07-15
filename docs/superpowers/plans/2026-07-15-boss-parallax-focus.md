@@ -78,7 +78,11 @@ dolly(deltaY) {
 const focus = clamp(camera.current.focus ?? 0.28, 0, 1);
 const bossScale = 1.42 + focus * 0.58;
 const viewAzimuth = clamp(camera.current.yaw * 0.375, -9 * DEG, 9 * DEG);
-const viewInclination = clamp(20.2 * DEG + camera.current.pitch * 0.5, 14 * DEG, 27.3 * DEG);
+const viewInclination = clamp(
+  20.2 * DEG + camera.current.yaw * 0.22 + camera.current.pitch * 0.25,
+  14 * DEG,
+  27.3 * DEG,
+);
 const observerRadiusIndex = Math.round(620 - (focus - 0.28) * 42);
 ```
 

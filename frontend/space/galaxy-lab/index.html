@@ -134,7 +134,7 @@
   <div class="hud">
     <div><strong>Chapter Observatory / Fan Field</strong><br><span>3 core systems · 12 living stars · 15 field paths · 1 relativistic Boss</span></div>
   </div>
-  <div class="legend"><b>近景模块 · 中景模块 · 远景模块</b><br>拖动观测角度 · 滚轮调节距离 · 双击复位</div>
+  <div class="legend"><b>近景模块 · 中景模块 · 远景模块</b><br>拖动真实视差 · 滚轮推进Boss焦点 · 双击复位</div>
 
   <div class="camera-state" id="camera-state">Bounded observatory · Drag · Wheel · Double-click reset</div>
 
@@ -242,7 +242,8 @@
       float localCoverage = 0.0;
       vec2 samplePoint = p;
       vec2 boss = bossData.xy;
-      float bossDistance = length((p - boss) * vec2(1.0, 0.82));
+      float opticalFocus = clamp(bossData.z / 1.58, 0.86, 1.28);
+      float bossDistance = length((p - boss) * vec2(1.0, 0.82)) / opticalFocus;
       float gravity = terminal * (1.0 - smoothstep(0.25, 0.90, bossDistance));
       float bend = gravity * 0.32 / (bossDistance + 0.31);
       samplePoint = boss + rotate2(-bend) * (samplePoint - boss);
@@ -415,7 +416,8 @@
       }
 
       vec2 bossLocal = (p - bossData.xy) * vec2(1.0, 0.84);
-      float bossRadius = length(bossLocal);
+      float opticalFocus = clamp(bossData.z / 1.58, 0.86, 1.28);
+      float bossRadius = length(bossLocal) / opticalFocus;
       float bossAngle = atan(bossLocal.y, bossLocal.x);
       float spiralNoise = fbm3(vec3(
         bossAngle * 0.92 - time * 0.075,
@@ -550,10 +552,10 @@
           strength: sceneFrame.boss.lensStrength,
         });
         const active = Math.abs(snapshot.yaw) > 0.08 || Math.abs(snapshot.pitch - 0.5) > 0.08 ||
-          Math.abs(snapshot.distance - 10) > 0.02;
+          Math.abs(snapshot.focus - 0.28) > 0.01;
         cameraState.classList.toggle('active', active);
         cameraState.textContent =
-          `Observatory · yaw ${snapshot.yaw.toFixed(1)}° · pitch ${snapshot.pitch.toFixed(1)}° · ${snapshot.distance.toFixed(1)} au`;
+          `Observatory · yaw ${snapshot.yaw.toFixed(1)}° · pitch ${snapshot.pitch.toFixed(1)}° · focus ${Math.round(snapshot.focus * 100)}%`;
       };
 
       window.observatoryCamera = {
@@ -575,6 +577,11 @@
         cosmosFrame.contentWindow?.renderCosmos?.(milliseconds);
         const bossView = bossFrame.contentWindow?.bossCameraView;
         if (bossView?.onRender) {
+          bossFrame.contentWindow?.bossObservatory?.setState?.({
+            azimuth: sceneFrame.boss.viewAzimuth,
+            inclination: sceneFrame.boss.viewInclination,
+            radiusIndex: sceneFrame.boss.observerRadiusIndex,
+          });
           bossView.onRender();
           const source = bossFrame.contentDocument?.querySelector('#camera_view');
           const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
