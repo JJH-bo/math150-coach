@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cosmic Sky / Volumetric Reconstruction</title>
+  <style>
+    :root { color-scheme: dark; background: #000; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+    canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+    canvas:active { cursor: grabbing; }
+    .hud {
+      position: fixed;
+      z-index: 2;
+      top: 24px;
+      left: 26px;
+      display: grid;
+      gap: 12px;
+      color: rgba(228, 234, 244, .76);
+      font: 11px/1.45 Inter, "Microsoft YaHei", sans-serif;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 20px #000;
+      pointer-events: none;
+    }
+    .hud strong { color: rgba(247, 249, 255, .90); font-size: 13px; font-weight: 600; }
+    .hud span { color: rgba(182, 195, 214, .48); }
+    .views { display: flex; gap: 7px; pointer-events: auto; }
+    button {
+      border: 1px solid rgba(174, 194, 224, .16);
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: rgba(207, 218, 234, .50);
+      background: rgba(3, 6, 12, .48);
+      backdrop-filter: blur(8px);
+      font: inherit;
+      letter-spacing: .05em;
+      cursor: pointer;
+    }
+    button.active {
+      color: rgba(248, 250, 255, .92);
+      border-color: rgba(184, 205, 238, .46);
+      background: rgba(35, 47, 68, .34);
+      box-shadow: 0 0 30px rgba(104, 145, 204, .07);
+    }
+    .credit {
+      position: fixed;
+      z-index: 2;
+      right: 22px;
+      bottom: 18px;
+      color: rgba(171, 184, 203, .30);
+      font: 10px/1.4 Inter, sans-serif;
+      letter-spacing: .05em;
+      text-decoration: none;
+      text-shadow: 0 2px 12px #000;
+    }
+    .hint {
+      position: fixed;
+      z-index: 2;
+      left: 27px;
+      bottom: 20px;
+      color: rgba(173, 188, 211, .28);
+      font: 10px/1.4 Inter, "Microsoft YaHei", sans-serif;
+      letter-spacing: .06em;
+      text-shadow: 0 2px 12px #000;
+      pointer-events: none;
+    }
+    .error {
+      position: fixed;
+      z-index: 5;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 32px;
+      color: #d8e3f2;
+      background: #02050a;
+      font: 14px/1.6 sans-serif;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="cosmos" aria-label="Volumetric cosmic sky visual proof"></canvas>
+  <div class="hud">
+    <div><strong>Cosmic Field / Reconstructed Sky</strong><br><span>real far field · volumetric dust · analytic stellar PSF</span></div>
+    <div class="views" aria-label="宇宙星空验收视角">
+      <button type="button" data-view="core" class="active">银河核心</button>
+      <button type="button" data-view="rift">暗尘裂谷</button>
+      <button type="button" data-view="deep">深空边缘</button>
+    </div>
+  </div>
+  <div class="hint">拖动观察天球 · 滚轮调整视场</div>
+  <a class="credit" href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noreferrer">Far field: ESO / S. Brunier · CC BY 4.0</a>
+  <div class="error" id="error"></div>
+
+  <script type="x-shader/x-vertex" id="fullscreen-vertex">
+    #version 300 es
+    precision highp float;
+    out vec2 vUv;
+    void main() {
+      vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+      vUv = p;
+      gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="far-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D skyTexture;
+    uniform vec2 resolution;
+    uniform vec3 orientation;
+    uniform float fov;
+    out vec4 fragColor;
+
+    const float PI = 3.141592653589793;
+
+    float hash12(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+
+    vec2 hash22(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.xx + p3.yz) * p3.zy);
+    }
+
+    vec3 cameraRay(vec2 frag) {
+      vec2 p = (2.0 * frag - resolution) / resolution.y;
+      float tangent = tan(radians(fov) * 0.5);
+      vec3 forward = normalize(vec3(
+        cos(orientation.y) * cos(orientation.x),
+        sin(orientation.y),
+        cos(orientation.y) * sin(orientation.x)
+      ));
+      vec3 right = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));
+      vec3 up = normalize(cross(right, forward));
+      float cr = cos(orientation.z), sr = sin(orientation.z);
+      vec3 rolledRight = right * cr + up * sr;
+      vec3 rolledUp = up * cr - right * sr;
+      return normalize(forward + (rolledRight * p.x + rolledUp * p.y) * tangent);
+    }
+
+    vec2 skyUv(vec3 direction) {
+      return vec2(fract(atan(direction.z, direction.x) / (2.0 * PI) + 0.5),
+                  asin(clamp(direction.y, -1.0, 1.0)) / PI + 0.5);
+    }
+
+    vec3 spectralColor(float value) {
+      vec3 blueWhite = vec3(0.58, 0.72, 1.0);
+      vec3 neutral = vec3(1.0, 0.93, 0.78);
+      vec3 amber = vec3(1.0, 0.61, 0.30);
+      vec3 red = vec3(1.0, 0.28, 0.13);
+      vec3 color = mix(blueWhite, neutral, smoothstep(0.0, 0.58, value));
+      color = mix(color, amber, smoothstep(0.58, 0.88, value));
+      return mix(color, red, smoothstep(0.90, 1.0, value));
+    }
+
+    vec3 starLayer(vec2 angularUv, vec2 grid, float seed, float probability,
+                   float gain, float sharpness, float spikeAmount) {
+      vec2 coordinate = angularUv * grid;
+      vec2 cell = floor(coordinate);
+      cell.x = mod(cell.x, grid.x);
+      vec2 local = fract(coordinate);
+      float existence = hash12(cell + seed);
+      float visible = step(1.0 - probability, existence);
+      vec2 position = 0.14 + 0.72 * hash22(cell + seed * 7.31);
+      vec2 delta = local - position;
+      float distanceSquared = dot(delta, delta);
+      float magnitudeSeed = hash12(cell.yx + seed * 13.7);
+      float magnitude = 0.22 + pow(magnitudeSeed, 7.0) * 8.5;
+      float distanceToCenter = length(delta);
+      float cellEnvelope = 1.0 - smoothstep(0.30, 0.47, distanceToCenter);
+      float core = exp(-distanceSquared * sharpness);
+      float halo = exp(-distanceSquared * sharpness * 0.28) * 0.07;
+      float spikes = (
+        exp(-abs(delta.x) * 88.0) * exp(-abs(delta.y) * 8.0) +
+        exp(-abs(delta.y) * 88.0) * exp(-abs(delta.x) * 8.0)
+      ) * spikeAmount * pow(magnitudeSeed, 12.0);
+      float diagonal = (
+        exp(-abs(delta.x + delta.y) * 72.0) * exp(-abs(delta.x - delta.y) * 7.0) +
+        exp(-abs(delta.x - delta.y) * 72.0) * exp(-abs(delta.x + delta.y) * 7.0)
+      ) * spikeAmount * 0.18 * pow(magnitudeSeed, 18.0);
+      vec3 color = spectralColor(hash12(cell + seed * 23.4));
+      return color * visible * gain * magnitude * (core + halo + spikes + diagonal) * cellEnvelope;
+    }
+
+    void main() {
+      vec3 direction = cameraRay(gl_FragCoord.xy);
+      vec2 uv = skyUv(direction);
+      vec3 farSky = texture(skyTexture, uv).rgb;
+      vec3 broadSky = textureLod(skyTexture, uv, 4.0).rgb;
+      float farLuminance = dot(farSky, vec3(0.2126, 0.7152, 0.0722));
+      vec3 astronomicalDetail = max(farSky - broadSky * 0.72, 0.0);
+      farSky = farSky * 0.78 + astronomicalDetail * 0.18;
+      farSky *= 0.88 + smoothstep(0.008, 0.16, farLuminance) * 0.14;
+      farSky = mix(farSky, farSky * vec3(1.08, 1.02, 0.96), smoothstep(0.03, 0.24, farLuminance));
+
+      vec3 stars = vec3(0.0);
+      stars += starLayer(uv, vec2(920.0, 460.0), 2.1, 0.014, 0.024, 52.0, 0.0);
+      stars += starLayer(uv, vec2(330.0, 165.0), 7.4, 0.017, 0.075, 72.0, 0.0);
+      stars += starLayer(uv, vec2(92.0, 46.0), 14.8, 0.010, 0.34, 108.0, 0.42);
+
+      float planeSuppression = smoothstep(0.0, 0.22, abs(direction.y));
+      stars *= 0.70 + planeSuppression * 0.30;
+      fragColor = vec4(farSky + stars, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="volume-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D skyTexture;
+    uniform vec2 resolution;
+    uniform vec3 orientation;
+    uniform float fov;
+    uniform float time;
+    uniform float volumeStrength;
+    uniform float dustStrength;
+    uniform vec2 parallax;
+    out vec4 fragColor;
+
+    const float PI = 3.141592653589793;
+
+    float hash12(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+
+    float hash13(vec3 p) {
+      p = fract(p * 0.1031);
+      p += dot(p, p.zyx + 31.32);
+      return fract((p.x + p.y) * p.z);
+    }
+
+    float noise3(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash13(i), hash13(i + vec3(1,0,0)), f.x),
+            mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x),
+            mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
+    }
+
+    float fbm3(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.54;
+      mat3 m = mat3(0.00,0.80,0.60, -0.80,0.36,-0.48, -0.60,-0.48,0.64);
+      for (int i = 0; i < 4; i++) {
+        value += noise3(p) * amplitude;
+        p = m * p * 2.04 + vec3(7.1, 11.7, 3.9);
+        amplitude *= 0.48;
+      }
+      return value;
+    }
+
+    vec3 cameraRay(vec2 frag) {
+      vec2 p = (2.0 * frag - resolution) / resolution.y;
+      float tangent = tan(radians(fov) * 0.5);
+      vec3 forward = normalize(vec3(
+        cos(orientation.y) * cos(orientation.x),
+        sin(orientation.y),
+        cos(orientation.y) * sin(orientation.x)
+      ));
+      vec3 right = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));
+      vec3 up = normalize(cross(right, forward));
+      float cr = cos(orientation.z), sr = sin(orientation.z);
+      vec3 rolledRight = right * cr + up * sr;
+      vec3 rolledUp = up * cr - right * sr;
+      return normalize(forward + (rolledRight * p.x + rolledUp * p.y) * tangent);
+    }
+
+    vec2 skyUv(vec3 direction) {
+      return vec2(fract(atan(direction.z, direction.x) / (2.0 * PI) + 0.5),
+                  asin(clamp(direction.y, -1.0, 1.0)) / PI + 0.5);
+    }
+
+    void main() {
+      vec3 direction = cameraRay(gl_FragCoord.xy);
+      vec3 farSample = texture(skyTexture, skyUv(direction)).rgb;
+      float prior = dot(farSample, vec3(0.2126, 0.7152, 0.0722));
+      prior = smoothstep(0.004, 0.18, prior);
+
+      float jitter = hash12(gl_FragCoord.xy);
+      float transmittance = 1.0;
+      vec3 accumulated = vec3(0.0);
+      float coreFacing = pow(max(direction.x, 0.0), 5.0);
+      float planeAngle = abs(direction.y);
+      float stepLength = 5.4 / 20.0;
+
+      for (int i = 0; i < 20; i++) {
+        float depth = 0.24 + (float(i) + jitter) * stepLength;
+        vec3 point = direction * depth;
+        point += vec3(parallax.x, parallax.y, -parallax.x * 0.38) * (1.0 - depth / 6.0) * 0.18;
+        float slowTime = time * 0.004;
+        float warp = fbm3(point * 0.42 + vec3(0.0, slowTime, 8.0)) - 0.5;
+        float thinDisk = exp(-pow((planeAngle + warp * 0.050) / 0.145, 1.55));
+        float molecular = fbm3(point * 1.14 + vec3(3.0, -1.0, slowTime));
+        float torn = noise3(point * 4.25 + vec3(1.0, slowTime * 1.7, 5.0));
+        float armPhase = 0.5 + 0.5 * sin(atan(point.z, point.x) * 3.0 + depth * 1.35 + warp * 4.0);
+        float emitting = thinDisk * (0.20 + prior * 1.25) *
+          smoothstep(0.38, 0.79, molecular * 0.76 + torn * 0.18 + armPhase * 0.16);
+
+        float dustCloud = fbm3(point * 1.62 + vec3(-4.0, 2.5, slowTime * 0.7));
+        float dustFilament = noise3(point * 6.4 + vec3(7.0, slowTime, -2.0));
+        float obscuring = thinDisk * (0.12 + prior * 1.15) *
+          smoothstep(0.53, 0.84, dustCloud * 0.83 + dustFilament * 0.17);
+
+        vec3 outerColor = vec3(0.13, 0.17, 0.26);
+        vec3 coreColor = vec3(1.08, 0.72, 0.40);
+        vec3 emissionColor = mix(outerColor, coreColor, coreFacing * (0.68 + molecular * 0.32));
+        accumulated += transmittance * emissionColor * emitting * stepLength * volumeStrength * 0.070;
+        transmittance *= exp(-obscuring * dustStrength * stepLength * 0.62);
+      }
+
+      vec3 cloudDirectionA = normalize(vec3(0.94, 0.07, 0.33));
+      vec3 cloudDirectionB = normalize(vec3(0.82, -0.12, -0.56));
+      float cloudA = exp(-(1.0 - dot(direction, cloudDirectionA)) * 18.0);
+      float cloudB = exp(-(1.0 - dot(direction, cloudDirectionB)) * 25.0);
+      float fiberA = smoothstep(0.43, 0.78, fbm3(direction * 7.5 + vec3(parallax, time * 0.003)));
+      float fiberB = smoothstep(0.49, 0.80, fbm3(direction * 9.0 + vec3(-parallax.y, parallax.x, 3.0)));
+      accumulated += vec3(0.19, 0.018, 0.012) * cloudA * fiberA * 0.055 * volumeStrength;
+      accumulated += vec3(0.025, 0.074, 0.12) * cloudB * fiberB * 0.032 * volumeStrength;
+      transmittance *= exp(-(cloudA * fiberA + cloudB * fiberB) * dustStrength * 0.045);
+
+      fragColor = vec4(accumulated, clamp(transmittance, 0.0, 1.0));
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="combine-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D farTexture;
+    uniform sampler2D volumeTexture;
+    in vec2 vUv;
+    out vec4 fragColor;
+    void main() {
+      vec3 farColor = texture(farTexture, vUv).rgb;
+      vec4 volume = texture(volumeTexture, vUv);
+      vec3 color = farColor * volume.a + volume.rgb;
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="blur-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D source;
+    uniform vec2 texel;
+    uniform vec2 direction;
+    uniform float threshold;
+    in vec2 vUv;
+    out vec4 fragColor;
+    vec3 bright(vec3 color) {
+      float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+      return color * smoothstep(threshold, threshold + 0.85, luminance);
+    }
+    void main() {
+      vec2 offset = texel * direction;
+      vec3 color = bright(texture(source, vUv).rgb) * 0.227027;
+      color += bright(texture(source, vUv + offset * 1.384615).rgb) * 0.316216;
+      color += bright(texture(source, vUv - offset * 1.384615).rgb) * 0.316216;
+      color += bright(texture(source, vUv + offset * 3.230769).rgb) * 0.070270;
+      color += bright(texture(source, vUv - offset * 3.230769).rgb) * 0.070270;
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="final-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D sceneTexture;
+    uniform sampler2D bloomTexture;
+    uniform float exposure;
+    uniform vec2 resolution;
+    in vec2 vUv;
+    out vec4 fragColor;
+
+    float hash12(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+
+    vec3 aces(vec3 x) {
+      const float a = 2.51, b = 0.03, c = 2.43, d = 0.59, e = 0.14;
+      return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+    }
+
+    void main() {
+      vec3 scene = texture(sceneTexture, vUv).rgb;
+      vec3 bloom = texture(bloomTexture, vUv).rgb;
+      vec3 color = aces((scene + bloom * 0.12) * exposure);
+      float dither = (hash12(gl_FragCoord.xy) - 0.5) / 500.0;
+      color = pow(max(color + dither, 0.0), vec3(1.0 / 2.2));
+      float vignette = 1.0 - smoothstep(0.45, 1.35, length((vUv - 0.5) * vec2(1.10, 1.0)));
+      color *= 0.91 + vignette * 0.09;
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector('#cosmos');
+      const errorPanel = document.querySelector('#error');
+      const gl = canvas.getContext('webgl2', {
+        alpha: false,
+        antialias: false,
+        powerPreference: 'high-performance',
+      });
+      if (!gl) {
+        errorPanel.style.display = 'grid';
+        errorPanel.textContent = '该星空样板需要 WebGL2。';
+        return;
+      }
+      if (!gl.getExtension('EXT_color_buffer_float')) {
+        errorPanel.style.display = 'grid';
+        errorPanel.textContent = '当前设备缺少浮点 HDR 渲染支持。';
+        return;
+      }
+
+      const source = (selector) => document.querySelector(selector).textContent.trimStart();
+      const compile = (type, shaderSource) => {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, shaderSource);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
+        return shader;
+      };
+      const createProgram = (fragmentSource) => {
+        const value = gl.createProgram();
+        gl.attachShader(value, compile(gl.VERTEX_SHADER, source('#fullscreen-vertex')));
+        gl.attachShader(value, compile(gl.FRAGMENT_SHADER, fragmentSource));
+        gl.linkProgram(value);
+        if (!gl.getProgramParameter(value, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(value));
+        return value;
+      };
+
+      let farProgram;
+      let volumeProgram;
+      let combineProgram;
+      let blurProgram;
+      let finalProgram;
+      try {
+        farProgram = createProgram(source('#far-fragment'));
+        volumeProgram = createProgram(source('#volume-fragment'));
+        combineProgram = createProgram(source('#combine-fragment'));
+        blurProgram = createProgram(source('#blur-fragment'));
+        finalProgram = createProgram(source('#final-fragment'));
+      } catch (error) {
+        errorPanel.style.display = 'grid';
+        errorPanel.textContent = `星空着色器编译失败：${error.message}`;
+        throw error;
+      }
+
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+
+      const createTexture = (width, height, internalFormat = gl.RGBA16F) => {
+        const value = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, value);
+        gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        return value;
+      };
+      const target = (width, height) => {
+        const color = createTexture(width, height);
+        const framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, color, 0);
+        return { width, height, color, framebuffer };
+      };
+      const destroyTarget = (value) => {
+        if (!value) return;
+        gl.deleteTexture(value.color);
+        gl.deleteFramebuffer(value.framebuffer);
+      };
+
+      const skyTexture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, skyTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.SRGB8_ALPHA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      let skyReady = false;
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => {
+        const maximumTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+        let uploadSource = image;
+        if (image.naturalWidth > maximumTextureSize || image.naturalHeight > maximumTextureSize) {
+          const scale = Math.min(maximumTextureSize / image.naturalWidth, maximumTextureSize / image.naturalHeight);
+          const stagingCanvas = document.createElement('canvas');
+          stagingCanvas.width = Math.max(1, Math.floor(image.naturalWidth * scale));
+          stagingCanvas.height = Math.max(1, Math.floor(image.naturalHeight * scale));
+          const context = stagingCanvas.getContext('2d', { alpha: false });
+          context.imageSmoothingEnabled = true;
+          context.imageSmoothingQuality = 'high';
+          context.drawImage(image, 0, 0, stagingCanvas.width, stagingCanvas.height);
+          uploadSource = stagingCanvas;
+        }
+        gl.bindTexture(gl.TEXTURE_2D, skyTexture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.SRGB8_ALPHA8, gl.RGBA, gl.UNSIGNED_BYTE, uploadSource);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        const anisotropy = gl.getExtension('EXT_texture_filter_anisotropic');
+        if (anisotropy) {
+          const maximum = gl.getParameter(anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+          gl.texParameterf(gl.TEXTURE_2D, anisotropy.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, maximum));
+        }
+        skyReady = true;
+      };
+      image.onerror = () => {
+        errorPanel.style.display = 'grid';
+        errorPanel.textContent = 'ESO 全天银河远场加载失败。';
+      };
+      image.src = '../assets/milky-way-eso-6000.jpg';
+
+      let farTarget;
+      let volumeTarget;
+      let sceneTarget;
+      let bloomA;
+      let bloomB;
+      const resize = () => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+        const width = Math.max(2, Math.round(innerWidth * dpr));
+        const height = Math.max(2, Math.round(innerHeight * dpr));
+        if (canvas.width === width && canvas.height === height) return;
+        canvas.width = width;
+        canvas.height = height;
+        [farTarget, volumeTarget, sceneTarget, bloomA, bloomB].forEach(destroyTarget);
+        farTarget = target(width, height);
+        volumeTarget = target(Math.max(2, width >> 1), Math.max(2, height >> 1));
+        sceneTarget = target(width, height);
+        bloomA = target(Math.max(2, width >> 2), Math.max(2, height >> 2));
+        bloomB = target(Math.max(2, width >> 2), Math.max(2, height >> 2));
+      };
+
+      const bind = (texture, unit) => {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+      };
+      const draw = (destination) => {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, destination?.framebuffer || null);
+        gl.viewport(0, 0, destination?.width || canvas.width, destination?.height || canvas.height);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      };
+      const uniformLocation = (program, name) => gl.getUniformLocation(program, name);
+
+      const farUniforms = {
+        skyTexture: uniformLocation(farProgram, 'skyTexture'), resolution: uniformLocation(farProgram, 'resolution'),
+        orientation: uniformLocation(farProgram, 'orientation'), fov: uniformLocation(farProgram, 'fov'),
+      };
+      const volumeUniforms = {
+        skyTexture: uniformLocation(volumeProgram, 'skyTexture'), resolution: uniformLocation(volumeProgram, 'resolution'),
+        orientation: uniformLocation(volumeProgram, 'orientation'), fov: uniformLocation(volumeProgram, 'fov'),
+        time: uniformLocation(volumeProgram, 'time'), volumeStrength: uniformLocation(volumeProgram, 'volumeStrength'),
+        dustStrength: uniformLocation(volumeProgram, 'dustStrength'), parallax: uniformLocation(volumeProgram, 'parallax'),
+      };
+      const combineUniforms = {
+        farTexture: uniformLocation(combineProgram, 'farTexture'), volumeTexture: uniformLocation(combineProgram, 'volumeTexture'),
+      };
+      const blurUniforms = {
+        source: uniformLocation(blurProgram, 'source'), texel: uniformLocation(blurProgram, 'texel'),
+        direction: uniformLocation(blurProgram, 'direction'), threshold: uniformLocation(blurProgram, 'threshold'),
+      };
+      const finalUniforms = {
+        sceneTexture: uniformLocation(finalProgram, 'sceneTexture'), bloomTexture: uniformLocation(finalProgram, 'bloomTexture'),
+        exposure: uniformLocation(finalProgram, 'exposure'), resolution: uniformLocation(finalProgram, 'resolution'),
+      };
+
+      const presets = {
+        core: { yaw: 0.0, pitch: 0.015, roll: -0.34, fov: 69, volume: 0.20, dust: 0.14, exposure: 0.78 },
+        rift: { yaw: 0.54, pitch: -0.025, roll: 0.22, fov: 62, volume: 0.19, dust: 0.48, exposure: 0.76 },
+        deep: { yaw: 2.18, pitch: 0.25, roll: -0.08, fov: 76, volume: 0.10, dust: 0.18, exposure: 0.88 },
+      };
+      let activeView = 'core';
+      let view = { ...presets.core };
+      const setView = (name) => {
+        activeView = presets[name] ? name : 'core';
+        view = { ...presets[activeView] };
+        document.querySelectorAll('[data-view]').forEach((button) => {
+          button.classList.toggle('active', button.dataset.view === activeView);
+        });
+        const url = new URL(location.href);
+        url.searchParams.set('view', activeView);
+        history.replaceState(null, '', url);
+      };
+      document.querySelectorAll('[data-view]').forEach((button) => {
+        button.addEventListener('click', () => setView(button.dataset.view));
+      });
+
+      let dragging = false;
+      let lastPointer = [0, 0];
+      const pointer = [0, 0];
+      canvas.addEventListener('pointerdown', (event) => {
+        dragging = true;
+        lastPointer = [event.clientX, event.clientY];
+        canvas.setPointerCapture(event.pointerId);
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        pointer[0] = event.clientX / innerWidth * 2 - 1;
+        pointer[1] = 1 - event.clientY / innerHeight * 2;
+        if (!dragging) return;
+        view.yaw -= (event.clientX - lastPointer[0]) * 0.0022;
+        view.pitch = Math.max(-1.18, Math.min(1.18, view.pitch + (event.clientY - lastPointer[1]) * 0.0022));
+        lastPointer = [event.clientX, event.clientY];
+      });
+      canvas.addEventListener('pointerup', () => { dragging = false; });
+      canvas.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        view.fov = Math.max(48, Math.min(88, view.fov + Math.sign(event.deltaY) * 2));
+      }, { passive: false });
+
+      const setCommon = (uniforms, targetResolution) => {
+        gl.uniform2f(uniforms.resolution, targetResolution[0], targetResolution[1]);
+        gl.uniform3f(uniforms.orientation, view.yaw, view.pitch, view.roll);
+        gl.uniform1f(uniforms.fov, view.fov);
+      };
+      const blur = (sourceTarget, destination, direction, threshold) => {
+        gl.useProgram(blurProgram);
+        bind(sourceTarget.color, 0);
+        gl.uniform1i(blurUniforms.source, 0);
+        gl.uniform2f(blurUniforms.texel, 1 / sourceTarget.width, 1 / sourceTarget.height);
+        gl.uniform2f(blurUniforms.direction, direction[0], direction[1]);
+        gl.uniform1f(blurUniforms.threshold, threshold);
+        draw(destination);
+      };
+
+      const renderCosmos = (milliseconds) => {
+        resize();
+        if (!skyReady) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, canvas.width, canvas.height);
+          gl.clearColor(0, 0, 0, 1);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          requestAnimationFrame(renderCosmos);
+          return;
+        }
+        const seconds = milliseconds * 0.001;
+
+        gl.useProgram(farProgram);
+        bind(skyTexture, 0);
+        gl.uniform1i(farUniforms.skyTexture, 0);
+        setCommon(farUniforms, [farTarget.width, farTarget.height]);
+        draw(farTarget);
+
+        gl.useProgram(volumeProgram);
+        bind(skyTexture, 0);
+        gl.uniform1i(volumeUniforms.skyTexture, 0);
+        setCommon(volumeUniforms, [volumeTarget.width, volumeTarget.height]);
+        gl.uniform1f(volumeUniforms.time, seconds);
+        gl.uniform1f(volumeUniforms.volumeStrength, view.volume);
+        gl.uniform1f(volumeUniforms.dustStrength, view.dust);
+        gl.uniform2f(volumeUniforms.parallax, pointer[0] * 0.045, pointer[1] * 0.045);
+        draw(volumeTarget);
+
+        gl.useProgram(combineProgram);
+        bind(farTarget.color, 0);
+        bind(volumeTarget.color, 1);
+        gl.uniform1i(combineUniforms.farTexture, 0);
+        gl.uniform1i(combineUniforms.volumeTexture, 1);
+        draw(sceneTarget);
+
+        blur(sceneTarget, bloomA, [1.0, 0.0], 0.80);
+        blur(bloomA, bloomB, [0.0, 1.0], 0.0);
+        blur(bloomB, bloomA, [2.5, 0.0], 0.0);
+        blur(bloomA, bloomB, [0.0, 2.5], 0.0);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.useProgram(finalProgram);
+        bind(sceneTarget.color, 0);
+        bind(bloomB.color, 1);
+        gl.uniform1i(finalUniforms.sceneTexture, 0);
+        gl.uniform1i(finalUniforms.bloomTexture, 1);
+        gl.uniform1f(finalUniforms.exposure, view.exposure);
+        gl.uniform2f(finalUniforms.resolution, canvas.width, canvas.height);
+        draw(null);
+
+        requestAnimationFrame(renderCosmos);
+      };
+
+      setView(new URLSearchParams(location.search).get('view') || 'core');
+      requestAnimationFrame(renderCosmos);
+      window.renderCosmos = renderCosmos;
+    })();
+  </script>
+</body>
+</html>
