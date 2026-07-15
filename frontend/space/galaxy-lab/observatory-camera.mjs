@@ -1,15 +1,19 @@
 const DEG = Math.PI / 180;
 
 export const OBSERVATORY_LIMITS = Object.freeze({
-  yaw: Object.freeze([-24 * DEG, 24 * DEG]),
-  pitch: Object.freeze([-12 * DEG, 14 * DEG]),
+  yaw: Object.freeze([-32 * DEG, 32 * DEG]),
+  pitch: Object.freeze([-16 * DEG, 18 * DEG]),
   distance: Object.freeze([8.6, 11.8]),
 });
 
-const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 10.0, focus: 0.28 });
+const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 10.0 });
+const CAMERA_TARGET = Object.freeze([0, 0, -0.20]);
 const BOSS_WORLD = Object.freeze([3.92, 0.02, -0.10]);
 const BOSS_WORLD_RADIUS = 1.44;
 const FOV = 42 * DEG;
+const BOSS_DEFAULT_INCLINATION = 20.2 * DEG;
+const BOSS_DEFAULT_RADIUS_INDEX = 620;
+const BOSS_COMPOSITE_SCALE = 1.58;
 
 const SYSTEMS = Object.freeze([
   Object.freeze({ center: [-3.30, -0.78, 1.22], rotation: [-10, -7, 8], energy: 1.00, seed: 1.3 }),
@@ -62,16 +66,22 @@ function rotatePoint(point, degrees) {
 
 function cameraBasis(state) {
   const cosPitch = Math.cos(state.pitch);
-  const position = [
+  const position = add(CAMERA_TARGET, [
     Math.sin(state.yaw) * cosPitch * state.distance,
     Math.sin(state.pitch) * state.distance,
     Math.cos(state.yaw) * cosPitch * state.distance,
-  ];
-  const forward = normalize(multiply(position, -1));
+  ]);
+  const forward = normalize(subtract(CAMERA_TARGET, position));
   const right = normalize(cross(forward, [0, 1, 0]));
   const up = normalize(cross(right, forward));
   return { position, forward, right, up };
 }
+
+const DEFAULT_BASIS = cameraBasis(DEFAULT_STATE);
+const DEFAULT_BOSS_OFFSET = subtract(DEFAULT_BASIS.position, BOSS_WORLD);
+const DEFAULT_BOSS_DISTANCE = length(DEFAULT_BOSS_OFFSET);
+const DEFAULT_BOSS_AZIMUTH = Math.atan2(DEFAULT_BOSS_OFFSET[0], DEFAULT_BOSS_OFFSET[2]);
+const DEFAULT_BOSS_ELEVATION = Math.asin(DEFAULT_BOSS_OFFSET[1] / DEFAULT_BOSS_DISTANCE);
 
 function projectPoint(point, basis) {
   const relative = subtract(point, basis.position);
@@ -103,7 +113,10 @@ export function createObservatoryCamera() {
       target.pitch = clamp(target.pitch + deltaY * scale, ...OBSERVATORY_LIMITS.pitch);
     },
     dolly(deltaY) {
-      target.focus = clamp(target.focus - deltaY * 0.00072, 0, 1);
+      target.distance = clamp(
+        target.distance + deltaY * 0.0024,
+        ...OBSERVATORY_LIMITS.distance,
+      );
     },
     reset(immediate = false) {
       Object.assign(target, DEFAULT_STATE);
@@ -116,7 +129,6 @@ export function createObservatoryCamera() {
       current.yaw += (target.yaw - current.yaw) * smoothing;
       current.pitch += (target.pitch - current.pitch) * smoothing;
       current.distance += (target.distance - current.distance) * smoothing;
-      current.focus += (target.focus - current.focus) * smoothing;
       return current;
     },
     snapshot() {
@@ -124,7 +136,6 @@ export function createObservatoryCamera() {
         yaw: Number((current.yaw / DEG).toFixed(2)),
         pitch: Number((current.pitch / DEG).toFixed(2)),
         distance: Number(current.distance.toFixed(2)),
-        focus: Number(current.focus.toFixed(3)),
       };
     },
   };
@@ -135,21 +146,8 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
   const planets = [];
   const routes = [];
   const systems = [];
-  const focus = clamp(camera.current.focus ?? DEFAULT_STATE.focus, 0, 1);
   const bossProjection = projectPoint(BOSS_WORLD, basis);
-  const baseBossX = aspect * (0.76 + focus * 0.04);
-  const bossCenter = [
-    clamp(
-      baseBossX + (bossProjection.point[0] - 1.01) * 0.22,
-      aspect * 0.72,
-      aspect * 0.90,
-    ),
-    clamp(bossProjection.point[1] * 0.44, -0.18, 0.22),
-  ];
-  const bossOffset = [
-    bossCenter[0] - bossProjection.point[0],
-    bossCenter[1] - bossProjection.point[1],
-  ];
+  const bossCenter = bossProjection.point;
 
   SYSTEMS.forEach((system, systemIndex) => {
     const worldPlanets = LOCAL_PLANETS.map((planet) => add(
@@ -205,25 +203,34 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
       1,
       system.energy,
     );
-    terminalRoute.b[0] += bossOffset[0] * 0.18;
-    terminalRoute.b[1] += bossOffset[1] * 0.18;
-    terminalRoute.c[0] += bossOffset[0] * 0.68;
-    terminalRoute.c[1] += bossOffset[1] * 0.68;
-    terminalRoute.d[0] += bossOffset[0];
-    terminalRoute.d[1] += bossOffset[1];
     routes.push(terminalRoute);
   });
 
-  const bossScale = 1.42 + focus * 0.58;
-  const viewAzimuth = clamp(camera.current.yaw * 0.375, -9 * DEG, 9 * DEG);
+  const bossOffset = subtract(basis.position, BOSS_WORLD);
+  const bossDistance = length(bossOffset);
+  const bossAzimuth = Math.atan2(bossOffset[0], bossOffset[2]);
+  const bossElevation = Math.asin(bossOffset[1] / Math.max(bossDistance, 1e-6));
+  const viewAzimuth = clamp(bossAzimuth - DEFAULT_BOSS_AZIMUTH, -34 * DEG, 34 * DEG);
   const viewInclination = clamp(
-    20.2 * DEG + camera.current.yaw * 0.22 + camera.current.pitch * 0.25,
-    14 * DEG,
-    27.3 * DEG,
+    BOSS_DEFAULT_INCLINATION + bossElevation - DEFAULT_BOSS_ELEVATION,
+    3 * DEG,
+    38 * DEG,
   );
-  const observerRadiusIndex = Math.round(620 - (focus - DEFAULT_STATE.focus) * 42);
+  const observerRadiusIndex = Math.round(clamp(
+    BOSS_DEFAULT_RADIUS_INDEX * Math.sqrt(bossDistance / DEFAULT_BOSS_DISTANCE),
+    0,
+    1000,
+  ));
+  const bossAngularScale = DEFAULT_BOSS_DISTANCE / bossDistance;
+  const bossScale = BOSS_COMPOSITE_SCALE * bossAngularScale;
 
   return {
+    camera: {
+      position: [...basis.position],
+      target: [...CAMERA_TARGET],
+      forward: [...basis.forward],
+      fov: FOV,
+    },
     planets,
     routes,
     systems,
@@ -231,8 +238,9 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
       center: bossCenter,
       projectedCenter: bossProjection.point,
       scale: bossScale,
+      compositeScale: BOSS_COMPOSITE_SCALE,
       depth: bossProjection.depth,
-      focus,
+      distance: bossDistance,
       viewAzimuth,
       viewInclination,
       observerRadiusIndex,

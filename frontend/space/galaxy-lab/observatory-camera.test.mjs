@@ -9,80 +9,53 @@ import {
 
 const DEG = Math.PI / 180;
 
-test('boundary Boss remains dominant and synchronized across the camera envelope', () => {
-  assert.equal(Math.round(OBSERVATORY_LIMITS.yaw[1] / DEG), 24);
-  assert.equal(Math.round(OBSERVATORY_LIMITS.pitch[0] / DEG), -12);
-  assert.equal(Math.round(OBSERVATORY_LIMITS.pitch[1] / DEG), 14);
+test('camera uses expanded limits and a real dolly', () => {
+  assert.equal(Math.round(OBSERVATORY_LIMITS.yaw[0] / DEG), -32);
+  assert.equal(Math.round(OBSERVATORY_LIMITS.yaw[1] / DEG), 32);
+  assert.equal(Math.round(OBSERVATORY_LIMITS.pitch[0] / DEG), -16);
+  assert.equal(Math.round(OBSERVATORY_LIMITS.pitch[1] / DEG), 18);
 
   const camera = createObservatoryCamera();
-  const states = [
-    [0, 0, 10],
-    [OBSERVATORY_LIMITS.yaw[0], OBSERVATORY_LIMITS.pitch[0], 10],
-    [OBSERVATORY_LIMITS.yaw[1], OBSERVATORY_LIMITS.pitch[1], 10],
-  ];
-
-  for (const [yaw, pitch, distance] of states) {
-    Object.assign(camera.current, { yaw, pitch, distance });
-    const frame = createSceneFrame(camera, 16 / 9);
-    const screenRatio = 0.5 + frame.boss.center[0] / (2 * 16 / 9);
-    assert.ok(screenRatio >= 0.86 && screenRatio <= 0.95);
-    assert.ok(frame.boss.scale >= 1.42 && frame.boss.scale <= 1.72);
-
-    const terminalRoutes = frame.routes.filter((route) => route.terminal === 1);
-    assert.equal(terminalRoutes.length, 3);
-    for (const route of terminalRoutes) {
-      const terminalDistance = Math.hypot(
-        route.d[0] - frame.boss.center[0],
-        route.d[1] - frame.boss.center[1],
-      );
-      assert.ok(terminalDistance < 0.55);
-    }
-  }
-});
-
-test('wheel advances Boss focus without changing planet projection scale', () => {
-  const camera = createObservatoryCamera();
-  const initialDistance = camera.target.distance;
-  const farFrame = createSceneFrame(camera, 16 / 9);
-
   camera.dolly(-900);
 
-  assert.equal(camera.target.distance, initialDistance);
-  assert.ok(camera.target.focus > camera.current.focus);
+  assert.equal(camera.target.distance, OBSERVATORY_LIMITS.distance[0]);
+  assert.equal('focus' in camera.target, false);
+});
 
-  camera.current.focus = 1;
-  const closeFrame = createSceneFrame(camera, 16 / 9);
-  assert.equal(closeFrame.boss.scale, 2);
-  assert.deepEqual(
-    closeFrame.planets.map((planet) => planet.radius),
-    farFrame.planets.map((planet) => planet.radius),
+test('Boss and planets share one projection', () => {
+  const camera = createObservatoryCamera();
+  Object.assign(camera.current, { yaw: 18 * DEG, pitch: 8 * DEG, distance: 9.2 });
+
+  const frame = createSceneFrame(camera, 16 / 9);
+
+  assert.deepEqual(frame.boss.center, frame.boss.projectedCenter);
+  assert.equal(frame.planets.length, 12);
+  assert.equal(frame.routes.filter((route) => route.terminal === 1).length, 3);
+});
+
+test('dolly changes the whole fixed scene', () => {
+  const camera = createObservatoryCamera();
+  const far = createSceneFrame(camera, 16 / 9);
+
+  camera.current.distance = OBSERVATORY_LIMITS.distance[0];
+  const near = createSceneFrame(camera, 16 / 9);
+
+  assert.notDeepEqual(
+    near.planets.map((planet) => planet.radius),
+    far.planets.map((planet) => planet.radius),
   );
+  assert.ok(near.boss.distance < far.boss.distance);
+  assert.ok(near.boss.lensRadius > far.boss.lensRadius);
 });
 
-test('fan angles map into the safe real Boss observer envelope', () => {
+test('Boss observer comes from the shared camera position', () => {
   const camera = createObservatoryCamera();
-  Object.assign(camera.current, {
-    yaw: OBSERVATORY_LIMITS.yaw[1],
-    pitch: OBSERVATORY_LIMITS.pitch[1],
-  });
+  const base = createSceneFrame(camera, 16 / 9);
 
-  const frame = createSceneFrame(camera, 16 / 9);
+  Object.assign(camera.current, { yaw: 32 * DEG, pitch: 18 * DEG });
+  const edge = createSceneFrame(camera, 16 / 9);
 
-  assert.equal(Math.round(frame.boss.viewAzimuth / DEG), 9);
-  assert.ok(frame.boss.viewInclination / DEG <= 27.3);
-  assert.ok(frame.boss.viewInclination / DEG >= 27.0);
-});
-
-test('horizontal observation creates a visible but bounded disc inclination change', () => {
-  const camera = createObservatoryCamera();
-  Object.assign(camera.current, {
-    yaw: OBSERVATORY_LIMITS.yaw[1],
-    pitch: 0,
-  });
-
-  const frame = createSceneFrame(camera, 16 / 9);
-  const inclinationDegrees = frame.boss.viewInclination / DEG;
-
-  assert.ok(inclinationDegrees >= 25.3);
-  assert.ok(inclinationDegrees <= 25.6);
+  assert.ok(Math.abs(edge.boss.viewAzimuth - base.boss.viewAzimuth) > 20 * DEG);
+  assert.ok(edge.boss.viewInclination > base.boss.viewInclination + 10 * DEG);
+  assert.ok(edge.boss.observerRadiusIndex >= 0 && edge.boss.observerRadiusIndex <= 1000);
 });
