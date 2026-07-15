@@ -118,6 +118,18 @@ export function createObservatoryCamera() {
         ...OBSERVATORY_LIMITS.distance,
       );
     },
+    setState(next = {}, immediate = false) {
+      if (Number.isFinite(next.yaw)) {
+        target.yaw = clamp(next.yaw, ...OBSERVATORY_LIMITS.yaw);
+      }
+      if (Number.isFinite(next.pitch)) {
+        target.pitch = clamp(next.pitch, ...OBSERVATORY_LIMITS.pitch);
+      }
+      if (Number.isFinite(next.distance)) {
+        target.distance = clamp(next.distance, ...OBSERVATORY_LIMITS.distance);
+      }
+      if (immediate) Object.assign(current, target);
+    },
     reset(immediate = false) {
       Object.assign(target, DEFAULT_STATE);
       if (immediate) Object.assign(current, target);

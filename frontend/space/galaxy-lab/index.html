@@ -560,6 +560,13 @@
 
       window.observatoryCamera = {
         reset: () => observatory.reset(true),
+        setImmediate: ({ yaw = 0, pitch = 0.5, distance = 10 } = {}) => {
+          observatory.setState({
+            yaw: yaw * Math.PI / 180,
+            pitch: pitch * Math.PI / 180,
+            distance,
+          }, true);
+        },
         snapshot: () => ({ ...observatory.snapshot(), boss: sceneFrame.boss.center.map((value) => Number(value.toFixed(4))) }),
       };
 
@@ -570,6 +577,7 @@
           const element = doc.querySelector(selector);
           if (element) element.style.display = 'none';
         });
+        bossFrame.contentWindow?.bossObservatory?.setRenderScale?.(1.35);
       });
 
       const renderEmbeddedLayers = (milliseconds) => {

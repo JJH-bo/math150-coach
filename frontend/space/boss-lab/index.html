@@ -2583,11 +2583,14 @@ class CameraView {
     this.model = model;
     this.rootElement = rootElement;
     this.devicePixelRatio = this.getDevicePixelRatio();
+    this.embeddedRenderScale = 1;
     this.canvas = rootElement.querySelector('#camera_view');
     this.canvas.style.width = `${rootElement.clientWidth}px`;
     this.canvas.style.height = `${rootElement.clientHeight}px`;
-    this.canvas.width = rootElement.clientWidth * this.devicePixelRatio;
-    this.canvas.height = rootElement.clientHeight * this.devicePixelRatio;
+    this.canvas.width = rootElement.clientWidth * this.devicePixelRatio *
+        this.embeddedRenderScale;
+    this.canvas.height = rootElement.clientHeight * this.devicePixelRatio *
+        this.embeddedRenderScale;
     this.errorPanel = rootElement.querySelector('#cv_error_panel');
     this.errorPanelShown = false;
 
@@ -2808,9 +2811,18 @@ class CameraView {
     this.devicePixelRatio = this.getDevicePixelRatio();
     this.canvas.style.width = `${rootElement.clientWidth}px`;
     this.canvas.style.height = `${rootElement.clientHeight}px`;
-    this.canvas.width = rootElement.clientWidth * this.devicePixelRatio;
-    this.canvas.height = rootElement.clientHeight * this.devicePixelRatio;
+    this.canvas.width = rootElement.clientWidth * this.devicePixelRatio *
+        this.embeddedRenderScale;
+    this.canvas.height = rootElement.clientHeight * this.devicePixelRatio *
+        this.embeddedRenderScale;
     this.bloom.resize(this.canvas.width, this.canvas.height);
+  }
+
+  setEmbeddedRenderScale(value) {
+    const next = Math.max(1, Math.min(1.5, Number(value) || 1));
+    if (Math.abs(next - this.embeddedRenderScale) < 0.01) return;
+    this.embeddedRenderScale = next;
+    this.onResize();
   }
 
   getDevicePixelRatio() {
@@ -4897,10 +4909,12 @@ Shortcut: CTRL + mouse drag">
             inclination = 20.2 * BOSS_DEG,
             radiusIndex = 620,
           } = {}) {
-            const azimuthStep = Math.max(-450, Math.min(450,
+            const azimuthStep = Math.max(-1700, Math.min(1700,
               Math.round(azimuth / BOSS_DEG * 50)));
+            const safeInclination = Math.max(3 * BOSS_DEG, Math.min(38 * BOSS_DEG,
+              inclination));
             const inclinationIndex = Math.max(0, Math.min(1799,
-              Math.round((inclination / Math.PI + 0.5) * 1799)));
+              Math.round((safeInclination / Math.PI + 0.5) * 1799)));
             const safeRadiusIndex = Math.max(0, Math.min(1000, Math.round(radiusIndex)));
             const stateKey = `${azimuthStep}:${inclinationIndex}:${safeRadiusIndex}`;
             if (stateKey === lastEmbeddedObserverState) return;
@@ -4910,6 +4924,9 @@ Shortcut: CTRL + mouse drag">
             model.orbitInclination.index = inclinationIndex;
             model.startRadius.index = safeRadiusIndex;
             model.updateDerivedValues();
+          },
+          setRenderScale(value) {
+            window.bossCameraView?.setEmbeddedRenderScale(value);
           },
         };
         window.setTimeout(() => {

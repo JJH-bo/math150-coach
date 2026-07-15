@@ -23,6 +23,17 @@ test('camera uses expanded limits and a real dolly', () => {
   assert.equal('focus' in camera.target, false);
 });
 
+test('camera can apply an exact clamped pose for boundary inspection and reset', () => {
+  const camera = createObservatoryCamera();
+
+  camera.setState({ yaw: 80 * DEG, pitch: -50 * DEG, distance: 3 }, true);
+
+  assert.equal(camera.current.yaw, OBSERVATORY_LIMITS.yaw[1]);
+  assert.equal(camera.current.pitch, OBSERVATORY_LIMITS.pitch[0]);
+  assert.equal(camera.current.distance, OBSERVATORY_LIMITS.distance[0]);
+  assert.deepEqual(camera.current, camera.target);
+});
+
 test('Boss and planets share one projection', () => {
   const camera = createObservatoryCamera();
   Object.assign(camera.current, { yaw: 18 * DEG, pitch: 8 * DEG, distance: 9.2 });
@@ -68,4 +79,15 @@ test('galaxy compositor has no Boss-only focus camera path', () => {
   assert.equal(galaxySource.includes('Boss焦点'), false);
   assert.equal(galaxySource.includes('sceneFrame.boss.observerRadiusIndex'), true);
   assert.equal(galaxySource.includes('sceneFrame.boss.compositeScale'), true);
+  assert.equal(galaxySource.includes('setImmediate:'), true);
+});
+
+test('embedded Boss supports the expanded observer and high-resolution composite', () => {
+  const galaxySource = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
+  const bossSource = readFileSync(new URL('../boss-lab/index.html', import.meta.url), 'utf8');
+
+  assert.equal(bossSource.includes('setEmbeddedRenderScale(value)'), true);
+  assert.equal(bossSource.includes('setRenderScale(value)'), true);
+  assert.equal(bossSource.includes('Math.max(-450'), false);
+  assert.equal(galaxySource.includes('setRenderScale?.(1.35)'), true);
 });
