@@ -134,9 +134,9 @@
   <div class="hud">
     <div><strong>Chapter Observatory / Fan Field</strong><br><span>3 core systems · 12 living stars · 15 field paths · 1 relativistic Boss</span></div>
   </div>
-  <div class="legend"><b>近景模块 · 中景模块 · 远景模块</b><br>拖动有限轨道观察 · 滚轮移动观察距离 · 双击复位</div>
+  <div class="legend"><b>固定空间 · 有限观察</b><br>拖动平移视野 · 滚轮统一缩放 · 双击复位</div>
 
-  <div class="camera-state" id="camera-state">Bounded observatory · Drag · Wheel · Double-click reset</div>
+  <div class="camera-state" id="camera-state">Fixed-space observatory · Drag · Wheel · Double-click reset</div>
 
   <script type="x-shader/x-vertex" id="fullscreen-vertex">
     #version 300 es
@@ -541,32 +541,27 @@
         observatory.update(milliseconds);
         sceneFrame = createSceneFrame(observatory, innerWidth / Math.max(innerHeight, 1));
         const snapshot = observatory.snapshot();
-        cosmosFrame.contentWindow?.cosmosCamera?.setObservatory?.({
-          yaw: observatory.current.yaw,
-          pitch: observatory.current.pitch,
-          distance: observatory.current.distance,
+        cosmosFrame.contentWindow?.cosmosCamera?.setViewportTransform?.({
+          panX: observatory.current.panX,
+          panY: observatory.current.panY,
+          zoom: observatory.current.zoom,
         });
         cosmosFrame.contentWindow?.cosmosCamera?.setGravityLens?.({
           center: sceneFrame.boss.center,
           radius: sceneFrame.boss.lensRadius,
           strength: sceneFrame.boss.lensStrength,
         });
-        const active = Math.abs(snapshot.yaw) > 0.08 || Math.abs(snapshot.pitch - 0.5) > 0.08 ||
-          Math.abs(snapshot.distance - 11.8) > 0.01;
+        const active = Math.abs(snapshot.panX) > 0.002 || Math.abs(snapshot.panY) > 0.002 ||
+          Math.abs(snapshot.zoom - 1) > 0.002;
         cameraState.classList.toggle('active', active);
         cameraState.textContent =
-          `Observatory · yaw ${snapshot.yaw.toFixed(1)}° · pitch ${snapshot.pitch.toFixed(1)}° · distance ${snapshot.distance.toFixed(2)}`;
+          `Fixed space · X ${snapshot.panX.toFixed(3)} · Y ${snapshot.panY.toFixed(3)} · zoom ${snapshot.zoom.toFixed(3)}`;
       };
 
       window.observatoryCamera = {
         reset: () => observatory.reset(true),
-        setImmediate: ({ yaw = 0, pitch = 0.5, distance = 11.8 } = {}) => {
-          observatory.setState({
-            yaw: yaw * Math.PI / 180,
-            pitch: pitch * Math.PI / 180,
-            distance,
-          }, true);
-        },
+        setImmediate: ({ panX = 0, panY = 0, zoom = 1 } = {}) =>
+          observatory.setState({ panX, panY, zoom }, true),
         snapshot: () => ({ ...observatory.snapshot(), boss: sceneFrame.boss.center.map((value) => Number(value.toFixed(4))) }),
       };
 
@@ -731,7 +726,7 @@
         const deltaX = event.clientX - interaction.lastPointer[0];
         const deltaY = event.clientY - interaction.lastPointer[1];
         interaction.lastPointer = [event.clientX, event.clientY];
-        observatory.rotate(deltaX, deltaY, innerHeight);
+        observatory.pan(deltaX, deltaY, innerHeight);
       });
       const endDrag = (event) => {
         if (!interaction.dragging) return;
@@ -747,7 +742,7 @@
       window.addEventListener('wheel', (event) => {
         if (targetsControls(event)) return;
         event.preventDefault();
-        observatory.dolly(event.deltaY);
+        observatory.zoom(event.deltaY);
       }, { passive: false });
       document.body.addEventListener('dblclick', (event) => {
         if (targetsControls(event)) return;
