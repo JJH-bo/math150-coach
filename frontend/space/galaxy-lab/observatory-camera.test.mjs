@@ -41,6 +41,8 @@ test('camera uses expanded limits and a real dolly', () => {
   assert.equal(Math.round(OBSERVATORY_LIMITS.yaw[1] / DEG), 32);
   assert.equal(Math.round(OBSERVATORY_LIMITS.pitch[0] / DEG), -16);
   assert.equal(Math.round(OBSERVATORY_LIMITS.pitch[1] / DEG), 18);
+  assert.equal(OBSERVATORY_LIMITS.distance[0], 8.6);
+  assert.equal(OBSERVATORY_LIMITS.distance[1], 15.6);
 
   const camera = createObservatoryCamera();
   camera.dolly(-900);
@@ -119,13 +121,35 @@ test('all systems reveal curved fixed-world motion and internal depth', () => {
   }
 });
 
+test('far dolly fits every complete learning planet inside a three percent margin', () => {
+  const aspect = 16 / 9;
+  const far = frameAt({ distance: OBSERVATORY_LIMITS.distance[1] });
+  const horizontalLimit = aspect * 0.94;
+  const verticalLimit = 0.94;
+
+  far.planets.forEach((planet, planetIndex) => {
+    assert.ok(planet.center[0] - planet.radius >= -horizontalLimit, `planet ${planetIndex} left`);
+    assert.ok(planet.center[0] + planet.radius <= horizontalLimit, `planet ${planetIndex} right`);
+    assert.ok(planet.center[1] - planet.radius >= -verticalLimit, `planet ${planetIndex} bottom`);
+    assert.ok(planet.center[1] + planet.radius <= verticalLimit, `planet ${planetIndex} top`);
+  });
+});
+
+test('dolly changes the Boss projected composite scale', () => {
+  const near = frameAt({ distance: OBSERVATORY_LIMITS.distance[0] });
+  const far = frameAt({ distance: OBSERVATORY_LIMITS.distance[1] });
+
+  assert.ok(near.boss.scale > far.boss.scale * 1.35);
+});
+
 test('galaxy compositor has no Boss-only focus camera path', () => {
   const galaxySource = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
 
   assert.equal(galaxySource.includes('snapshot.focus'), false);
   assert.equal(galaxySource.includes('Boss焦点'), false);
   assert.equal(galaxySource.includes('sceneFrame.boss.observerRadiusIndex'), true);
-  assert.equal(galaxySource.includes('sceneFrame.boss.compositeScale'), true);
+  assert.equal(galaxySource.includes('sceneFrame.boss.compositeScale'), false);
+  assert.equal(galaxySource.includes('sceneFrame.boss.scale'), true);
   assert.equal(galaxySource.includes('setImmediate:'), true);
 });
 

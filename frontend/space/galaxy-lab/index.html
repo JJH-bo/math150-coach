@@ -602,10 +602,10 @@
           if (source) {
             bossContext.clearRect(0, 0, width, height);
             const destinationWidth = Math.round(
-              bossFrame.clientWidth * dpr * sceneFrame.boss.compositeScale
+              bossFrame.clientWidth * dpr * sceneFrame.boss.scale
             );
             const destinationHeight = Math.round(
-              bossFrame.clientHeight * dpr * sceneFrame.boss.compositeScale
+              bossFrame.clientHeight * dpr * sceneFrame.boss.scale
             );
             const targetX = (innerWidth * 0.5 + sceneFrame.boss.center[0] * innerHeight * 0.5) * dpr;
             const targetY = (innerHeight * 0.5 - sceneFrame.boss.center[1] * innerHeight * 0.5) * dpr;

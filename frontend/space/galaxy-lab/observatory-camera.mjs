@@ -3,7 +3,7 @@ const DEG = Math.PI / 180;
 export const OBSERVATORY_LIMITS = Object.freeze({
   yaw: Object.freeze([-32 * DEG, 32 * DEG]),
   pitch: Object.freeze([-16 * DEG, 18 * DEG]),
-  distance: Object.freeze([8.6, 11.8]),
+  distance: Object.freeze([8.6, 15.6]),
 });
 
 const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 10.0 });
@@ -254,7 +254,6 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
       center: bossCenter,
       projectedCenter: bossProjection.point,
       scale: bossScale,
-      compositeScale: BOSS_COMPOSITE_SCALE,
       depth: bossProjection.depth,
       distance: bossDistance,
       viewAzimuth,
