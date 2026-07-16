@@ -1,8 +1,8 @@
 const DEG = Math.PI / 180;
 
 export const OBSERVATORY_LIMITS = Object.freeze({
-  yaw: Object.freeze([-32 * DEG, 32 * DEG]),
-  pitch: Object.freeze([-16 * DEG, 18 * DEG]),
+  yaw: Object.freeze([-42 * DEG, 42 * DEG]),
+  pitch: Object.freeze([-24 * DEG, 26 * DEG]),
   distance: Object.freeze([8.6, 15.6]),
 });
 
@@ -66,12 +66,12 @@ function rotatePoint(point, degrees) {
 
 function cameraBasis(state) {
   const cosPitch = Math.cos(state.pitch);
-  const position = add(CAMERA_TARGET, [
-    Math.sin(state.yaw) * cosPitch * state.distance,
-    Math.sin(state.pitch) * state.distance,
-    Math.cos(state.yaw) * cosPitch * state.distance,
+  const position = [CAMERA_TARGET[0], 0.10, CAMERA_TARGET[2] + state.distance];
+  const forward = normalize([
+    -Math.sin(state.yaw) * cosPitch,
+    -Math.sin(state.pitch),
+    -Math.cos(state.yaw) * cosPitch,
   ]);
-  const forward = normalize(subtract(CAMERA_TARGET, position));
   const right = normalize(cross(forward, [0, 1, 0]));
   const up = normalize(cross(right, forward));
   return { position, forward, right, up };
@@ -243,7 +243,7 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
   return {
     camera: {
       position: [...basis.position],
-      target: [...CAMERA_TARGET],
+      target: add(basis.position, basis.forward),
       forward: [...basis.forward],
       fov: FOV,
     },
