@@ -164,21 +164,26 @@ export function createObservatoryCamera() {
   };
 }
 
-export function createSceneFrame(camera, aspect = 16 / 9) {
+export function createSceneFrame(camera, aspect = 16 / 9, sceneConfig = null) {
   void aspect;
   const basis = cameraBasis(camera.current);
   const planets = [];
   const routes = [];
   const systems = [];
   const bossProjection = projectPoint(BOSS_WORLD, basis);
+  const sceneSystems = Array.isArray(sceneConfig?.systems) ? sceneConfig.systems : SYSTEMS;
+  const bossMetadata = sceneConfig?.boss || {};
 
-  SYSTEMS.forEach((system, systemIndex) => {
-    const worldPlanets = LOCAL_PLANETS.map((planet) => {
+  sceneSystems.forEach((system, systemIndex) => {
+    const localPlanets = Array.isArray(system.planets) ? system.planets : LOCAL_PLANETS;
+    const internalLinks = Array.isArray(system.internalLinks) ? system.internalLinks : INTERNAL_LINKS;
+    const worldPlanets = localPlanets.map((planet) => {
       const volumetricPoint = [planet.point[0], planet.point[1], planet.point[2] * system.depthScale];
       return add(system.center, rotatePoint(volumetricPoint, system.rotation));
     });
     const projectedCenter = projectPoint(system.center, basis);
     systems.push({
+      ...system,
       world: [...system.center],
       center: projectedCenter.point,
       radius: 1.18 * projectedCenter.scale,
@@ -186,10 +191,11 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
       depth: projectedCenter.depth,
     });
 
-    LOCAL_PLANETS.forEach((planet, planetIndex) => {
+    localPlanets.forEach((planet, planetIndex) => {
       const world = worldPlanets[planetIndex];
       const projected = projectPoint(world, basis);
       planets.push({
+        ...planet,
         world: [...world],
         center: projected.point,
         radius: planet.radius * projected.scale,
@@ -201,7 +207,7 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
     });
 
     const localUp = normalize(rotatePoint([0, 1, 0], system.rotation));
-    INTERNAL_LINKS.forEach(([fromIndex, toIndex, bend], linkIndex) => {
+    internalLinks.forEach(([fromIndex, toIndex, bend], linkIndex) => {
       const start = worldPlanets[fromIndex];
       const end = worldPlanets[toIndex];
       const chord = subtract(end, start);
@@ -213,7 +219,7 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
       ));
     });
 
-    const merge = worldPlanets[3];
+    const merge = worldPlanets[worldPlanets.length - 1];
     const towardBoss = normalize(subtract(BOSS_WORLD, merge));
     const endpoint = add(BOSS_WORLD, multiply(towardBoss, -BOSS_WORLD_RADIUS));
     const terminalLift = multiply(localUp, 0.34 - systemIndex * 0.11);
@@ -254,6 +260,7 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
     routes,
     systems,
     boss: {
+      ...bossMetadata,
       center: bossProjection.point,
       projectedCenter: bossProjection.point,
       scale: bossScale,

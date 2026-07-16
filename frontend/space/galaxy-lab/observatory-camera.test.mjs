@@ -71,6 +71,43 @@ test('all learning objects stay fixed in world space while projections change', 
   assert.ok(Math.abs(leftRatio - rightRatio) > 0.2, 'orbit must create real perspective, not rigid translation');
 });
 
+test('custom chapter scene projects five planets while preserving metadata and Boss optics', () => {
+  const camera = createObservatoryCamera();
+  const defaultFrame = createSceneFrame(camera, 16 / 9);
+  const planets = Array.from({ length: 5 }, (_, index) => ({
+    id: `chapter.planet_${index}`,
+    title: `Planet ${index}`,
+    point: [-0.9 + index * 0.45, (index % 2 ? 1 : -1) * 0.42, index * 0.03],
+    radius: 0.42 + index * 0.01,
+    heat: 0.5 + index * 0.08,
+    training: { stem: `Question ${index}` },
+  }));
+  const config = {
+    systems: [{
+      id: 'chapter.system',
+      title: 'Chapter System',
+      center: [-2.4, 0.2, 0.7],
+      rotation: [4, 12, -6],
+      depthScale: 2.1,
+      energy: 0.9,
+      seed: 3.2,
+      planets,
+      internalLinks: [[0, 1, 0.1], [0, 2, -0.1], [1, 3, 0.08], [2, 4, -0.08]],
+    }],
+    boss: { id: 'chapter.boss', title: 'Chapter Boss', training: { stem: 'Boss question' } },
+  };
+
+  const frame = createSceneFrame(camera, 16 / 9, config);
+
+  assert.equal(frame.planets.length, 5);
+  assert.deepEqual(frame.planets.map((planet) => planet.id), planets.map((planet) => planet.id));
+  assert.equal(frame.planets[0].training.stem, 'Question 0');
+  assert.equal(frame.systems[0].id, 'chapter.system');
+  assert.equal(frame.routes.length, 5);
+  assert.equal(frame.boss.id, 'chapter.boss');
+  assert.deepEqual(frame.boss.center, defaultFrame.boss.center);
+});
+
 test('wheel dolly changes only orbit radius and creates depth-dependent scale', () => {
   const near = frameAt({ radius: OBSERVATORY_LIMITS.radius[0] }).frame;
   const far = frameAt({ radius: OBSERVATORY_LIMITS.radius[1] }).frame;

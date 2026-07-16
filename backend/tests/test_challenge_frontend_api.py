@@ -503,3 +503,29 @@ def test_space_trainer_stellar_system_uses_filaments_instead_of_permanent_tunnel
     assert "createRapidTransitCorridor" not in script.text
     assert "new THREE.TubeGeometry" not in script.text
     assert "new THREE.TorusGeometry" not in script.text
+
+
+def test_galaxy_lab_exposes_infinite_series_sectors_and_training_transit() -> None:
+    client = TestClient(create_app("mixed"))
+
+    page = client.get("/trainer/space/galaxy-lab/")
+    data = client.get("/trainer/space/galaxy-lab/infinite-series-data.mjs")
+    scene = client.get("/trainer/space/galaxy-lab/infinite-series-scene.mjs")
+
+    assert page.status_code == 200
+    assert data.status_code == 200
+    assert scene.status_code == 200
+    assert "./infinite-series-data.mjs" in page.text
+    assert "./infinite-series-scene.mjs" in page.text
+    assert 'id="sector-navigation"' in page.text
+    assert 'id="system-label-layer"' in page.text
+    assert 'id="training-transit"' in page.text
+    assert 'id="training-observatory"' in page.text
+    assert 'id="training-observatory" role="dialog" aria-modal="true" aria-labelledby="training-title" aria-hidden="true"' in page.text
+    assert 'id="close-training"' in page.text
+    assert "pickSceneTarget" in page.text
+    assert "openTrainingTransit" in page.text
+    assert "renderTrainingStem" in page.text
+    assert '"systemCount": 10' in data.text
+    assert '"planetCount": 43' in data.text
+    assert '"bossCount": 1' in data.text
