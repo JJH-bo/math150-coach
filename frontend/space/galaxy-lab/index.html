@@ -552,7 +552,7 @@
           strength: sceneFrame.boss.lensStrength,
         });
         const active = Math.abs(snapshot.yaw) > 0.08 || Math.abs(snapshot.pitch - 0.5) > 0.08 ||
-          Math.abs(snapshot.distance - 10) > 0.01;
+          Math.abs(snapshot.distance - 11.8) > 0.01;
         cameraState.classList.toggle('active', active);
         cameraState.textContent =
           `Observatory · yaw ${snapshot.yaw.toFixed(1)}° · pitch ${snapshot.pitch.toFixed(1)}° · distance ${snapshot.distance.toFixed(2)}`;
@@ -560,7 +560,7 @@
 
       window.observatoryCamera = {
         reset: () => observatory.reset(true),
-        setImmediate: ({ yaw = 0, pitch = 0.5, distance = 10 } = {}) => {
+        setImmediate: ({ yaw = 0, pitch = 0.5, distance = 11.8 } = {}) => {
           observatory.setState({
             yaw: yaw * Math.PI / 180,
             pitch: pitch * Math.PI / 180,

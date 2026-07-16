@@ -36,6 +36,16 @@ const depthRadiusSpread = (frame, systemIndex) => {
   return Math.max(...radii) / Math.min(...radii) - 1;
 };
 
+const systemBounds = (frame, systemIndex) => {
+  const planets = systemPlanets(frame, systemIndex);
+  return {
+    left: Math.min(...planets.map((planet) => planet.center[0] - planet.radius)),
+    right: Math.max(...planets.map((planet) => planet.center[0] + planet.radius)),
+    bottom: Math.min(...planets.map((planet) => planet.center[1] - planet.radius)),
+    top: Math.max(...planets.map((planet) => planet.center[1] + planet.radius)),
+  };
+};
+
 test('camera uses expanded limits and a real dolly', () => {
   assert.equal(Math.round(OBSERVATORY_LIMITS.yaw[0] / DEG), -32);
   assert.equal(Math.round(OBSERVATORY_LIMITS.yaw[1] / DEG), 32);
@@ -45,7 +55,7 @@ test('camera uses expanded limits and a real dolly', () => {
   assert.equal(OBSERVATORY_LIMITS.distance[1], 15.6);
 
   const camera = createObservatoryCamera();
-  camera.dolly(-900);
+  camera.dolly(-2000);
 
   assert.equal(camera.target.distance, OBSERVATORY_LIMITS.distance[0]);
   assert.equal('focus' in camera.target, false);
@@ -132,6 +142,35 @@ test('lower-right system reverses horizontal travel around the default view', ()
   assert.ok(centerX < right.systems[systemIndex].center[0] - 0.02);
 });
 
+test('default narrow view keeps all three system envelopes visibly separate', () => {
+  const aspect = 900 / 817;
+  const camera = createObservatoryCamera();
+  const frame = createSceneFrame(camera, aspect);
+  const bounds = [0, 1, 2].map((systemIndex) => systemBounds(frame, systemIndex));
+
+  for (let first = 0; first < bounds.length; first += 1) {
+    for (let second = first + 1; second < bounds.length; second += 1) {
+      const a = bounds[first];
+      const b = bounds[second];
+      const horizontalGap = Math.max(b.left - a.right, a.left - b.right);
+      const verticalGap = Math.max(b.bottom - a.top, a.bottom - b.top);
+      assert.ok(
+        Math.max(horizontalGap, verticalGap) >= 0.09,
+        `systems ${first}/${second} gap ${Math.max(horizontalGap, verticalGap)}`,
+      );
+    }
+  }
+
+  const horizontalLimit = aspect * 0.94;
+  bounds.forEach((value, systemIndex) => {
+    assert.ok(value.left >= -horizontalLimit, `system ${systemIndex} left edge`);
+    assert.ok(value.right <= horizontalLimit, `system ${systemIndex} right edge`);
+    assert.ok(value.bottom >= -0.94, `system ${systemIndex} bottom edge`);
+    assert.ok(value.top <= 0.94, `system ${systemIndex} top edge`);
+  });
+  assert.equal(camera.current.distance, 11.8);
+});
+
 test('far dolly fits every complete learning planet inside a three percent margin', () => {
   const aspect = 16 / 9;
   const far = frameAt({ distance: OBSERVATORY_LIMITS.distance[1] });
@@ -162,6 +201,8 @@ test('galaxy compositor has no Boss-only focus camera path', () => {
   assert.equal(galaxySource.includes('sceneFrame.boss.compositeScale'), false);
   assert.equal(galaxySource.includes('sceneFrame.boss.scale'), true);
   assert.equal(galaxySource.includes('setImmediate:'), true);
+  assert.equal(galaxySource.includes('snapshot.distance - 11.8'), true);
+  assert.equal(galaxySource.includes('distance = 11.8'), true);
 });
 
 test('embedded Boss supports the expanded observer and high-resolution composite', () => {

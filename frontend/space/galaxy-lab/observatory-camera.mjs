@@ -6,7 +6,7 @@ export const OBSERVATORY_LIMITS = Object.freeze({
   distance: Object.freeze([8.6, 15.6]),
 });
 
-const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 10.0 });
+const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 11.8 });
 const CAMERA_TARGET = Object.freeze([-0.20, 0, -0.25]);
 const BOSS_WORLD = Object.freeze([3.92, 0.02, -0.10]);
 const BOSS_WORLD_RADIUS = 1.44;
@@ -16,9 +16,9 @@ const BOSS_DEFAULT_RADIUS_INDEX = 620;
 const BOSS_COMPOSITE_SCALE = 1.58;
 
 const SYSTEMS = Object.freeze([
-  Object.freeze({ center: [-3.30, -0.78, 1.22], rotation: [-10, -7, 8], depthScale: 1.0, energy: 1.00, seed: 1.3 }),
-  Object.freeze({ center: [-2.15, 1.75, -0.15], rotation: [18, 28, -8], depthScale: 3.2, energy: 0.82, seed: 5.2 }),
-  Object.freeze({ center: [-2.70, -1.60, 0.40], rotation: [-22, -31, 12], depthScale: 3.4, energy: 0.66, seed: 9.4 }),
+  Object.freeze({ center: [-3.00, 0.00, 1.25], rotation: [-10, -7, 8], depthScale: 1.0, energy: 1.00, seed: 1.3 }),
+  Object.freeze({ center: [-2.00, 2.90, -0.10], rotation: [18, 40, -8], depthScale: 3.2, energy: 0.82, seed: 5.2 }),
+  Object.freeze({ center: [-2.40, -2.80, 0.25], rotation: [-22, -31, 12], depthScale: 3.4, energy: 0.66, seed: 9.4 }),
 ]);
 
 const LOCAL_PLANETS = Object.freeze([
