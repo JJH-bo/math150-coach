@@ -121,6 +121,17 @@ test('all systems reveal curved fixed-world motion and internal depth', () => {
   }
 });
 
+test('lower-right system reverses horizontal travel around the default view', () => {
+  const left = frameAt({ yaw: -16 });
+  const center = frameAt();
+  const right = frameAt({ yaw: 16 });
+  const systemIndex = 2;
+  const centerX = center.systems[systemIndex].center[0];
+
+  assert.ok(centerX < left.systems[systemIndex].center[0] - 0.02);
+  assert.ok(centerX < right.systems[systemIndex].center[0] - 0.02);
+});
+
 test('far dolly fits every complete learning planet inside a three percent margin', () => {
   const aspect = 16 / 9;
   const far = frameAt({ distance: OBSERVATORY_LIMITS.distance[1] });

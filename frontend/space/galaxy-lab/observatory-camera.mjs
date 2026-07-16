@@ -18,7 +18,7 @@ const BOSS_COMPOSITE_SCALE = 1.58;
 const SYSTEMS = Object.freeze([
   Object.freeze({ center: [-3.30, -0.78, 1.22], rotation: [-10, -7, 8], depthScale: 1.0, energy: 1.00, seed: 1.3 }),
   Object.freeze({ center: [-2.15, 1.75, -0.15], rotation: [18, 28, -8], depthScale: 3.2, energy: 0.82, seed: 5.2 }),
-  Object.freeze({ center: [-2.60, -1.75, -0.90], rotation: [-22, -31, 12], depthScale: 3.4, energy: 0.66, seed: 9.4 }),
+  Object.freeze({ center: [-2.70, -1.60, 0.40], rotation: [-22, -31, 12], depthScale: 3.4, energy: 0.66, seed: 9.4 }),
 ]);
 
 const LOCAL_PLANETS = Object.freeze([
