@@ -134,9 +134,9 @@
   <div class="hud">
     <div><strong>Chapter Observatory / Fan Field</strong><br><span>3 core systems · 12 living stars · 15 field paths · 1 relativistic Boss</span></div>
   </div>
-  <div class="legend"><b>固定空间 · 有限观察</b><br>拖动平移视野 · 滚轮统一缩放 · 双击复位</div>
+  <div class="legend"><b>黑洞中心 · 扇形观察</b><br>拖动环绕黑洞 · 滚轮改变观察半径 · 双击复位</div>
 
-  <div class="camera-state" id="camera-state">Fixed-space observatory · Drag · Wheel · Double-click reset</div>
+  <div class="camera-state" id="camera-state">Boss-centered fan · Drag · Wheel · Double-click reset</div>
 
   <script type="x-shader/x-vertex" id="fullscreen-vertex">
     #version 300 es
@@ -541,27 +541,31 @@
         observatory.update(milliseconds);
         sceneFrame = createSceneFrame(observatory, innerWidth / Math.max(innerHeight, 1));
         const snapshot = observatory.snapshot();
-        cosmosFrame.contentWindow?.cosmosCamera?.setViewportTransform?.({
-          panX: observatory.current.panX,
-          panY: observatory.current.panY,
-          zoom: observatory.current.zoom,
+        cosmosFrame.contentWindow?.cosmosCamera?.setObservatory?.({
+          yaw: observatory.current.azimuth,
+          pitch: observatory.current.elevation,
+          distance: observatory.current.radius,
         });
         cosmosFrame.contentWindow?.cosmosCamera?.setGravityLens?.({
           center: sceneFrame.boss.center,
           radius: sceneFrame.boss.lensRadius,
           strength: sceneFrame.boss.lensStrength,
         });
-        const active = Math.abs(snapshot.panX) > 0.002 || Math.abs(snapshot.panY) > 0.002 ||
-          Math.abs(snapshot.zoom - 1) > 0.002;
+        const active = Math.abs(snapshot.azimuth) > 0.08 || Math.abs(snapshot.elevation) > 0.08 ||
+          Math.abs(snapshot.radius - 12.36) > 0.01;
         cameraState.classList.toggle('active', active);
         cameraState.textContent =
-          `Fixed space · X ${snapshot.panX.toFixed(3)} · Y ${snapshot.panY.toFixed(3)} · zoom ${snapshot.zoom.toFixed(3)}`;
+          `Boss orbit · azimuth ${snapshot.azimuth.toFixed(1)}° · elevation ${snapshot.elevation.toFixed(1)}° · radius ${snapshot.radius.toFixed(2)}`;
       };
 
       window.observatoryCamera = {
         reset: () => observatory.reset(true),
-        setImmediate: ({ panX = 0, panY = 0, zoom = 1 } = {}) =>
-          observatory.setState({ panX, panY, zoom }, true),
+        setImmediate: ({ azimuth = 0, elevation = 0, radius = 12.36 } = {}) =>
+          observatory.setState({
+            azimuth: azimuth * Math.PI / 180,
+            elevation: elevation * Math.PI / 180,
+            radius,
+          }, true),
         snapshot: () => ({ ...observatory.snapshot(), boss: sceneFrame.boss.center.map((value) => Number(value.toFixed(4))) }),
       };
 
@@ -726,7 +730,7 @@
         const deltaX = event.clientX - interaction.lastPointer[0];
         const deltaY = event.clientY - interaction.lastPointer[1];
         interaction.lastPointer = [event.clientX, event.clientY];
-        observatory.pan(deltaX, deltaY, innerHeight);
+        observatory.orbit(deltaX, deltaY, innerHeight);
       });
       const endDrag = (event) => {
         if (!interaction.dragging) return;
@@ -742,7 +746,7 @@
       window.addEventListener('wheel', (event) => {
         if (targetsControls(event)) return;
         event.preventDefault();
-        observatory.zoom(event.deltaY);
+        observatory.dolly(event.deltaY);
       }, { passive: false });
       document.body.addEventListener('dblclick', (event) => {
         if (targetsControls(event)) return;
