@@ -10,6 +10,32 @@ import {
 
 const DEG = Math.PI / 180;
 
+function frameAt({ yaw = 0, pitch = 0.5, distance = 10 } = {}) {
+  const camera = createObservatoryCamera();
+  camera.setState({ yaw: yaw * DEG, pitch: pitch * DEG, distance }, true);
+  return createSceneFrame(camera, 16 / 9);
+}
+
+const systemPlanets = (frame, systemIndex) =>
+  frame.planets.slice(systemIndex * 4, systemIndex * 4 + 4);
+
+const projectedWidth = (frame, systemIndex) => {
+  const xs = systemPlanets(frame, systemIndex).map((planet) => planet.center[0]);
+  return Math.max(...xs) - Math.min(...xs);
+};
+
+const midpointCurvature = (left, center, right, systemIndex) => {
+  const a = left.systems[systemIndex].center;
+  const m = center.systems[systemIndex].center;
+  const b = right.systems[systemIndex].center;
+  return Math.hypot(m[0] - (a[0] + b[0]) * 0.5, m[1] - (a[1] + b[1]) * 0.5);
+};
+
+const depthRadiusSpread = (frame, systemIndex) => {
+  const radii = systemPlanets(frame, systemIndex).map((planet) => planet.radius);
+  return Math.max(...radii) / Math.min(...radii) - 1;
+};
+
 test('camera uses expanded limits and a real dolly', () => {
   assert.equal(Math.round(OBSERVATORY_LIMITS.yaw[0] / DEG), -32);
   assert.equal(Math.round(OBSERVATORY_LIMITS.yaw[1] / DEG), 32);
@@ -70,6 +96,27 @@ test('Boss observer comes from the shared camera position', () => {
   assert.ok(Math.abs(edge.boss.viewAzimuth - base.boss.viewAzimuth) > 20 * DEG);
   assert.ok(edge.boss.viewInclination > base.boss.viewInclination + 10 * DEG);
   assert.ok(edge.boss.observerRadiusIndex >= 0 && edge.boss.observerRadiusIndex <= 1000);
+});
+
+test('all systems reveal curved fixed-world motion and internal depth', () => {
+  const left = frameAt({ yaw: -32 });
+  const center = frameAt();
+  const right = frameAt({ yaw: 32 });
+
+  for (let systemIndex = 0; systemIndex < 3; systemIndex += 1) {
+    const curvature = midpointCurvature(left, center, right, systemIndex);
+    const leftWidth = projectedWidth(left, systemIndex);
+    const rightWidth = projectedWidth(right, systemIndex);
+    const widthChange = Math.abs(rightWidth - leftWidth) / Math.max(leftWidth, rightWidth);
+    const radiusSpread = Math.max(
+      depthRadiusSpread(left, systemIndex),
+      depthRadiusSpread(right, systemIndex),
+    );
+
+    assert.ok(curvature >= 0.06, `system ${systemIndex} curvature ${curvature}`);
+    assert.ok(widthChange >= 0.12, `system ${systemIndex} width change ${widthChange}`);
+    assert.ok(radiusSpread >= 0.08, `system ${systemIndex} radius spread ${radiusSpread}`);
+  }
 });
 
 test('galaxy compositor has no Boss-only focus camera path', () => {

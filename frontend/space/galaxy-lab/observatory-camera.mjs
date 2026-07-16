@@ -7,7 +7,7 @@ export const OBSERVATORY_LIMITS = Object.freeze({
 });
 
 const DEFAULT_STATE = Object.freeze({ yaw: 0, pitch: 0.5 * DEG, distance: 10.0 });
-const CAMERA_TARGET = Object.freeze([0, 0, -0.20]);
+const CAMERA_TARGET = Object.freeze([-0.20, 0, -0.25]);
 const BOSS_WORLD = Object.freeze([3.92, 0.02, -0.10]);
 const BOSS_WORLD_RADIUS = 1.44;
 const FOV = 42 * DEG;
@@ -16,9 +16,9 @@ const BOSS_DEFAULT_RADIUS_INDEX = 620;
 const BOSS_COMPOSITE_SCALE = 1.58;
 
 const SYSTEMS = Object.freeze([
-  Object.freeze({ center: [-3.30, -0.78, 1.22], rotation: [-10, -7, 8], energy: 1.00, seed: 1.3 }),
-  Object.freeze({ center: [-1.28, 1.62, -0.42], rotation: [12, 13, -7], energy: 0.82, seed: 5.2 }),
-  Object.freeze({ center: [0.12, -1.48, -2.38], rotation: [-8, -18, 11], energy: 0.66, seed: 9.4 }),
+  Object.freeze({ center: [-3.30, -0.78, 1.22], rotation: [-10, -7, 8], depthScale: 1.0, energy: 1.00, seed: 1.3 }),
+  Object.freeze({ center: [-2.15, 1.75, -0.15], rotation: [18, 28, -8], depthScale: 3.2, energy: 0.82, seed: 5.2 }),
+  Object.freeze({ center: [-2.60, -1.75, -0.90], rotation: [-22, -31, 12], depthScale: 3.4, energy: 0.66, seed: 9.4 }),
 ]);
 
 const LOCAL_PLANETS = Object.freeze([
@@ -162,10 +162,14 @@ export function createSceneFrame(camera, aspect = 16 / 9) {
   const bossCenter = bossProjection.point;
 
   SYSTEMS.forEach((system, systemIndex) => {
-    const worldPlanets = LOCAL_PLANETS.map((planet) => add(
-      system.center,
-      rotatePoint(planet.point, system.rotation),
-    ));
+    const worldPlanets = LOCAL_PLANETS.map((planet) => {
+      const volumetricPoint = [
+        planet.point[0],
+        planet.point[1],
+        planet.point[2] * system.depthScale,
+      ];
+      return add(system.center, rotatePoint(volumetricPoint, system.rotation));
+    });
     const projectedCenter = projectPoint(system.center, basis);
     systems.push({
       center: projectedCenter.point,
