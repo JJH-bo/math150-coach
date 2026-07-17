@@ -35,11 +35,13 @@ from app.challenge.chapter_feedback_optimizer import (
 from app.challenge.chapter_intelligent_importer import build_intelligent_chapter_draft
 from app.challenge.chapter_publish_executor import execute_chapter_controlled_publish
 from app.challenge.chapter_publish_plan import build_chapter_publish_plan_dry_run
+from app.challenge.gpt_draft_store import ChapterDraftStore, DraftNotFound
 from app.challenge.progress_store import ChallengeProgressError
 from app.challenge.repository import ChallengeRepository, ChallengeRepositoryError
 from app.logic_graph.quality_validator import KnowledgeGraphQualityValidator
 from app.logic_graph.repository import LogicGraphRepository, LogicGraphRepositoryError
 from app.training.session_log import SessionLogError, validate_session_id
+from app.config import chapter_draft_root
 
 
 router = APIRouter(prefix="/api/challenge/v1", tags=["challenge"])
@@ -61,6 +63,27 @@ def challenge_atlas() -> dict[str, Any]:
 @router.get("/chapters/registry")
 def challenge_chapter_registry() -> dict[str, Any]:
     return ChapterRuntimeRegistry().build()
+
+
+@router.get("/chapters/{chapter_id}/galaxy")
+def published_chapter_galaxy(chapter_id: str) -> dict[str, Any]:
+    try:
+        record = ChapterDraftStore(
+            chapter_draft_root()
+        ).find_published_by_chapter(chapter_id)
+    except DraftNotFound as exc:
+        raise api_error(
+            404,
+            "chapter_galaxy_not_found",
+            "Published galaxy asset not found.",
+        ) from exc
+    if record is None or not isinstance(record.get("galaxy_asset"), dict):
+        raise api_error(
+            404,
+            "chapter_galaxy_not_found",
+            "Published galaxy asset not found.",
+        )
+    return record["galaxy_asset"]
 
 
 @router.get("/quality/{chapter_id}")

@@ -148,3 +148,54 @@ def test_review_can_reject_current_revision(
 
     assert response.status_code == 200
     assert response.json()["status"] == "changes_requested"
+
+
+def test_review_galaxy_returns_exact_preview_asset(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    store = _configure(monkeypatch, tmp_path)
+    draft = _preview_ready_draft(store)
+    client = TestClient(create_app("mixed"))
+
+    unauthenticated = client.get(
+        f"/api/chapter-review/{draft['draft_id']}/galaxy",
+        params={"revision": draft["revision"]},
+    )
+    assert unauthenticated.status_code == 401
+
+    _login(client)
+    response = client.get(
+        f"/api/chapter-review/{draft['draft_id']}/galaxy",
+        params={"revision": draft["revision"]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["chapterId"] == "controlled_demo"
+    assert response.json()["metrics"]["bossCount"] == 1
+
+
+def test_published_galaxy_endpoint_returns_approved_asset(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    store = _configure(monkeypatch, tmp_path)
+    draft = _preview_ready_draft(store)
+    client = TestClient(create_app("mixed"))
+    _login(client)
+    approved = client.post(
+        f"/api/chapter-review/{draft['draft_id']}/approve",
+        json={
+            "revision": draft["revision"],
+            "content_hash": draft["content_hash"],
+        },
+    )
+    assert approved.status_code == 200
+
+    response = client.get(
+        "/api/challenge/v1/chapters/controlled_demo/galaxy"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["chapterId"] == "controlled_demo"
+    assert response.json() == draft["galaxy_asset"]

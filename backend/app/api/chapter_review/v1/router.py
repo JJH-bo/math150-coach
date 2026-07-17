@@ -90,6 +90,29 @@ def get_review_metadata(
         raise _not_found() from exc
 
 
+@router.get("/{draft_id}/galaxy")
+def get_draft_galaxy(
+    draft_id: str,
+    request: Request,
+    revision: int | None = None,
+) -> dict[str, Any]:
+    require_review_session(request)
+    try:
+        record = _store().load(draft_id, revision)
+    except DraftNotFound as exc:
+        raise _not_found() from exc
+    asset = record.get("galaxy_asset")
+    if not isinstance(asset, dict):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error_code": "preview_not_ready",
+                "message": "The draft has no valid galaxy asset.",
+            },
+        )
+    return asset
+
+
 @router.post("/{draft_id}/approve")
 def approve_draft(
     draft_id: str,
