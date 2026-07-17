@@ -302,7 +302,8 @@ def test_space_trainer_uses_high_resolution_observatory_panorama() -> None:
     assert "createRealisticStarField" not in script.text
     assert "scene.backgroundIntensity = 0.62" in script.text
     assert "scene.backgroundRotation.set(-0.16, 0, -0.14)" in script.text
-    assert "0.32,\n    0.38,\n    0.72" in script.text
+    normalized_script = script.text.replace("\r\n", "\n")
+    assert "0.32,\n    0.38,\n    0.72" in normalized_script
     assert panorama.status_code == 200
     assert len(panorama.content) > 6_000_000
 
