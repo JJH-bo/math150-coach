@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>章节知识网审核台</title>
+  <link rel="stylesheet" href="./review.css">
+</head>
+<body>
+  <form id="review-login" class="review-login" autocomplete="off">
+    <div class="login-card">
+      <p class="eyebrow">HUMAN REVIEW GATE</p>
+      <h1>进入章节知识网审核台</h1>
+      <p>审核密钥只用于建立安全会话，不会保存在网页或地址中。</p>
+      <label for="review-key">审核密钥</label>
+      <input id="review-key" type="password" required maxlength="512">
+      <button type="submit">进入审核</button>
+      <p id="login-result" class="status" role="status"></p>
+    </div>
+  </form>
+
+  <main id="review-workspace" class="review-workspace" hidden>
+    <section class="preview-shell">
+      <iframe
+        id="galaxy-preview"
+        title="章节知识网三维预览"
+        allow="fullscreen"
+      ></iframe>
+    </section>
+    <aside class="review-panel">
+      <p class="eyebrow">EXACT REVISION REVIEW</p>
+      <h1 id="draft-title">章节草稿</h1>
+      <p id="draft-revision" class="revision"></p>
+      <p id="draft-metrics" class="metrics"></p>
+      <section class="issues">
+        <h2>自动校验</h2>
+        <ul id="draft-issues"></ul>
+      </section>
+      <label for="reject-reason">退回原因</label>
+      <textarea
+        id="reject-reason"
+        rows="3"
+        placeholder="仅在需要退回修改时填写"
+      ></textarea>
+      <div class="actions">
+        <button id="approve-draft" class="approve" type="button">
+          批准并发布当前预览
+        </button>
+        <button id="reject-draft" class="reject" type="button">
+          退回修改
+        </button>
+      </div>
+      <p id="review-result" class="status" role="status"></p>
+      <a id="formal-link" class="formal-link" hidden>打开正式章节</a>
+    </aside>
+  </main>
+
+  <script type="module" src="./review.js"></script>
+</body>
+</html>

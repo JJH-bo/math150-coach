@@ -217,6 +217,26 @@ def test_galaxy_lab_loads_selected_chapter_data_dynamically() -> None:
     assert "import chapter from './infinite-series-data.mjs'" not in page.text
 
 
+def test_chapter_review_page_is_served_without_embedding_secrets() -> None:
+    client = TestClient(create_app("mixed"))
+
+    page = client.get("/trainer/chapter-review/")
+    script = client.get("/trainer/chapter-review/review.js")
+    styles = client.get("/trainer/chapter-review/review.css")
+
+    assert page.status_code == 200
+    assert 'id="review-login"' in page.text
+    assert 'id="approve-draft"' in page.text
+    assert 'id="galaxy-preview"' in page.text
+    assert script.status_code == 200
+    assert "/api/chapter-review/session" in script.text
+    assert "/approve" in script.text
+    assert styles.status_code == 200
+    combined = page.text + script.text + styles.text
+    assert "GPT_AUTHORING_KEY" not in combined
+    assert "CHAPTER_REVIEW_KEY" not in combined
+
+
 def test_space_portals_have_a_layered_traversable_interior() -> None:
     client = TestClient(create_app("mixed"))
 
