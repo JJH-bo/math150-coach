@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -148,3 +150,28 @@ def test_write_javascript_module_is_deterministic(tmp_path: Path) -> None:
     assert source.startswith("export default ")
     payload = json.loads(source.removeprefix("export default ").removesuffix(";\n"))
     assert payload == asset
+
+
+def test_builder_cli_runs_from_repository_root(tmp_path: Path) -> None:
+    source = tmp_path / "chapter.md"
+    output = tmp_path / "chapter-data.mjs"
+    source.write_text(_chapter_markdown(), encoding="utf-8")
+    repository_root = Path(__file__).resolve().parents[2]
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "tools/chapter_galaxy_builder.py",
+            "--source",
+            str(source),
+            "--output",
+            str(output),
+        ],
+        cwd=repository_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert output.exists()

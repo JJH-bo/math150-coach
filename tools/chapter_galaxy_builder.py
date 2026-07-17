@@ -3,8 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
+
+BACKEND_ROOT = Path(__file__).resolve().parents[1] / "backend"
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.challenge.chapter_galaxy_asset import (
     build_chapter_galaxy_asset,
