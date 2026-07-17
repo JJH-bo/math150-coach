@@ -24,8 +24,8 @@ Custom GPT Action 不能访问 `127.0.0.1` 或仅局域网可见的服务。先�
 ## 3. 导入 Action
 
 1. 打开 `docs/custom-gpt/chapter-authoring-actions.openapi.yaml`。
-2. 只把 `servers[0].url` 从 `https://your-domain.example` 改成实际公网根地址。
-3. 在 GPT 编辑器的 Actions 中导入这个 OpenAPI 3.1 文件。
+2. 已部署服务可直接从 `https://你的域名/api/gpt/v1/action-schema` 读取自动替换域名后的 OpenAPI；也可以手动导入本地文件，并只修改 `servers[0].url`。
+3. 在 GPT 编辑器的 Actions 中导入这个 OpenAPI 3.1 Schema。
 4. Authentication 选择 API Key，Auth Type 选择 Bearer。
 5. 填入 `GPT_AUTHORING_KEY` 的真实值。不要把它写进 schema 或 Instructions。
 6. 确认工具列表恰好包含：
@@ -63,3 +63,15 @@ Custom GPT Action 不能访问 `127.0.0.1` 或仅局域网可见的服务。先�
 `http://127.0.0.1:8000/trainer/chapter-review/?draft=<draft_id>&revision=<revision>`
 
 这个地址只供本机调试，不能填入 Custom GPT 的 Action server。
+
+## 容器部署
+
+仓库根目录提供生产容器入口 `Dockerfile`。托管平台必须：
+
+- 挂载可持久化目录，并将 `CHAPTER_DRAFT_ROOT` 与 `CHAPTER_PUBLISH_TARGET_ROOT` 指向该目录；
+- 把真实密钥放在平台 Secret 管理中，而不是镜像或仓库；
+- 提供 `PORT` 和公网 HTTPS；
+- 使用 `/health` 作为健康检查；
+- 设置 `PUBLIC_BASE_URL` 为部署后的 HTTPS 根地址。
+
+没有持久化磁盘的临时容器只能用于联调，不能作为正式章节存储。

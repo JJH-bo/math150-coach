@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .pytest_tmp/
 runtime/chapter_drafts/
+runtime/public-preview/
 .mypy_cache/
 .ruff_cache/
 .coverage

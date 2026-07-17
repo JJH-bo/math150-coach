@@ -1,0 +1,8 @@
+.git
+.worktrees
+.pytest_cache
+.pytest_tmp
+__pycache__
+*.pyc
+.venv
+runtime
