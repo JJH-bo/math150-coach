@@ -78,9 +78,15 @@ function renderDraft(payload) {
   preview.src =
     `/trainer/space/galaxy-lab/?draft=${encodeURIComponent(draftId)}`
     + `&revision=${selectedRevision}`;
-  approveButton.disabled = stale || payload.status !== 'preview_ready';
+  approveButton.disabled =
+    stale
+    || payload.status !== 'preview_ready'
+    || payload.approval_ready !== true;
   if (stale) {
     reviewResult.textContent = '该链接不是最新版本，请让GPT返回新的预览链接。';
+  } else if (payload.approval_ready !== true) {
+    reviewResult.textContent =
+      '画面可以预览，但内容尚未通过最终就绪检查。请先让GPT修复上方问题。';
   } else {
     reviewResult.textContent = '当前画面与待发布内容已绑定，可以直接批准。';
   }
@@ -138,7 +144,7 @@ approveButton.addEventListener('click', async () => {
     formalLink.hidden = false;
   } catch (error) {
     reviewResult.textContent = error.message;
-    approveButton.disabled = false;
+    approveButton.disabled = currentDraft?.approval_ready !== true;
     rejectButton.disabled = false;
   }
 });

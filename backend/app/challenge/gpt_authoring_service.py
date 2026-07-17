@@ -4,8 +4,14 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
 
-from app.challenge.chapter_draft_importer import validate_chapter_markdown
+from app.challenge.chapter_draft_importer import (
+    HUMAN_REVIEW_CHECKS,
+    validate_chapter_markdown,
+)
 from app.challenge.chapter_galaxy_asset import build_chapter_galaxy_asset
+from app.challenge.chapter_publish_plan import (
+    build_chapter_publish_plan_dry_run,
+)
 from app.challenge.gpt_authoring_contract import CONTRACT_VERSION
 from app.challenge.gpt_draft_store import ChapterDraftStore
 
@@ -66,18 +72,29 @@ class GptAuthoringService:
 
     def validate(self, draft_id: str) -> dict[str, Any]:
         record = self.store.load(draft_id)
-        validation = validate_chapter_markdown(record["source_markdown"])
         return {
             **self.response(record),
-            "validation": validation,
+            "validation": record.get("validation_report", {}),
         }
 
     def response(self, record: dict[str, Any]) -> dict[str, Any]:
         asset = record.get("galaxy_asset") or {}
-        report = record.get("validation_report", {}).get("report", {})
+        validation = record.get("validation_report", {})
+        report = validation.get("report", {})
+        approval = validation.get("approval_readiness")
+        approval_ready = (
+            bool(approval.get("ready"))
+            if isinstance(approval, dict)
+            else record.get("status") == "preview_ready"
+        )
         issues = [
             *report.get("errors", []),
             *report.get("warnings", []),
+            *(
+                approval.get("issues", [])
+                if isinstance(approval, dict)
+                else []
+            ),
         ]
         query = (
             f"draft={quote(str(record['draft_id']))}"
@@ -88,6 +105,7 @@ class GptAuthoringService:
             "chapter_id": record["chapter_id"],
             "title": record["title"],
             "status": record["status"],
+            "approval_ready": approval_ready,
             "revision": record["revision"],
             "content_hash": record["content_hash"],
             "metrics": asset.get("metrics", {}),
@@ -136,4 +154,29 @@ class GptAuthoringService:
             ) + 1
             report["passed"] = False
             asset = None
+        if (
+            asset is not None
+            and int(report.get("error_count", 0) or 0) == 0
+        ):
+            plan = build_chapter_publish_plan_dry_run(
+                submission.source_markdown,
+                reviewer="gpt-authoring-readiness",
+                decision="approve_for_candidate",
+                checklist={
+                    code: True
+                    for code, _description in HUMAN_REVIEW_CHECKS
+                },
+                notes="Automated readiness preflight.",
+            )
+            validation["approval_readiness"] = {
+                "ready": plan.get("publish_plan_grade") == "ready",
+                "blocking_reasons": plan.get("blocking_reasons", []),
+                "issues": plan.get("blocking_issues", []),
+            }
+        else:
+            validation["approval_readiness"] = {
+                "ready": False,
+                "blocking_reasons": ["chapter_validation_failed"],
+                "issues": [],
+            }
         return validation, asset

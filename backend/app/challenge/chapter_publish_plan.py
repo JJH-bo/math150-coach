@@ -72,6 +72,9 @@ def build_chapter_publish_plan_dry_run(
             "formal_publish_lock_reason": FORMAL_PUBLISH_LOCK_REASON,
             "publish_plan_grade": "blocked",
             "blocking_reasons": blocking_reasons or ["candidate_missing"],
+            "blocking_issues": _candidate_quality_issues(
+                candidate_quality,
+            ),
             "candidate_summary": _candidate_summary(candidate_result),
             "planned_files": [],
             "required_next_action": "fix_candidate_gate_or_candidate_quality_before_publish_plan",
@@ -91,6 +94,10 @@ def build_chapter_publish_plan_dry_run(
             "formal_publish_lock_reason": FORMAL_PUBLISH_LOCK_REASON,
             "publish_plan_grade": "blocked",
             "blocking_reasons": [f"question_package_quality:{question_quality.get('grade', 'missing')}"],
+            "blocking_issues": [
+                *question_quality.get("errors", []),
+                *question_quality.get("warnings", []),
+            ],
             "candidate_summary": _candidate_summary(candidate_result),
             "question_package_summary": _question_package_summary(question_package),
             "planned_files": [],
@@ -110,6 +117,7 @@ def build_chapter_publish_plan_dry_run(
         "formal_publish_lock_reason": FORMAL_PUBLISH_LOCK_REASON,
         "publish_plan_grade": "ready",
         "blocking_reasons": [],
+        "blocking_issues": [],
         "candidate_summary": _candidate_summary(candidate_result),
         "question_package_summary": _question_package_summary(question_package),
         "content_hash": candidate_result.get("content_hash"),
@@ -134,6 +142,17 @@ def _blocking_reasons(candidate_result: dict[str, Any]) -> list[str]:
     quality_gate = quality.get("candidate_publish_gate", {})
     reasons.extend(str(code) for code in quality_gate.get("blocking_codes", []) if code)
     return sorted(set(reasons))
+
+
+def _candidate_quality_issues(
+    candidate_quality: dict[str, Any],
+) -> list[dict[str, Any]]:
+    return [
+        dict(issue)
+        for dimension in candidate_quality.get("dimensions", [])
+        for issue in dimension.get("issues", [])
+        if isinstance(issue, dict)
+    ]
 
 
 def _candidate_summary(candidate_result: dict[str, Any]) -> dict[str, Any]:

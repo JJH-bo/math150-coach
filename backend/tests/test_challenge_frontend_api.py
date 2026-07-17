@@ -231,6 +231,7 @@ def test_chapter_review_page_is_served_without_embedding_secrets() -> None:
     assert script.status_code == 200
     assert "/api/chapter-review/session" in script.text
     assert "/approve" in script.text
+    assert "approval_ready" in script.text
     assert styles.status_code == 200
     combined = page.text + script.text + styles.text
     assert "GPT_AUTHORING_KEY" not in combined

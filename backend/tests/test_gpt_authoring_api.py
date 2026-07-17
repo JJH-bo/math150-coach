@@ -87,6 +87,11 @@ def test_gpt_can_create_get_validate_and_update_draft(
     assert created.status_code == 201
     payload = created.json()
     assert payload["status"] == "preview_ready"
+    assert payload["approval_ready"] is False
+    assert any(
+        issue.get("code") == "no_macro_challenges"
+        for issue in payload["issues"]
+    )
     assert payload["preview_url"].startswith(
         "https://math.example/trainer/chapter-review/"
     )

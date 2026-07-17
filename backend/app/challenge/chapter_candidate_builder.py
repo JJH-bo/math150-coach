@@ -369,7 +369,7 @@ def _guide_nodes_from_logic(draft: dict[str, Any]) -> list[dict[str, Any]]:
         node_kind = node.get("node_kind")
         if node_kind not in GUIDE_KIND_BY_LOGIC_KIND:
             continue
-        related = [node_id for node_id in [node.get("owner_node_id"), node.get("repair_target_node_id")] if node_id]
+        related = _related_node_ids_for_logic_node(draft, node)
         guides.append(
             {
                 "id": node["id"],
@@ -383,6 +383,29 @@ def _guide_nodes_from_logic(draft: dict[str, Any]) -> list[dict[str, Any]]:
             }
         )
     return guides
+
+
+def _related_node_ids_for_logic_node(
+    draft: dict[str, Any],
+    node: dict[str, Any],
+) -> list[str]:
+    node_id = str(node.get("id", ""))
+    candidates = [
+        node.get("owner_node_id"),
+        node.get("repair_target_node_id"),
+    ]
+    for edge in draft.get("logic_edges", []):
+        if edge.get("source_id") == node_id:
+            candidates.append(edge.get("target_id"))
+        elif edge.get("target_id") == node_id:
+            candidates.append(edge.get("source_id"))
+    return list(
+        dict.fromkeys(
+            str(candidate)
+            for candidate in candidates
+            if candidate
+        )
+    )
 
 
 def _typed_edges_from_draft(draft: dict[str, Any]) -> list[dict[str, Any]]:

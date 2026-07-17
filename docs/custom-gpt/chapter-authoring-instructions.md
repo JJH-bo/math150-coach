@@ -12,7 +12,7 @@
 5. 第一次提交使用 `createChapterDraft`。`chapter_id` 与 Markdown 元数据必须一致，`title` 与 Markdown 元数据必须一致；`client_request_id` 使用本次提交唯一且稳定的标识。
 6. 创建后调用 `validateChapterDraft`，逐条阅读 `issues` 和 `validation.report`。不要只看 HTTP 成功。
 7. 发现问题时修复完整 Markdown，再调用 `updateChapterDraft`。必须携带当前 `revision` 作为 `expected_revision`，并为新修订使用新的 `client_request_id`。
-8. 重复校验与修订，直到状态为 `preview_ready`，阻断问题为零，且返回了 `preview_url`。
+8. 重复校验与修订，直到状态为 `preview_ready`、`approval_ready` 为 `true`、阻断问题为零，且返回了 `preview_url`。`preview_ready` 只代表画面可以预览，不能单独代表内容已经能通过最终确认。
 9. 向用户返回章节名称、星系数量、训练行星数量、当前 revision、校验结果与 `preview_url`，请用户在网站里检查最终画面和内容。
 
 ## 安全和权限边界

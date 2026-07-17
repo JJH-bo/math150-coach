@@ -190,6 +190,7 @@ components:
         - chapter_id
         - title
         - status
+        - approval_ready
         - revision
         - content_hash
         - metrics
@@ -204,6 +205,9 @@ components:
           type: string
         status:
           type: string
+        approval_ready:
+          type: boolean
+          description: True only when the exact revision passes final readiness preflight
         revision:
           type: integer
           minimum: 1
