@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import chapter from './infinite-series-data.mjs';
 import {
+  buildChapterSectors,
   buildInfiniteSeriesSectors,
   createSectorSceneConfig,
   pickSceneTarget,
@@ -41,8 +42,16 @@ test('sector scene config preserves chapter metadata and one shared Boss', () =>
   assert.equal(config.boss.id, 'infinite_series.boss');
   assert.equal(config.boss, chapter.boss);
   assert.ok(config.systems.every((system) => system.planets.every((planet) => planet.point.length === 3)));
+  assert.ok(config.systems.flatMap((system) => system.planets).every((planet) => planet.radius >= 0.42));
   assert.ok(config.systems.every((system) => system.internalLinks.length >= system.planets.length - 1));
   assert.deepEqual(config.systems.map((system) => system.slot), [0, 1, 2]);
+
+  const firstSector = createSectorSceneConfig(chapter, 'convergence-i');
+  assert.deepEqual(firstSector.systems[0].internalLinks.map((link) => link.slice(0, 2)), [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+  ]);
 });
 
 
@@ -90,4 +99,62 @@ test('scene picking returns planets and Boss in the renderer coordinate system',
   assert.equal(pickSceneTarget(frame, { x: 500, y: 250 }, viewport)?.id, 'planet-a');
   assert.equal(pickSceneTarget(frame, { x: 700, y: 250 }, viewport)?.id, 'chapter-boss');
   assert.equal(pickSceneTarget(frame, { x: 50, y: 450 }, viewport), null);
+
+  const overlap = {
+    planets: [
+      { id: 'planet-far', center: [0, 0], radius: 0.12, depth: 10 },
+      { id: 'planet-near', center: [0, 0], radius: 0.12, depth: 5 },
+    ],
+    boss: null,
+  };
+  assert.equal(pickSceneTarget(overlap, { x: 500, y: 250 }, viewport)?.id, 'planet-near');
+});
+
+
+test('generic chapters are partitioned into uncrowded two-or-three-system sectors', () => {
+  const synthetic = {
+    ...chapter,
+    chapterId: 'synthetic',
+    systems: Array.from({ length: 7 }, (_, index) => ({
+      ...chapter.systems[index],
+      id: `system-${index + 1}`,
+      learningOrder: index + 1,
+    })),
+  };
+
+  const sectors = buildChapterSectors(synthetic);
+
+  assert.deepEqual(
+    sectors.map((sector) => sector.systems.length),
+    [2, 3, 2],
+  );
+  assert.deepEqual(
+    sectors.flatMap((sector) => sector.systems.map((system) => system.id)),
+    synthetic.systems.map((system) => system.id),
+  );
+  assert.ok(sectors.every((sector) => sector.systems.length <= 3));
+});
+
+
+test('three-planet systems receive a complete safe scene layout', () => {
+  const synthetic = {
+    chapterId: 'three-planets',
+    title: 'Three Planets',
+    systems: [{
+      ...chapter.systems[0],
+      id: 'three-planets.system',
+      learningOrder: 1,
+      planets: chapter.systems[0].planets.slice(0, 3),
+      links: chapter.systems[0].links.slice(0, 2),
+    }],
+    boss: chapter.boss,
+    metrics: { systemCount: 1, planetCount: 3, bossCount: 1 },
+  };
+
+  const sector = buildChapterSectors(synthetic)[0];
+  const config = createSectorSceneConfig(synthetic, sector.id);
+
+  assert.equal(config.systems[0].planets.length, 3);
+  assert.equal(config.systems[0].internalLinks.length, 2);
+  assert.ok(config.systems[0].planets.every((planet) => planet.point.length === 3));
 });

@@ -201,6 +201,22 @@ def test_space_trainer_builds_high_fidelity_volumetric_portals() -> None:
     assert "highp float" in renderer.text
 
 
+def test_galaxy_lab_loads_selected_chapter_data_dynamically() -> None:
+    client = TestClient(create_app("mixed"))
+
+    page = client.get("/trainer/space/galaxy-lab/")
+    loader = client.get(
+        "/trainer/space/galaxy-lab/chapter-data-loader.mjs"
+    )
+
+    assert page.status_code == 200
+    assert loader.status_code == 200
+    assert "loadChapterData" in page.text
+    assert "chapter-data-loader.mjs" in page.text
+    assert "resolveChapterRequest" in loader.text
+    assert "import chapter from './infinite-series-data.mjs'" not in page.text
+
+
 def test_space_portals_have_a_layered_traversable_interior() -> None:
     client = TestClient(create_app("mixed"))
 
@@ -519,13 +535,20 @@ def test_galaxy_lab_exposes_infinite_series_sectors_and_training_transit() -> No
     assert "./infinite-series-scene.mjs" in page.text
     assert 'id="sector-navigation"' in page.text
     assert 'id="system-label-layer"' in page.text
+    assert 'id="scene-target-layer"' in page.text
     assert 'id="training-transit"' in page.text
     assert 'id="training-observatory"' in page.text
-    assert 'id="training-observatory" role="dialog" aria-modal="true" aria-labelledby="training-title" aria-hidden="true"' in page.text
+    assert 'id="training-observatory" role="dialog" aria-modal="true" aria-labelledby="training-title" aria-hidden="true" inert' in page.text
+    assert 'id="training-context"' in page.text
+    assert 'id="render-fallback"' in page.text
     assert 'id="close-training"' in page.text
     assert "pickSceneTarget" in page.text
     assert "openTrainingTransit" in page.text
     assert "renderTrainingStem" in page.text
+    assert "renderSceneTargets" in page.text
+    assert "failureRouting" in page.text
+    assert "formatFailureRouting" in page.text
+    assert "showRenderFailure" in page.text
     assert '"systemCount": 10' in data.text
     assert '"planetCount": 43' in data.text
     assert '"bossCount": 1' in data.text
