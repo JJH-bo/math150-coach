@@ -1,26 +1,16 @@
 from __future__ import annotations
 
-import argparse
 import json
 import re
 from pathlib import Path
 from typing import Any
-
-from app.challenge.chapter_galaxy_asset import (
-    build_chapter_galaxy_asset,
-    write_galaxy_asset_module,
-)
 
 
 TABLE_SECTIONS = {"GalaxyPlan", "GalaxyBoss", "MacroNodes", "MicroNodes"}
 MICRO_TYPES = {"concept", "trigger", "method", "transformation", "calculation", "expression"}
 
 
-def build_chapter_asset(markdown: str) -> dict[str, Any]:
-    return build_chapter_galaxy_asset(markdown)
-
-
-def _legacy_build_chapter_asset(markdown: str) -> dict[str, Any]:
+def build_chapter_galaxy_asset(markdown: str) -> dict[str, Any]:
     metadata = _parse_metadata(markdown)
     tables = _parse_tables(markdown)
     missing = sorted(TABLE_SECTIONS - tables.keys())
@@ -43,13 +33,22 @@ def _legacy_build_chapter_asset(markdown: str) -> dict[str, Any]:
 
     systems: list[dict[str, Any]] = []
     seen_planets: set[str] = set()
-    for galaxy in sorted(galaxy_rows, key=lambda row: _integer(row.get("learning_order"), 9999)):
+    ordered_galaxies = sorted(
+        galaxy_rows,
+        key=lambda row: _integer(row.get("learning_order"), 9999),
+    )
+    for galaxy in ordered_galaxies:
         system_id = galaxy.get("system_id", "").strip()
         macro_id = galaxy.get("macro_node_id", "").strip()
         if not system_id or macro_id not in macro_rows:
             raise ValueError(f"GalaxyPlan references unknown MacroNode: {system_id or macro_id}")
+
         planets: list[dict[str, Any]] = []
-        for micro in (row for row in micro_rows if row.get("macro_node_id", "").strip() == macro_id):
+        for micro in (
+            row
+            for row in micro_rows
+            if row.get("macro_node_id", "").strip() == macro_id
+        ):
             node_id = micro.get("id", "").strip()
             node_type = micro.get("type", "").strip()
             if node_type not in MICRO_TYPES:
@@ -60,21 +59,26 @@ def _legacy_build_chapter_asset(markdown: str) -> dict[str, Any]:
             if node_id in seen_planets:
                 raise ValueError(f"duplicate MicroNode id: {node_id}")
             seen_planets.add(node_id)
-            planets.append({
-                "id": node_id,
-                "macroId": macro_id,
-                "type": node_type,
-                "title": micro.get("title", "").strip(),
-                "description": micro.get("description", "").strip(),
-                "training": training,
-            })
+            planets.append(
+                {
+                    "id": node_id,
+                    "macroId": macro_id,
+                    "type": node_type,
+                    "title": micro.get("title", "").strip(),
+                    "description": micro.get("description", "").strip(),
+                    "training": training,
+                }
+            )
+
         declared_count = _integer(galaxy.get("planet_count"), -1)
         if declared_count != len(planets):
             raise ValueError(
-                f"planet_count mismatch for {system_id}: declared {declared_count}, actual {len(planets)}"
+                f"planet_count mismatch for {system_id}: "
+                f"declared {declared_count}, actual {len(planets)}"
             )
         if not 3 <= len(planets) <= 5:
             raise ValueError(f"system {system_id} must contain 3-5 planets")
+
         planet_ids = {planet["id"] for planet in planets}
         links = [
             {
@@ -89,22 +93,33 @@ def _legacy_build_chapter_asset(markdown: str) -> dict[str, Any]:
         ]
         if len(links) < len(planets) - 1:
             raise ValueError(f"system {system_id} is missing visible supports edges")
-        systems.append({
-            "id": system_id,
-            "macroNodeId": macro_id,
-            "title": galaxy.get("title", "").strip() or macro_rows[macro_id].get("title", "").strip(),
-            "coreQuestion": galaxy.get("core_question", "").strip(),
-            "learningOrder": _integer(galaxy.get("learning_order"), len(systems) + 1),
-            "visualPriority": galaxy.get("visual_priority", "medium").strip(),
-            "recommendedDepth": galaxy.get("recommended_depth", "middle").strip(),
-            "preferredSector": galaxy.get("preferred_sector", "flexible").strip(),
-            "prerequisiteSystemIds": _split_list(galaxy.get("prerequisite_system_ids", "")),
-            "bossContribution": galaxy.get("boss_contribution", "").strip(),
-            "spacingReason": galaxy.get("spacing_reason", "").strip(),
-            "sourceEvidence": galaxy.get("source_evidence", "").strip(),
-            "planets": planets,
-            "links": links,
-        })
+
+        systems.append(
+            {
+                "id": system_id,
+                "macroNodeId": macro_id,
+                "title": (
+                    galaxy.get("title", "").strip()
+                    or macro_rows[macro_id].get("title", "").strip()
+                ),
+                "coreQuestion": galaxy.get("core_question", "").strip(),
+                "learningOrder": _integer(
+                    galaxy.get("learning_order"),
+                    len(systems) + 1,
+                ),
+                "visualPriority": galaxy.get("visual_priority", "medium").strip(),
+                "recommendedDepth": galaxy.get("recommended_depth", "middle").strip(),
+                "preferredSector": galaxy.get("preferred_sector", "flexible").strip(),
+                "prerequisiteSystemIds": _split_list(
+                    galaxy.get("prerequisite_system_ids", "")
+                ),
+                "bossContribution": galaxy.get("boss_contribution", "").strip(),
+                "spacingReason": galaxy.get("spacing_reason", "").strip(),
+                "sourceEvidence": galaxy.get("source_evidence", "").strip(),
+                "planets": planets,
+                "links": links,
+            }
+        )
 
     boss_row = boss_rows[0]
     boss_training = _parse_boss_training_asset(markdown)
@@ -115,7 +130,10 @@ def _legacy_build_chapter_asset(markdown: str) -> dict[str, Any]:
         "id": boss_id,
         "title": boss_row.get("title", "").strip(),
         "coversSystemIds": _split_list(boss_row.get("covers_system_ids", "")),
-        "integratedLearningGoal": boss_row.get("integrated_learning_goal", "").strip(),
+        "integratedLearningGoal": boss_row.get(
+            "integrated_learning_goal",
+            "",
+        ).strip(),
         "challengeBrief": boss_row.get("challenge_brief", "").strip(),
         "successEvidence": boss_row.get("success_evidence", "").strip(),
         "failureRouting": boss_row.get("failure_routing", "").strip(),
@@ -139,8 +157,14 @@ def _legacy_build_chapter_asset(markdown: str) -> dict[str, Any]:
     }
 
 
-def write_javascript_module(asset: dict[str, Any], output: Path) -> None:
-    write_galaxy_asset_module(asset, output)
+def write_galaxy_asset_module(asset: dict[str, Any], output: Path) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(asset, ensure_ascii=False, indent=2, sort_keys=False)
+    output.write_text(
+        f"export default {payload};\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def _parse_metadata(markdown: str) -> dict[str, str]:
@@ -178,7 +202,12 @@ def _parse_tables(markdown: str) -> dict[str, list[dict[str, str]]]:
         while cursor < len(lines) and lines[cursor].lstrip().startswith("|"):
             values = _split_table_row(lines[cursor])
             values += [""] * max(0, len(headers) - len(values))
-            rows.append({header: values[position] for position, header in enumerate(headers)})
+            rows.append(
+                {
+                    header: values[position]
+                    for position, header in enumerate(headers)
+                }
+            )
             cursor += 1
         tables[section] = rows
         index = cursor
@@ -191,7 +220,10 @@ def _split_table_row(line: str) -> list[str]:
 
 def _is_separator_row(line: str) -> bool:
     cells = _split_table_row(line)
-    return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell.replace(" ", "")) for cell in cells)
+    return bool(cells) and all(
+        re.fullmatch(r":?-{3,}:?", cell.replace(" ", ""))
+        for cell in cells
+    )
 
 
 def _parse_training_assets(markdown: str) -> dict[str, dict[str, Any]]:
@@ -200,8 +232,12 @@ def _parse_training_assets(markdown: str) -> dict[str, dict[str, Any]]:
     assets: dict[str, dict[str, Any]] = {}
     for position, heading in enumerate(headings):
         node_id = heading.group(1).strip()
-        end = headings[position + 1].start() if position + 1 < len(headings) else len(section)
-        block = section[heading.end():end]
+        end = (
+            headings[position + 1].start()
+            if position + 1 < len(headings)
+            else len(section)
+        )
+        block = section[heading.end() : end]
         core, variant = _split_question_blocks(block)
         meta = _parse_fields(block.split("#### CoreQuestion", 1)[0])
         core_fields = _parse_fields(core)
@@ -214,7 +250,9 @@ def _parse_training_assets(markdown: str) -> dict[str, dict[str, Any]]:
             "questionId": core_fields.get("question_id", ""),
             "kind": core_fields.get("question_kind", ""),
             "difficulty": core_fields.get("difficulty", ""),
-            "targetDimensions": _split_list(core_fields.get("target_dimensions", "")),
+            "targetDimensions": _split_list(
+                core_fields.get("target_dimensions", "")
+            ),
             "stem": core_fields.get("stem", ""),
             "expectedAnswer": core_fields.get("expected_answer", ""),
             "variant": {
@@ -243,23 +281,43 @@ def _parse_boss_training_asset(markdown: str) -> dict[str, Any]:
     }
 
 
-def _section_text(markdown: str, start_heading: str, end_heading: str | None = None) -> str:
-    start = re.search(rf"(?m)^##\s+{re.escape(start_heading)}\s*$", markdown)
+def _section_text(
+    markdown: str,
+    start_heading: str,
+    end_heading: str | None = None,
+) -> str:
+    start = re.search(
+        rf"(?m)^##\s+{re.escape(start_heading)}\s*$",
+        markdown,
+    )
     if not start:
         raise ValueError(f"missing section: {start_heading}")
     if end_heading:
-        end = re.search(rf"(?m)^##\s+{re.escape(end_heading)}\s*$", markdown[start.end():])
+        remaining = markdown[start.end() :]
+        end = re.search(
+            rf"(?m)^##\s+{re.escape(end_heading)}\s*$",
+            remaining,
+        )
         if end:
-            return markdown[start.end():start.end() + end.start()]
-    return markdown[start.end():]
+            return remaining[: end.start()]
+    return markdown[start.end() :]
 
 
 def _split_question_blocks(block: str) -> tuple[str, str]:
     core_marker = re.search(r"(?m)^#### CoreQuestion\s*$", block)
     variant_marker = re.search(r"(?m)^#### TransferVariant\s*$", block)
-    if not core_marker or not variant_marker or variant_marker.start() <= core_marker.end():
-        raise ValueError("each TrainingAssets node requires CoreQuestion and TransferVariant")
-    return block[core_marker.end():variant_marker.start()], block[variant_marker.end():]
+    if (
+        not core_marker
+        or not variant_marker
+        or variant_marker.start() <= core_marker.end()
+    ):
+        raise ValueError(
+            "each TrainingAssets node requires CoreQuestion and TransferVariant"
+        )
+    return (
+        block[core_marker.end() : variant_marker.start()],
+        block[variant_marker.end() :],
+    )
 
 
 def _parse_fields(block: str) -> dict[str, str]:
@@ -267,7 +325,10 @@ def _parse_fields(block: str) -> dict[str, str]:
     fields: dict[str, str] = {}
     index = 0
     while index < len(lines):
-        match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$", lines[index])
+        match = re.match(
+            r"^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$",
+            lines[index],
+        )
         if not match:
             index += 1
             continue
@@ -295,7 +356,11 @@ def _parse_fields(block: str) -> dict[str, str]:
 
 def _split_list(value: str) -> list[str]:
     cleaned = value.strip().strip("[]")
-    return [item.strip() for item in re.split(r"[,，;；]", cleaned) if item.strip()]
+    return [
+        item.strip()
+        for item in re.split(r"[,，、]", cleaned)
+        if item.strip()
+    ]
 
 
 def _integer(value: str | None, fallback: int) -> int:
@@ -303,24 +368,3 @@ def _integer(value: str | None, fallback: int) -> int:
         return int(str(value).strip())
     except (TypeError, ValueError):
         return fallback
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Build browser galaxy data from structured chapter Markdown.")
-    parser.add_argument("--source", type=Path, required=True)
-    parser.add_argument("--copy-to", type=Path)
-    parser.add_argument("--output", type=Path)
-    args = parser.parse_args()
-
-    markdown = args.source.read_text(encoding="utf-8")
-    if args.copy_to:
-        args.copy_to.parent.mkdir(parents=True, exist_ok=True)
-        args.copy_to.write_text(markdown, encoding="utf-8", newline="\n")
-    if args.output:
-        asset = build_chapter_asset(markdown)
-        write_javascript_module(asset, args.output)
-        print(json.dumps(asset["metrics"], ensure_ascii=False, sort_keys=True))
-
-
-if __name__ == "__main__":
-    main()

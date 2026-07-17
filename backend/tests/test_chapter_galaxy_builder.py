@@ -78,6 +78,14 @@ generation_status: final
 | --- | --- | --- | --- | --- |
 {micro_rows}
 
+## Edges
+| id | edge_type | source_id | target_id | reason |
+| --- | --- | --- | --- | --- |
+| demo.edge.01 | supports | demo.system_01.concept | demo.system_01.trigger | 训练顺序 |
+| demo.edge.02 | supports | demo.system_01.trigger | demo.system_01.method | 训练顺序 |
+| demo.edge.03 | supports | demo.system_02.concept | demo.system_02.transform | 训练顺序 |
+| demo.edge.04 | supports | demo.system_02.transform | demo.system_02.expression | 训练顺序 |
+
 ## TrainingAssets
 {training}
 
@@ -106,6 +114,18 @@ def test_build_chapter_asset_preserves_system_order_and_training_content() -> No
     assert asset["boss"]["id"] == "demo.boss"
     assert asset["boss"]["training"]["stem"] == "完成两个阶段的综合任务。"
     assert asset["metrics"] == {"systemCount": 2, "planetCount": 6, "bossCount": 1}
+    assert asset["systems"][0]["links"] == [
+        {
+            "sourceId": "demo.system_01.concept",
+            "targetId": "demo.system_01.trigger",
+            "edgeType": "supports",
+        },
+        {
+            "sourceId": "demo.system_01.trigger",
+            "targetId": "demo.system_01.method",
+            "edgeType": "supports",
+        },
+    ]
 
 
 def test_build_chapter_asset_rejects_planet_count_mismatch() -> None:
