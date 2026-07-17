@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+import yaml
 
 from app.main import create_app
 from test_gpt_draft_store import _valid_authoring_markdown
@@ -54,6 +55,36 @@ def test_gpt_contract_requires_bearer_key(
     assert invalid.status_code == 401
     assert valid.status_code == 200
     assert valid.json()["contract_version"] == "chapter-galaxy-v1"
+
+
+def test_action_schema_is_public_and_uses_the_deployed_base_url(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _configure(monkeypatch, tmp_path)
+    client = TestClient(create_app("mixed"))
+
+    response = client.get("/api/gpt/v1/action-schema")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/yaml"
+    )
+    schema = yaml.safe_load(response.text)
+    assert schema["servers"] == [{"url": "https://math.example"}]
+    operation_ids = {
+        operation["operationId"]
+        for path_item in schema["paths"].values()
+        for operation in path_item.values()
+        if isinstance(operation, dict) and "operationId" in operation
+    }
+    assert operation_ids == {
+        "getProjectContract",
+        "createChapterDraft",
+        "updateChapterDraft",
+        "getChapterDraft",
+        "validateChapterDraft",
+    }
 
 
 def test_gpt_api_is_registered_only_on_mixed_profile(

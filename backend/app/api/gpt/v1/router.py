@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, ValidationError
+import yaml
 
 from app.api.gpt.v1.auth import require_gpt_authoring_key
 from app.api.gpt.v1.schemas import (
@@ -25,6 +27,12 @@ from app.config import chapter_draft_root, public_base_url
 
 
 router = APIRouter(prefix="/api/gpt/v1", tags=["gpt-authoring"])
+ACTION_SCHEMA_PATH = (
+    Path(__file__).resolve().parents[5]
+    / "docs"
+    / "custom-gpt"
+    / "chapter-authoring-actions.openapi.yaml"
+)
 
 
 def _service() -> GptAuthoringService:
@@ -83,6 +91,27 @@ def _domain_error(exc: Exception) -> HTTPException:
             "error_code": "chapter_draft_invalid",
             "message": str(exc),
         },
+    )
+
+
+@router.get(
+    "/action-schema",
+    include_in_schema=False,
+    response_class=Response,
+)
+def get_action_schema(request: Request) -> Response:
+    schema = yaml.safe_load(
+        ACTION_SCHEMA_PATH.read_text(encoding="utf-8")
+    )
+    base_url = public_base_url() or str(request.base_url).rstrip("/")
+    schema["servers"] = [{"url": base_url}]
+    return Response(
+        content=yaml.safe_dump(
+            schema,
+            allow_unicode=True,
+            sort_keys=False,
+        ),
+        media_type="application/yaml",
     )
 
 
