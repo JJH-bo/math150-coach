@@ -1,0 +1,166 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+  background: #030205;
+  color: #f2e4d6;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(117, 31, 7, .18), transparent 34%),
+    #030205;
+}
+
+button,
+input,
+textarea { font: inherit; }
+
+button {
+  border: 1px solid rgba(245, 153, 81, .35);
+  border-radius: 999px;
+  padding: 11px 18px;
+  color: #ffe6cd;
+  background: rgba(77, 24, 7, .48);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+.review-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: min(520px, 100%);
+  padding: 34px;
+  border: 1px solid rgba(245, 153, 81, .25);
+  border-radius: 24px;
+  background: rgba(9, 6, 8, .92);
+  box-shadow: 0 28px 100px rgba(0, 0, 0, .55);
+}
+
+.login-card label,
+.review-panel label {
+  display: block;
+  margin: 22px 0 8px;
+  color: rgba(238, 213, 190, .66);
+  font-size: 12px;
+}
+
+.login-card input,
+.review-panel textarea {
+  width: 100%;
+  border: 1px solid rgba(245, 153, 81, .26);
+  border-radius: 12px;
+  padding: 12px;
+  color: #fff2e6;
+  background: rgba(255, 255, 255, .035);
+  outline: none;
+}
+
+.login-card button { width: 100%; margin-top: 16px; }
+
+.eyebrow {
+  color: #ff944d;
+  font-size: 10px;
+  letter-spacing: .18em;
+}
+
+.review-workspace {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.preview-shell {
+  min-height: 100vh;
+  background: #000;
+}
+
+#galaxy-preview {
+  display: block;
+  width: 100%;
+  height: 100vh;
+  border: 0;
+}
+
+.review-panel {
+  position: relative;
+  z-index: 2;
+  padding: 30px 26px;
+  border-left: 1px solid rgba(255, 143, 67, .18);
+  background: rgba(7, 5, 7, .96);
+  box-shadow: -30px 0 90px rgba(0, 0, 0, .45);
+}
+
+.review-panel h1 { margin: 6px 0 8px; }
+
+.revision,
+.metrics,
+.status {
+  color: rgba(232, 211, 191, .62);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.issues {
+  margin: 28px 0;
+  padding: 18px;
+  border: 1px solid rgba(255, 145, 66, .16);
+  border-radius: 16px;
+  background: rgba(94, 29, 7, .12);
+}
+
+.issues h2 { margin: 0 0 10px; font-size: 13px; }
+.issues ul { margin: 0; padding-left: 18px; }
+.issues li { margin: 7px 0; color: #efaa76; font-size: 12px; }
+.issues li.pass { color: #8dc9a1; }
+
+.actions {
+  display: grid;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.approve {
+  border-color: rgba(255, 127, 41, .66);
+  background: linear-gradient(135deg, rgba(180, 48, 7, .75), rgba(87, 20, 5, .8));
+  box-shadow: 0 0 30px rgba(255, 82, 16, .16);
+}
+
+.reject { background: transparent; }
+
+.formal-link {
+  display: block;
+  margin-top: 16px;
+  color: #ffad70;
+  text-decoration: none;
+}
+
+[hidden] { display: none !important; }
+
+@media (max-width: 880px) {
+  .review-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-shell,
+  #galaxy-preview { min-height: 68vh; height: 68vh; }
+
+  .review-panel {
+    border-left: 0;
+    border-top: 1px solid rgba(255, 143, 67, .18);
+  }
+}

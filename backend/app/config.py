@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import os
 from enum import Enum
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class AppProfile(str, Enum):
@@ -30,4 +34,26 @@ def resolve_app_profile(profile: AppProfile | str | None = None) -> AppProfile:
     except ValueError as exc:
         supported = ", ".join(item.value for item in AppProfile)
         raise AppProfileConfigError(f"Invalid APP_PROFILE: {raw_profile}. Expected one of: {supported}.") from exc
+
+
+def chapter_draft_root() -> Path:
+    configured = os.getenv("CHAPTER_DRAFT_ROOT", "").strip()
+    return (
+        Path(configured).expanduser().resolve()
+        if configured
+        else (PROJECT_ROOT / "runtime" / "chapter_drafts").resolve()
+    )
+
+
+def public_base_url() -> str:
+    return os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/")
+
+
+def chapter_publish_target_root() -> Path:
+    configured = os.getenv("CHAPTER_PUBLISH_TARGET_ROOT", "").strip()
+    return (
+        Path(configured).expanduser().resolve()
+        if configured
+        else PROJECT_ROOT.resolve()
+    )
 

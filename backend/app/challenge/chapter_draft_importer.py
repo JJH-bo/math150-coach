@@ -33,11 +33,38 @@ ERROR_TYPES = {
     "migration_failure",
     "synthesis_failure",
 }
+HUMAN_REVIEW_CHECKS = (
+    ("math_scope_checked", "确认章节仍属于当前数学范围。"),
+    ("macro_micro_structure_checked", "确认 MacroNode 与 MicroNode 拆分清晰。"),
+    ("repair_targets_checked", "确认每个错因都能回到明确修复节点。"),
+    ("hidden_abilities_checked", "确认隐藏能力有存在理由和证据来源。"),
+    ("semantic_edges_checked", "确认语义边表达真实依赖、对比或修复关系。"),
+    ("boss_coverage_checked", "确认 Boss 覆盖关键 MicroNode。"),
+    ("learner_surface_safe", "确认草稿不会向学习者暴露可信答案或内部调试信息。"),
+)
 
 
 def validate_chapter_markdown(markdown: str) -> dict[str, Any]:
     importer = ChapterDraftImporter()
     return importer.validate(markdown)
+
+
+def record_chapter_human_review(
+    markdown: str,
+    *,
+    reviewer: str,
+    decision: str,
+    checklist: dict[str, bool] | None = None,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    importer = ChapterDraftImporter()
+    return importer.record_human_review(
+        markdown,
+        reviewer=reviewer,
+        decision=decision,
+        checklist=checklist or {},
+        notes=notes,
+    )
 
 
 class ChapterDraftImporter:
@@ -48,13 +75,74 @@ class ChapterDraftImporter:
         draft = self._build_draft(metadata, sections)
         report = self._validate_draft(draft)
         preview = self._preview(draft)
+        readiness = self._readiness(draft, report, preview)
         return {
             "mode": "structured_markdown_draft",
             "publish_state": "draft_only",
+            "workflow_stage": "draft_preview",
             "report": report,
             "draft": draft,
             "preview": preview,
+            "readiness": readiness,
+            "human_review": self._human_review_packet(report),
             "template": self.template(),
+        }
+
+    def record_human_review(
+        self,
+        markdown: str,
+        *,
+        reviewer: str,
+        decision: str,
+        checklist: dict[str, bool],
+        notes: str | None,
+    ) -> dict[str, Any]:
+        if decision not in {"request_changes", "approve_for_candidate"}:
+            raise ValueError("human review decision must be request_changes or approve_for_candidate")
+
+        validation = self.validate(markdown)
+        report = validation["report"]
+        checklist_items = self._review_checklist_items(checklist)
+        missing_checklist_codes = [item["code"] for item in checklist_items if not item["checked"]]
+        blocking_issue_count = int(report.get("error_count", 0) or 0)
+
+        if blocking_issue_count:
+            status = "blocked_by_validation"
+        elif decision == "request_changes":
+            status = "changes_requested"
+        elif missing_checklist_codes:
+            status = "review_incomplete"
+        else:
+            status = "approved_for_candidate"
+
+        candidate_build_allowed = status == "approved_for_candidate"
+        chapter_id = validation.get("draft", {}).get("chapter_id") or "chapter_draft"
+        reviewer_name = reviewer.strip()
+        record = {
+            "record_id": f"{chapter_id}.human_review.{self._safe_record_token(reviewer_name)}",
+            "chapter_id": chapter_id,
+            "reviewer": reviewer_name,
+            "decision": decision,
+            "status": status,
+            "notes": notes,
+            "checklist": checklist_items,
+            "missing_checklist_codes": missing_checklist_codes,
+            "blocking_issue_count": blocking_issue_count,
+            "warning_issue_count": int(report.get("warning_count", 0) or 0),
+            "issue_snapshot": validation["human_review"]["issue_snapshot"],
+        }
+        return {
+            "mode": "chapter_draft_human_review",
+            "workflow_stage": "human_review",
+            "publish_state": "draft_only",
+            "candidate_build_allowed": candidate_build_allowed,
+            "formal_publish_allowed": False,
+            "review_record": record,
+            "validation": {
+                "report": report,
+                "readiness": validation["readiness"],
+                "human_review": validation["human_review"],
+            },
         }
 
     @staticmethod
@@ -148,6 +236,7 @@ title: 一阶微分方程扩展示例
             "transfer_nodes": "transfernodes",
             "synthesis_nodes": "synthesisnodes",
             "error_repair_map": "errorrepairmap",
+            "source_evidence": "sourceevidence",
         }
         return aliases.get(key, key)
 
@@ -195,6 +284,7 @@ title: 一阶微分方程扩展示例
             for row in sections.get("macrochallenges", [])
         ]
         abilities = self._logic_abilities(sections)
+        source_evidence = self._source_evidence(sections.get("sourceevidence", []))
         compare_guards = [
             {
                 "id": row.get("id", ""),
@@ -231,6 +321,7 @@ title: 一阶微分方程扩展示例
             "logic_nodes": abilities + compare_guards,
             "logic_edges": edges,
             "error_repair_map": repair_map,
+            "source_evidence": source_evidence,
             "challenge_graph_draft": {
                 "chapter_id": chapter_id,
                 "title": title,
@@ -245,6 +336,35 @@ title: 一阶微分方程扩展示例
                 "edges": edges,
             },
         }
+
+    def _source_evidence(self, rows: list[dict[str, str]]) -> dict[str, Any]:
+        evidence: dict[str, Any] = {}
+        for row in rows:
+            key = row.get("key", "").strip()
+            raw_values = row.get("values", "").strip()
+            if not key or not raw_values:
+                continue
+            if key == "math1_value":
+                evidence[key] = self._split_key_value_list(raw_values)
+                continue
+            if key in {"chapter_topic", "subject_area"}:
+                evidence[key] = raw_values
+                continue
+            evidence[key] = self._split_semicolon_list(raw_values)
+        return evidence
+
+    @staticmethod
+    def _split_semicolon_list(raw: str) -> list[str]:
+        return [item.strip() for item in raw.split(";") if item.strip()]
+
+    def _split_key_value_list(self, raw: str) -> dict[str, str]:
+        values: dict[str, str] = {}
+        for item in re.split(r"[;,]", raw):
+            if "=" not in item:
+                continue
+            key, value = item.split("=", 1)
+            values[key.strip()] = value.strip()
+        return values
 
     def _logic_abilities(self, sections: dict[str, list[dict[str, str]]]) -> list[dict[str, Any]]:
         abilities: list[dict[str, Any]] = []
@@ -345,7 +465,13 @@ title: 一阶微分方程扩展示例
                 if edge.get(field) not in known_ids:
                     errors.append(self._issue(edge.get("id", "logic_edges"), f"{field} 引用了不存在的节点：{edge.get(field)}。"))
             if not edge.get("reason"):
-                warnings.append(self._issue(edge.get("id", "logic_edges"), "语义边缺少 reason，后续解释力会变弱。"))
+                warnings.append(
+                    self._issue(
+                        edge.get("id", "logic_edges"),
+                        "语义边缺少 reason，后续解释力会变弱。",
+                        severity="warning",
+                    )
+                )
 
     def _quality_checks(
         self,
@@ -362,7 +488,13 @@ title: 一阶微分方程扩展示例
             if count > 12:
                 errors.append(self._issue(macro_id, "单个 MacroNode 可见 MicroNode 超过 12 个，地图会膨胀。"))
             elif count > 8:
-                warnings.append(self._issue(macro_id, "单个 MacroNode 可见 MicroNode 超过 8 个，建议合并或转为 HiddenAbility。"))
+                warnings.append(
+                    self._issue(
+                        macro_id,
+                        "单个 MacroNode 可见 MicroNode 超过 8 个，建议合并或转为 HiddenAbility。",
+                        severity="warning",
+                    )
+                )
 
         for logic in draft.get("logic_nodes", []):
             if logic.get("node_kind") == "compare_guard":
@@ -395,7 +527,13 @@ title: 一阶微分方程扩展示例
         }
         orphan_logic = sorted(logic_ids - edge_connected_logic)
         if orphan_logic:
-            warnings.append(self._issue("logic_edges", f"存在未被语义边连接的逻辑节点：{', '.join(orphan_logic)}。"))
+            warnings.append(
+                self._issue(
+                    "logic_edges",
+                    f"存在未被语义边连接的逻辑节点：{', '.join(orphan_logic)}。",
+                    severity="warning",
+                )
+            )
 
     @staticmethod
     def _preview(draft: dict[str, Any]) -> dict[str, Any]:
@@ -426,12 +564,282 @@ title: 一阶微分方程扩展示例
             },
         }
 
+    def _readiness(
+        self,
+        draft: dict[str, Any],
+        report: dict[str, Any],
+        preview: dict[str, Any],
+    ) -> dict[str, Any]:
+        error_count = int(report.get("error_count", 0) or 0)
+        warning_count = int(report.get("warning_count", 0) or 0)
+        max_micro_per_macro = self._max_micro_per_macro(draft)
+        repair_blocking_codes = {"invalid_repair_target", "invalid_root_cause", "missing_repair_map"}
+        repair_errors = [
+            error
+            for error in report.get("errors", [])
+            if error.get("code") in repair_blocking_codes
+            or "repair" in error.get("message", "")
+            or "repair_target" in error.get("message", "")
+        ]
+        has_repair_map = bool(draft.get("error_repair_map"))
+
+        visible_budget_state = "pass"
+        if max_micro_per_macro > 12:
+            visible_budget_state = "fail"
+        elif max_micro_per_macro > 8:
+            visible_budget_state = "warn"
+
+        repair_targets_state = "pass"
+        if repair_errors or not has_repair_map:
+            repair_targets_state = "fail"
+
+        return {
+            "status": "blocked" if error_count else "review_ready",
+            "publish_allowed": False,
+            "blocking_error_count": error_count,
+            "warning_count": warning_count,
+            "next_action": "fix_validation_errors" if error_count else "human_review",
+            "counts": dict(preview.get("counts", {})),
+            "visible_budget": {
+                "max_micro_per_macro": max_micro_per_macro,
+                "recommended_max": 8,
+                "hard_max": 12,
+            },
+            "checks": [
+                {
+                    "code": "graph_valid",
+                    "label": "Graph validation",
+                    "state": "fail" if error_count else "pass",
+                    "summary": f"{error_count} blocking errors" if error_count else "No blocking validation errors",
+                },
+                {
+                    "code": "visible_budget",
+                    "label": "Visible node budget",
+                    "state": visible_budget_state,
+                    "summary": f"Max {max_micro_per_macro} visible MicroNodes per MacroNode",
+                },
+                {
+                    "code": "repair_targets",
+                    "label": "Repair targets",
+                    "state": repair_targets_state,
+                    "summary": (
+                        "Repair targets mapped to visible MicroNodes"
+                        if repair_targets_state == "pass"
+                        else "Repair target coverage needs fixes"
+                    ),
+                },
+                {
+                    "code": "human_review_required",
+                    "label": "Human review",
+                    "state": "locked",
+                    "summary": "Human review is required before candidate build",
+                },
+                {
+                    "code": "formal_publish_locked",
+                    "label": "Formal publish",
+                    "state": "locked",
+                    "summary": "Formal publish is not available from draft preview",
+                },
+            ],
+        }
+
+    @staticmethod
+    def _max_micro_per_macro(draft: dict[str, Any]) -> int:
+        counts = Counter(
+            micro.get("macro_node_id", "")
+            for micro in draft.get("micro_nodes", [])
+            if micro.get("macro_node_id")
+        )
+        return max(counts.values(), default=0)
+
+    def _human_review_packet(self, report: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "required": True,
+            "status": "blocked_by_validation" if report.get("error_count", 0) else "pending",
+            "candidate_build_allowed": False,
+            "formal_publish_allowed": False,
+            "required_checklist": [
+                {
+                    "code": code,
+                    "label": label,
+                    "required": True,
+                    "checked": False,
+                }
+                for code, label in HUMAN_REVIEW_CHECKS
+            ],
+            "issue_snapshot": self._issue_snapshot(report),
+        }
+
+    @staticmethod
+    def _review_checklist_items(checklist: dict[str, bool]) -> list[dict[str, Any]]:
+        return [
+            {
+                "code": code,
+                "label": label,
+                "required": True,
+                "checked": bool(checklist.get(code, False)),
+            }
+            for code, label in HUMAN_REVIEW_CHECKS
+        ]
+
+    @staticmethod
+    def _safe_record_token(value: str) -> str:
+        token = re.sub(r"[^a-zA-Z0-9_.-]+", "_", value.strip()).strip("._-")
+        return token or "reviewer"
+
+    @staticmethod
+    def _issue_snapshot(report: dict[str, Any]) -> list[dict[str, str]]:
+        issues = [*report.get("errors", []), *report.get("warnings", [])]
+        return [
+            {
+                "code": issue.get("code", "draft_issue"),
+                "severity": issue.get("severity", "issue"),
+                "target": issue.get("target", "draft"),
+                "target_kind": issue.get("target_kind", "draft"),
+            }
+            for issue in issues
+        ]
+
     @staticmethod
     def _split_list(value: str) -> list[str]:
         if not value:
             return []
         return [item.strip() for item in re.split(r"[,，;；]", value) if item.strip()]
 
+    @classmethod
+    def _issue(
+        cls,
+        target: str,
+        message: str,
+        *,
+        severity: str = "error",
+        code: str | None = None,
+        target_kind: str | None = None,
+        suggested_fix: str | None = None,
+    ) -> dict[str, str]:
+        profile = cls._issue_profile(target, message, severity)
+        return {
+            "target": target,
+            "message": message,
+            "code": code or profile["code"],
+            "severity": severity,
+            "target_kind": target_kind or profile["target_kind"],
+            "suggested_fix": suggested_fix or profile["suggested_fix"],
+        }
+
+    @classmethod
+    def _issue_profile(cls, target: str, message: str, severity: str) -> dict[str, str]:
+        text = f"{target} {message}".lower()
+        target_kind = cls._issue_target_kind(target)
+
+        code = "draft_validation_warning" if severity == "warning" else "draft_validation_error"
+        suggested_fix = "根据提示修正这个草稿条目后重新校验。"
+
+        if target == "chapter_id":
+            code = "invalid_chapter_id"
+            target_kind = "chapter"
+            suggested_fix = "填写只包含字母、数字、下划线、点或短横线的 chapter_id。"
+        elif "缺少 id" in message:
+            code = "missing_item_id"
+            suggested_fix = "为该表格中的每个条目补充唯一 id。"
+        elif "重复" in message and "id" in text:
+            code = "duplicate_item_id"
+            suggested_fix = "保留一个 id，并把重复条目改成新的唯一 id。"
+        elif "micronode" in text and "12" in text:
+            code = "visible_node_budget_exceeded"
+            target_kind = "macro_nodes"
+            suggested_fix = "减少该 MacroNode 下的可见 MicroNode，或迁移为 HiddenAbility。"
+        elif "micronode" in text and "8" in text:
+            code = "visible_node_budget_warning"
+            target_kind = "macro_nodes"
+            suggested_fix = "考虑合并相近 MicroNode，或把细粒度能力转为 HiddenAbility。"
+        elif "macrochallenge" in text and "macronode" in text:
+            code = "invalid_macro_challenge_macro"
+            suggested_fix = "把 MacroChallenge 绑定到已存在的 MacroNode。"
+        elif "boss" in text and "micronode" in text:
+            code = "invalid_macro_challenge_coverage"
+            suggested_fix = "只在 covers_micro_nodes 中填写已存在的 MicroNode。"
+        elif "micronode" in text and "macronode" in text:
+            code = "invalid_micro_macro"
+            suggested_fix = "把 MicroNode 的 macro_node_id 改为已存在的 MacroNode。"
+        elif "micronode type" in text:
+            code = "invalid_micro_type"
+            suggested_fix = "把 MicroNode type 改为允许集合中的一种。"
+        elif "compareguard" in text and "contrast" in text:
+            code = "missing_compare_contrast"
+            target_kind = "logic_nodes"
+            suggested_fix = "补充 CompareGuard 的 contrast，写清两个节点容易混淆的题眼差异。"
+        elif "compareguard" in text:
+            code = "invalid_compare_guard"
+            target_kind = "logic_nodes"
+            suggested_fix = "让 CompareGuard 至少连接两个已存在且容易混淆的节点。"
+        elif "owner_node_id" in text:
+            code = "invalid_logic_owner"
+            target_kind = "logic_nodes"
+            suggested_fix = "把 owner_node_id 改为已存在的可见节点、Boss 或逻辑节点。"
+        elif target == "error_repair_map" and "root cause" in text:
+            code = "missing_repair_map"
+            target_kind = "error_repair_map"
+            suggested_fix = "至少补充一个 root_cause 到 MicroNode repair target 的映射。"
+        elif "root_cause" in text and "repair target" not in text:
+            code = "invalid_root_cause"
+            target_kind = "error_repair_map"
+            suggested_fix = "把 root_cause 改为系统已知错因集合中的一种。"
+        elif "repair target" in text or "repair_target_node_id" in text:
+            code = "invalid_repair_target"
+            suggested_fix = "把修复目标改为已存在的 MicroNode id。"
+        elif "edge_type" in text:
+            code = "invalid_edge_type"
+            target_kind = "logic_edges"
+            suggested_fix = "把 edge_type 改为允许的语义边类型。"
+        elif "自连" in message:
+            code = "self_loop_edge"
+            target_kind = "logic_edges"
+            suggested_fix = "把这条边改成连接两个不同节点。"
+        elif "source_id" in text or "target_id" in text:
+            code = "invalid_edge_endpoint"
+            target_kind = "logic_edges"
+            suggested_fix = "把边的 source_id 和 target_id 都改为已存在节点。"
+        elif "reason" in text and severity == "warning":
+            code = "missing_edge_reason"
+            target_kind = "logic_edges"
+            suggested_fix = "补一句这条语义边存在的原因。"
+        elif "why_exists" in text:
+            code = "missing_why_exists"
+            target_kind = "logic_nodes"
+            suggested_fix = "补充该隐藏、迁移或综合能力为什么必须存在。"
+        elif "evidence_sources" in text:
+            code = "missing_evidence_sources"
+            target_kind = "logic_nodes"
+            suggested_fix = "为 HiddenAbility 补充 rubric、self_explanation 或 response_steps 等证据来源。"
+        elif target == "logic_edges" and severity == "warning":
+            code = "orphan_logic_node"
+            target_kind = "logic_edges"
+            suggested_fix = "为这些逻辑节点补充 supports、checks、contrasts 或 repairs 等语义边。"
+
+        return {
+            "code": code,
+            "target_kind": target_kind,
+            "suggested_fix": suggested_fix,
+        }
+
     @staticmethod
-    def _issue(target: str, message: str) -> dict[str, str]:
-        return {"target": target, "message": message}
+    def _issue_target_kind(target: str) -> str:
+        if target == "chapter_id":
+            return "chapter"
+        if target in {"macro_nodes", "micro_nodes", "macro_challenges", "logic_nodes", "logic_edges"}:
+            return target
+        if target == "error_repair_map" or target in ERROR_TYPES:
+            return "error_repair_map"
+        if target == "compare_guard":
+            return "logic_nodes"
+        lowered = target.lower()
+        if re.fullmatch(r"e\d+", lowered):
+            return "logic_edges"
+        if ".macro_challenge" in lowered:
+            return "macro_challenges"
+        if ".hidden." in lowered or ".transfer." in lowered or ".synthesis." in lowered or ".compare." in lowered:
+            return "logic_nodes"
+        if ".macro." in lowered:
+            return "micro_nodes"
+        return "draft_item"

@@ -5,7 +5,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.api.chapter_review.v1.router import router as chapter_review_router
 from app.api.challenge.v1.router import router as challenge_v1_router
+from app.api.gpt.v1.router import router as gpt_authoring_router
 from app.api.learner.v1.router import router as learner_v1_router
 from app.api.v1.router import router as api_v1_router
 from app.config import AppProfile, resolve_app_profile
@@ -29,6 +31,8 @@ def create_app(profile: AppProfile | str | None = None) -> FastAPI:
         application.include_router(learner_v1_router)
     if resolved_profile == AppProfile.MIXED:
         application.include_router(challenge_v1_router)
+        application.include_router(gpt_authoring_router)
+        application.include_router(chapter_review_router)
         if FRONTEND_DIR.exists():
             application.mount("/trainer", StaticFiles(directory=FRONTEND_DIR, html=True), name="trainer")
 

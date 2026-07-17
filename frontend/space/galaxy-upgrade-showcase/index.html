@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Galaxy Observatory / Upgrade Visions</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --warm: #ffb36b;
+      --hot: #ff5d2c;
+      --cold: #80c8ff;
+      --ink: rgba(5, 4, 7, .78);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: Inter, "Microsoft YaHei", system-ui, sans-serif;
+    }
+    #showcase {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      isolation: isolate;
+      background: #000;
+    }
+    #base-scene,
+    #upgrade-layer,
+    .tone,
+    .grain {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    #base-scene {
+      z-index: 0;
+      pointer-events: none;
+      background: #000;
+    }
+    #upgrade-layer { z-index: 1; pointer-events: none; }
+    .tone {
+      z-index: 2;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 79% 50%, transparent 0 28%, rgba(0,0,0,.12) 64%, rgba(0,0,0,.52) 110%),
+        linear-gradient(90deg, rgba(0,0,0,.18), transparent 42%, rgba(28,3,0,.08));
+      mix-blend-mode: multiply;
+    }
+    .grain {
+      z-index: 3;
+      pointer-events: none;
+      opacity: .12;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.84' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+    }
+    .topline {
+      position: absolute;
+      z-index: 5;
+      top: 22px;
+      left: 24px;
+      right: 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      pointer-events: none;
+    }
+    .brand {
+      color: rgba(255,242,222,.86);
+      font-size: 11px;
+      line-height: 1.45;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 18px #000;
+    }
+    .brand strong { display: block; font-size: 13px; font-weight: 600; }
+    .brand span { color: rgba(222,190,159,.48); }
+    .mode-nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
+      max-width: 700px;
+      pointer-events: auto;
+    }
+    .mode-nav button,
+    .system-picker button {
+      border: 1px solid rgba(235,172,111,.18);
+      border-radius: 999px;
+      color: rgba(240,218,196,.54);
+      background: rgba(8,6,8,.58);
+      backdrop-filter: blur(14px);
+      padding: 8px 12px;
+      font: 10px/1 Inter, "Microsoft YaHei", sans-serif;
+      letter-spacing: .08em;
+      cursor: pointer;
+      transition: color .25s ease, border-color .25s ease, background .25s ease, transform .25s ease;
+    }
+    .mode-nav button:hover,
+    .system-picker button:hover { color: #fff1dd; border-color: rgba(255,179,107,.5); }
+    .mode-nav button.active,
+    .system-picker button.active {
+      color: #fff5e8;
+      border-color: rgba(255,171,91,.6);
+      background: rgba(101,38,13,.52);
+      box-shadow: 0 0 28px rgba(255,91,31,.13);
+      transform: translateY(-1px);
+    }
+    .mode-nav b { color: rgba(255,181,106,.72); font-weight: 600; margin-right: 5px; }
+    .concept {
+      position: absolute;
+      z-index: 5;
+      left: 26px;
+      bottom: 24px;
+      width: min(430px, calc(100vw - 52px));
+      padding: 18px 19px 17px;
+      border: 1px solid rgba(230,174,119,.16);
+      border-radius: 16px;
+      color: rgba(247,232,213,.88);
+      background: linear-gradient(135deg, rgba(10,8,11,.82), rgba(22,10,8,.55));
+      backdrop-filter: blur(20px) saturate(1.1);
+      box-shadow: 0 18px 60px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.025);
+    }
+    .eyebrow {
+      color: rgba(255,176,103,.62);
+      font-size: 9px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .concept h1 {
+      margin: 0 0 7px;
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: .035em;
+    }
+    .concept p {
+      margin: 0;
+      color: rgba(220,199,181,.64);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+    .chip {
+      border: 1px solid rgba(227,169,112,.13);
+      border-radius: 999px;
+      padding: 5px 8px;
+      color: rgba(237,210,184,.55);
+      background: rgba(255,129,48,.04);
+      font-size: 9px;
+      letter-spacing: .06em;
+    }
+    .system-picker {
+      display: none;
+      gap: 6px;
+      margin-top: 13px;
+    }
+    .system-picker.visible { display: flex; }
+    .progress-control { display: none; margin-top: 14px; }
+    .progress-control.visible { display: block; }
+    .progress-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      color: rgba(239,216,193,.6);
+      font-size: 10px;
+      letter-spacing: .08em;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #ff7134;
+      cursor: pointer;
+    }
+    .corner-note {
+      position: absolute;
+      z-index: 5;
+      right: 26px;
+      bottom: 26px;
+      color: rgba(221,194,169,.34);
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-align: right;
+      text-transform: uppercase;
+      text-shadow: 0 2px 16px #000;
+      pointer-events: none;
+    }
+    @media (max-width: 860px) {
+      .topline { top: 14px; left: 14px; right: 14px; display: block; }
+      .brand { margin-bottom: 10px; }
+      .mode-nav { justify-content: flex-start; max-width: none; }
+      .mode-nav button { padding: 7px 9px; }
+      .concept { left: 14px; bottom: 14px; width: min(410px, calc(100vw - 28px)); }
+      .corner-note { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main id="showcase">
+    <iframe id="base-scene" src="../galaxy-lab/" title="当前已通过的黑洞中心扇形星系"></iframe>
+    <canvas id="upgrade-layer" aria-label="升级方案动态效果预演"></canvas>
+    <div class="tone"></div>
+    <div class="grain"></div>
+
+    <header class="topline">
+      <div class="brand"><strong>Chapter Observatory / Next Visions</strong><span>基于当前已通过版本 · 只预演新增层</span></div>
+      <nav class="mode-nav" aria-label="升级方案">
+        <button type="button" data-mode="base"><b>0</b>当前基准</button>
+        <button type="button" data-mode="gravity" class="active"><b>A</b>引力潮汐场</button>
+        <button type="button" data-mode="domains"><b>B</b>模块星域</button>
+        <button type="button" data-mode="focus"><b>C</b>知识锁定</button>
+        <button type="button" data-mode="evolution"><b>D</b>章节觉醒</button>
+      </nav>
+    </header>
+
+    <section class="concept" aria-live="polite">
+      <div class="eyebrow" id="eyebrow">Recommended / Environment</div>
+      <h1 id="concept-title">A · 引力潮汐场</h1>
+      <p id="concept-copy">让Boss的引力真正作用于整个章节：星际尘埃持续被拉向黑洞，空间出现缓慢潮汐波纹，终端连线在靠近视界时产生光学偏折。</p>
+      <div class="chips" id="chips"></div>
+      <div class="system-picker" id="system-picker">
+        <button type="button" data-system="0" class="active">模块 I</button>
+        <button type="button" data-system="1">模块 II</button>
+        <button type="button" data-system="2">模块 III</button>
+      </div>
+      <label class="progress-control" id="progress-control">
+        <span class="progress-head"><span>章节掌握度</span><b id="progress-value">68%</b></span>
+        <input id="progress" type="range" min="0" max="100" value="68">
+      </label>
+    </section>
+
+    <div class="corner-note">拖动上方编号切换方案<br>所有方案均保留现有Boss、星球与相机</div>
+  </main>
+
+  <script type="module">
+    import { createObservatoryCamera, createSceneFrame } from '../galaxy-lab/observatory-camera.mjs';
+
+    const baseScene = document.querySelector('#base-scene');
+    const canvas = document.querySelector('#upgrade-layer');
+    const ctx = canvas.getContext('2d');
+    const frame = createSceneFrame(createObservatoryCamera(), innerWidth / Math.max(innerHeight, 1));
+    const title = document.querySelector('#concept-title');
+    const copy = document.querySelector('#concept-copy');
+    const eyebrow = document.querySelector('#eyebrow');
+    const chips = document.querySelector('#chips');
+    const picker = document.querySelector('#system-picker');
+    const progressControl = document.querySelector('#progress-control');
+    const progressInput = document.querySelector('#progress');
+    const progressValue = document.querySelector('#progress-value');
+    let mode = 'gravity';
+    let activeSystem = 0;
+    let progress = 0.68;
+    let width = 1;
+    let height = 1;
+    let dpr = 1;
+
+    const hideBaseInterface = () => {
+      const doc = baseScene.contentDocument;
+      if (!doc) return;
+      ['.hud', '.legend', '.camera-state'].forEach((selector) => {
+        const element = doc.querySelector(selector);
+        if (element) element.style.display = 'none';
+      });
+    };
+    baseScene.addEventListener('load', hideBaseInterface);
+    hideBaseInterface();
+
+    const concepts = {
+      base: {
+        eyebrow: 'Accepted / Current Baseline',
+        title: '0 · 当前基准',
+        copy: '保留现在已经正确的黑洞中心扇形观察。切换其他编号，只叠加新的视觉或交互层，方便直接判断升级是否值得进入正式版本。',
+        chips: ['现有Boss', '现有恒星材质', '现有扇形相机'],
+      },
+      gravity: {
+        eyebrow: 'Recommended / Environment',
+        title: 'A · 引力潮汐场',
+        copy: '让Boss的引力真正作用于整个章节：星际尘埃持续被拉向黑洞，空间出现缓慢潮汐波纹，终端连线在靠近视界时产生光学偏折。',
+        chips: ['动态尘埃吸积', '空间潮汐波', '连线引力偏折'],
+      },
+      domains: {
+        eyebrow: 'Structure / Chapter Identity',
+        title: 'B · 模块星域',
+        copy: '每个核心模块不再只是四颗恒星，而成为一块可辨认的局部星域：拥有自己的稀薄星云、轨道平面和远距离地标，解决模块边界不清的问题。',
+        chips: ['局部体积星云', '模块轨道平面', '远距离地标'],
+      },
+      focus: {
+        eyebrow: 'Interaction / Learning Focus',
+        title: 'C · 知识锁定',
+        copy: '选择一个核心模块后，其他区域进入低亮度，当前模块和通往Boss的验收路径被逐段点亮。后续点击恒星进入训练时，可以沿用这套聚焦语言。',
+        chips: ['模块聚焦', '路径逐段点亮', '训练入口过渡'],
+      },
+      evolution: {
+        eyebrow: 'Progress / Living Chapter',
+        title: 'D · 章节觉醒',
+        copy: '把学习进度变成宇宙状态：掌握度越高，模块星域越稳定、连线能流越完整，Boss吸积盘出现更强的周期响应，让整个章节像一个会成长的天体系统。',
+        chips: ['进度可视化', '能流完整度', 'Boss周期响应'],
+      },
+    };
+
+    const particles = Array.from({ length: 96 }, (_, index) => ({
+      route: [4, 9, 14][index % 3],
+      phase: ((index * 0.61803398875) % 1),
+      speed: 0.026 + (index % 7) * 0.004,
+      size: 0.7 + (index % 4) * 0.28,
+    }));
+
+    const toScreen = ([x, y]) => [width * 0.5 + x * height * 0.5, height * 0.5 - y * height * 0.5];
+    const cubic = (route, t) => {
+      const points = [route.a, route.b, route.c, route.d].map(toScreen);
+      const u = 1 - t;
+      return [
+        u*u*u*points[0][0] + 3*u*u*t*points[1][0] + 3*u*t*t*points[2][0] + t*t*t*points[3][0],
+        u*u*u*points[0][1] + 3*u*u*t*points[1][1] + 3*u*t*t*points[2][1] + t*t*t*points[3][1],
+      ];
+    };
+
+    const resize = () => {
+      dpr = Math.min(devicePixelRatio || 1, 1.5);
+      width = innerWidth;
+      height = innerHeight;
+      canvas.width = Math.max(2, Math.round(width * dpr));
+      canvas.height = Math.max(2, Math.round(height * dpr));
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    addEventListener('resize', resize);
+    resize();
+
+    const strokeRoute = (route, color, lineWidth, alpha = 1) => {
+      const a = toScreen(route.a);
+      const b = toScreen(route.b);
+      const c = toScreen(route.c);
+      const d = toScreen(route.d);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = lineWidth * 5;
+      ctx.beginPath();
+      ctx.moveTo(...a);
+      ctx.bezierCurveTo(...b, ...c, ...d);
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    const drawGravity = (seconds) => {
+      const boss = toScreen(frame.boss.center);
+      ctx.save();
+      ctx.translate(boss[0], boss[1]);
+      ctx.rotate(-0.12);
+      for (let index = 0; index < 7; index += 1) {
+        const pulse = Math.sin(seconds * 0.48 + index * 1.31) * 5;
+        ctx.strokeStyle = `rgba(255,${96 + index * 10},48,${0.075 - index * 0.006})`;
+        ctx.lineWidth = 1 + (index % 2) * .5;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 150 + index * 41 + pulse, 72 + index * 19 + pulse * .4, 0, Math.PI * .74, Math.PI * 1.75);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      [4, 9, 14].forEach((index, routeIndex) => {
+        strokeRoute(frame.routes[index], routeIndex === 0 ? '#ffd58f' : '#ff7a3e', 1.15, .34);
+      });
+
+      particles.forEach((particle, index) => {
+        const t = (seconds * particle.speed + particle.phase) % 1;
+        const p = cubic(frame.routes[particle.route], t);
+        const tail = cubic(frame.routes[particle.route], Math.max(0, t - .025));
+        const alpha = Math.sin(Math.PI * t) * (0.25 + (index % 5) * .06);
+        ctx.strokeStyle = `rgba(255,${128 + index % 80},82,${alpha})`;
+        ctx.lineWidth = particle.size;
+        ctx.beginPath();
+        ctx.moveTo(tail[0], tail[1]);
+        ctx.lineTo(p[0], p[1]);
+        ctx.stroke();
+      });
+
+      const glow = ctx.createRadialGradient(boss[0], boss[1], 20, boss[0], boss[1], Math.min(width, height) * .35);
+      glow.addColorStop(0, 'rgba(255,70,20,.025)');
+      glow.addColorStop(.45, 'rgba(255,50,10,.012)');
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, width, height);
+    };
+
+    const drawDomains = (seconds) => {
+      const palettes = [
+        ['255,153,70', '模块 I · 基础场'],
+        ['118,190,255', '模块 II · 变化场'],
+        ['211,118,255', '模块 III · 综合场'],
+      ];
+      frame.systems.forEach((system, index) => {
+        const [x, y] = toScreen(system.center);
+        const radius = Math.max(78, system.radius * height * .82);
+        const [color, label] = palettes[index];
+        const cloud = ctx.createRadialGradient(x, y, radius * .08, x, y, radius * 1.25);
+        cloud.addColorStop(0, `rgba(${color},.085)`);
+        cloud.addColorStop(.48, `rgba(${color},.04)`);
+        cloud.addColorStop(1, `rgba(${color},0)`);
+        ctx.fillStyle = cloud;
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 1.25, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate([-0.36, .22, -.14][index]);
+        ctx.strokeStyle = `rgba(${color},.28)`;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 7]);
+        ctx.lineDashOffset = -seconds * (5 + index);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radius * 1.08, radius * .46, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        for (let star = 0; star < 26; star += 1) {
+          const angle = star * 2.399 + index * 1.7;
+          const r = radius * (.28 + ((star * 37) % 61) / 100);
+          const sx = x + Math.cos(angle) * r;
+          const sy = y + Math.sin(angle) * r * .48;
+          const flicker = .18 + .14 * Math.sin(seconds * 1.3 + star);
+          ctx.fillStyle = `rgba(${color},${flicker})`;
+          ctx.fillRect(sx, sy, star % 7 === 0 ? 1.8 : 1, star % 7 === 0 ? 1.8 : 1);
+        }
+
+        ctx.fillStyle = `rgba(${color},.72)`;
+        ctx.font = '500 10px Inter, Microsoft YaHei, sans-serif';
+        ctx.letterSpacing = '.08em';
+        ctx.fillText(label, x - radius * .78, y - radius * .68);
+      });
+    };
+
+    const drawFocus = (seconds) => {
+      const system = frame.systems[activeSystem];
+      const [x, y] = toScreen(system.center);
+      const radius = Math.max(116, system.radius * height * 1.05);
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,.52)';
+      ctx.fillRect(0, 0, width, height);
+      ctx.globalCompositeOperation = 'destination-out';
+      const aperture = ctx.createRadialGradient(x, y, radius * .18, x, y, radius * 1.15);
+      aperture.addColorStop(0, 'rgba(0,0,0,.98)');
+      aperture.addColorStop(.55, 'rgba(0,0,0,.74)');
+      aperture.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = aperture;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      for (let index = activeSystem * 5; index < activeSystem * 5 + 5; index += 1) {
+        const terminal = index % 5 === 4;
+        strokeRoute(frame.routes[index], terminal ? '#ffbc67' : '#fff0c5', terminal ? 2 : 1.25, terminal ? .8 : .46);
+      }
+
+      const scan = (seconds * 36) % (radius * 1.7) - radius * .85;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.strokeStyle = 'rgba(255,203,142,.42)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * .72 + Math.sin(seconds) * 3, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,195,125,.16)';
+      ctx.beginPath();
+      ctx.moveTo(-radius, scan);
+      ctx.lineTo(radius, scan);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(255,225,190,.74)';
+      ctx.font = '500 10px Inter, Microsoft YaHei, sans-serif';
+      ctx.fillText(`CORE MODULE 0${activeSystem + 1} / LOCKED`, x - radius * .72, y - radius * .86);
+    };
+
+    const drawEvolution = (seconds) => {
+      const boss = toScreen(frame.boss.center);
+      frame.routes.forEach((route, index) => {
+        const threshold = (index + 1) / frame.routes.length;
+        const enabled = progress >= threshold;
+        strokeRoute(route, index % 5 === 4 ? '#ff8b43' : '#ffd289', enabled ? 1.45 : .7, enabled ? .34 + progress * .32 : .05);
+      });
+
+      frame.systems.forEach((system, index) => {
+        const [x, y] = toScreen(system.center);
+        const localProgress = Math.max(0, Math.min(1, progress * 1.35 - index * .16));
+        const radius = Math.max(66, system.radius * height * .72);
+        ctx.strokeStyle = `rgba(255,169,84,${.12 + localProgress * .46})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, -Math.PI * .5, -Math.PI * .5 + Math.PI * 2 * localProgress);
+        ctx.stroke();
+        const halo = ctx.createRadialGradient(x, y, 4, x, y, radius * 1.3);
+        halo.addColorStop(0, `rgba(255,120,52,${localProgress * .075})`);
+        halo.addColorStop(1, 'rgba(255,80,20,0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(x, y, radius * 1.3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const heartbeat = .5 + .5 * Math.sin(seconds * (1.1 + progress * 2.2));
+      const ringRadius = 105 + progress * 58 + heartbeat * 8;
+      ctx.strokeStyle = `rgba(255,82,28,${.08 + progress * .2})`;
+      ctx.lineWidth = 1.2 + progress * 1.6;
+      ctx.beginPath();
+      ctx.arc(boss[0], boss[1], ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      const pulse = ctx.createRadialGradient(boss[0], boss[1], 20, boss[0], boss[1], ringRadius * 1.9);
+      pulse.addColorStop(0, `rgba(255,70,18,${progress * heartbeat * .035})`);
+      pulse.addColorStop(1, 'rgba(255,40,0,0)');
+      ctx.fillStyle = pulse;
+      ctx.fillRect(0, 0, width, height);
+    };
+
+    const render = (milliseconds) => {
+      ctx.clearRect(0, 0, width, height);
+      const seconds = milliseconds * .001;
+      if (mode === 'gravity') drawGravity(seconds);
+      if (mode === 'domains') drawDomains(seconds);
+      if (mode === 'focus') drawFocus(seconds);
+      if (mode === 'evolution') drawEvolution(seconds);
+      requestAnimationFrame(render);
+    };
+    requestAnimationFrame(render);
+
+    const setMode = (next) => {
+      mode = next;
+      const concept = concepts[next];
+      eyebrow.textContent = concept.eyebrow;
+      title.textContent = concept.title;
+      copy.textContent = concept.copy;
+      chips.replaceChildren(...concept.chips.map((text) => {
+        const element = document.createElement('span');
+        element.className = 'chip';
+        element.textContent = text;
+        return element;
+      }));
+      picker.classList.toggle('visible', next === 'focus');
+      progressControl.classList.toggle('visible', next === 'evolution');
+      document.querySelectorAll('[data-mode]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.mode === next);
+      });
+    };
+
+    document.querySelectorAll('[data-mode]').forEach((button) => {
+      button.addEventListener('click', () => setMode(button.dataset.mode));
+    });
+    document.querySelectorAll('[data-system]').forEach((button) => {
+      button.addEventListener('click', () => {
+        activeSystem = Number(button.dataset.system);
+        document.querySelectorAll('[data-system]').forEach((item) => {
+          item.classList.toggle('active', item === button);
+        });
+      });
+    });
+    progressInput.addEventListener('input', () => {
+      progress = Number(progressInput.value) / 100;
+      progressValue.textContent = `${progressInput.value}%`;
+    });
+    setMode('gravity');
+  </script>
+</body>
+</html>

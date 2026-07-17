@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.api.v1.nodes import load_node_catalog
+from app.challenge.chapter_registry import ChapterRuntimeRegistry
 from app.challenge.models import (
     ChallengeEvaluation,
     ChallengeGraph,
@@ -98,6 +99,7 @@ class ChallengeEngine:
         self.store = store or ChallengeProgressStore()
         self.processor = processor or self._process_with_orchestrator
         self.logic_graph_repository = logic_graph_repository or LogicGraphRepository()
+        self.runtime_registry = ChapterRuntimeRegistry(self.repository)
 
     def start(
         self,
@@ -106,6 +108,7 @@ class ChallengeEngine:
         session_id: str,
         session_root: str | Path | None = None,
     ) -> dict[str, Any]:
+        self.runtime_registry.ensure_trainable(chapter_id)
         graph = self.repository.load_graph(chapter_id)
         questions = self.repository.load_question_bank(chapter_id)
         progress = self._initial_progress(graph, session_id)
@@ -117,6 +120,7 @@ class ChallengeEngine:
 
     def status(self, *, session_id: str, session_root: str | Path | None = None) -> dict[str, Any]:
         progress = self.store.load(session_id, session_root)
+        self.runtime_registry.ensure_trainable(progress.chapter_id)
         graph = self.repository.load_graph(progress.chapter_id)
         questions = self.repository.load_question_bank(progress.chapter_id)
         self._ensure_mastery_states(graph, progress)
@@ -135,6 +139,7 @@ class ChallengeEngine:
         session_root: str | Path | None = None,
     ) -> dict[str, Any]:
         progress = self.store.load(session_id, session_root)
+        self.runtime_registry.ensure_trainable(progress.chapter_id)
         graph = self.repository.load_graph(progress.chapter_id)
         questions = self.repository.load_question_bank(progress.chapter_id)
         self._ensure_mastery_states(graph, progress)
@@ -201,6 +206,7 @@ class ChallengeEngine:
         session_root: str | Path | None = None,
     ) -> dict[str, Any]:
         progress = self.store.load(session_id, session_root)
+        self.runtime_registry.ensure_trainable(progress.chapter_id)
         graph = self.repository.load_graph(progress.chapter_id)
         questions = self.repository.load_question_bank(progress.chapter_id)
         self._ensure_mastery_states(graph, progress)

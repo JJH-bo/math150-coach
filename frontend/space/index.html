@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3D Knowledge Singularity Universe</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%2302040a'/%3E%3Ccircle cx='32' cy='32' r='14' fill='%2376e4ff'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23000000'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/trainer/space/space.css?v=20260713-knowledge-singularity-2" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="spaceApp" class="space-app" aria-label="三维数学知识宇宙">
+      <canvas id="spaceCanvas" aria-label="知识奇点宇宙"></canvas>
+
+      <header class="space-hud" aria-label="航行状态">
+        <div class="hud-identity">
+          <p class="eyebrow">Math150 / Knowledge Cosmos</p>
+          <h1 id="universeTitle">微分方程知识宇宙</h1>
+        </div>
+        <div class="mission-strip">
+          <span class="mission-label">当前航向</span>
+          <strong id="currentTaskBadge">正在同步知识图</strong>
+          <span id="routeReason">等待学习任务</span>
+        </div>
+        <div class="hud-actions">
+          <div class="mode-switch" aria-label="航行模式">
+            <button id="guidedModeBtn" class="is-active" type="button">引导</button>
+            <button id="exploreModeBtn" type="button">自由</button>
+          </div>
+          <button id="focusCurrentBtn" class="icon-command" type="button" title="跃迁到当前任务" aria-label="跃迁到当前任务">◎</button>
+          <button id="syncBtn" class="icon-command" type="button" title="同步学习状态" aria-label="同步学习状态">↻</button>
+        </div>
+      </header>
+
+      <div class="reticle" aria-hidden="true"><span></span></div>
+
+      <section id="proximityPanel" class="proximity-panel" aria-live="polite">
+        <div class="proximity-heading">
+          <p id="nearestRole" class="eyebrow">Deep space</p>
+          <span id="nearestStatus">巡航</span>
+        </div>
+        <h2 id="nearestTitle">寻找知识奇点</h2>
+        <p id="nearestMeta">锁定航线后，目标关系和学习状态会显示在这里。</p>
+        <button id="engageBtn" type="button" disabled>进入知识域</button>
+      </section>
+
+      <section id="learningObservatory" class="learning-observatory is-hidden" role="dialog" aria-modal="true" aria-labelledby="podTitle">
+        <button id="closePodBtn" class="observatory-close" type="button" aria-label="离开知识空间" title="离开知识空间">×</button>
+        <div class="observatory-visual">
+          <div class="observatory-grid" aria-hidden="true"></div>
+          <div id="observatoryObject" class="observatory-object" aria-hidden="true">
+            <span class="observatory-ring ring-one"></span>
+            <span class="observatory-ring ring-two"></span>
+            <span class="observatory-core"></span>
+          </div>
+          <div class="observatory-identity">
+            <p id="podRole" class="eyebrow">Knowledge singularity</p>
+            <h2 id="podTitle">知识内部空间</h2>
+            <p id="podMeta">正在建立稳定观测层。</p>
+          </div>
+        </div>
+
+        <div class="observatory-interface">
+          <div class="observatory-progress" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div id="taskBrief" class="task-brief">正在读取当前挑战。</div>
+
+          <form id="answerForm" class="answer-form">
+            <label for="answerInput">回答</label>
+            <textarea id="answerInput" rows="5" placeholder="写出判断、关键步骤和结论"></textarea>
+            <label for="explanationInput">关键理由</label>
+            <textarea id="explanationInput" rows="3" placeholder="说明为什么采用这个方法"></textarea>
+            <button id="submitBtn" type="submit">提交本次训练</button>
+          </form>
+
+          <div id="coachOutput" class="coach-output" aria-live="polite"></div>
+          <section id="branchChoices" class="branch-choices is-hidden" aria-labelledby="branchTitle">
+            <p class="eyebrow">Next trajectories</p>
+            <h3 id="branchTitle">选择下一航向</h3>
+            <div id="branchChoiceList" class="branch-choice-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <div id="transitOverlay" class="transit-overlay is-hidden" aria-hidden="true">
+        <div class="transit-aperture"></div>
+        <p>正在穿越知识奇点</p>
+      </div>
+
+      <div id="loadingOverlay" class="loading-overlay">
+        <p class="eyebrow">Synchronizing knowledge graph</p>
+        <strong>正在构建知识宇宙</strong>
+        <span>读取真实节点、语义关系与学习状态</span>
+      </div>
+
+      <section id="fallbackPanel" class="fallback-panel is-hidden" role="alert">
+        <p class="eyebrow">Render fallback</p>
+        <h2>三维宇宙暂时不可用</h2>
+        <p id="fallbackReason">当前环境无法建立稳定的 WebGL 场景。</p>
+        <a href="/trainer/">返回二维训练器</a>
+      </section>
+
+      <nav class="touch-controls" aria-label="移动控制">
+        <button type="button" data-key="KeyW" aria-label="向前">↑</button>
+        <button type="button" data-key="KeyA" aria-label="向左">←</button>
+        <button type="button" data-key="KeyS" aria-label="向后">↓</button>
+        <button type="button" data-key="KeyD" aria-label="向右">→</button>
+        <button type="button" data-key="Space" aria-label="上升">＋</button>
+        <button type="button" data-key="ControlLeft" aria-label="下降">－</button>
+      </nav>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <a class="sky-credit" href="https://www.eso.org/public/images/eso0932a/" target="_blank" rel="noreferrer">Sky: ESO/S. Brunier · CC BY 4.0</a>
+    </main>
+
+    <script type="module" src="/trainer/space/space.js?v=20260714-directional-abyss-1"></script>
+  </body>
+</html>

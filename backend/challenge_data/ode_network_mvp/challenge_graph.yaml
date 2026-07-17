@@ -519,21 +519,144 @@ typed_edges:
     source_id: ode.compare.separable_vs_homogeneous
     target_id: ode_homogeneous_first_order.method
     label: 易混对比
+  - id: edge.progression.separable.entry
+    edge_type: contains
+    source_id: ode_separable
+    target_id: ode_separable.concept
+    label: 进入概念训练
+    decision_role: progression
+  - id: edge.progression.separable.concept_trigger
+    edge_type: transfers_to
+    source_id: ode_separable.concept
+    target_id: ode_separable.trigger
+    label: 从概念进入题眼识别
+    decision_role: progression
+  - id: edge.progression.separable.trigger_method
+    edge_type: transfers_to
+    source_id: ode_separable.trigger
+    target_id: ode_separable.method
+    label: 从识别进入方法选择
+    decision_role: progression
+  - id: edge.progression.separable.method_transformation
+    edge_type: transfers_to
+    source_id: ode_separable.method
+    target_id: ode_separable.transformation
+    label: 从方法进入变形
+    decision_role: progression
+  - id: edge.progression.separable.transformation_calculation
+    edge_type: transfers_to
+    source_id: ode_separable.transformation
+    target_id: ode_separable.calculation
+    label: 从变形进入计算
+    decision_role: progression
+  - id: edge.progression.separable.calculation_expression
+    edge_type: transfers_to
+    source_id: ode_separable.calculation
+    target_id: ode_separable.expression
+    label: 从计算进入结果表达
+    decision_role: progression
+  - id: edge.progression.separable.unlock_linear
+    edge_type: unlock
+    source_id: ode_separable.macro_challenge
+    target_id: ode_first_order_linear
+    label: 解锁一阶线性知识域
+    decision_role: progression
+  - id: edge.progression.linear.entry
+    edge_type: contains
+    source_id: ode_first_order_linear
+    target_id: ode_first_order_linear.concept
+    label: 进入概念训练
+    decision_role: progression
+  - id: edge.progression.linear.concept_trigger
+    edge_type: transfers_to
+    source_id: ode_first_order_linear.concept
+    target_id: ode_first_order_linear.trigger
+    label: 从概念进入题眼识别
+    decision_role: progression
+  - id: edge.progression.linear.trigger_method
+    edge_type: transfers_to
+    source_id: ode_first_order_linear.trigger
+    target_id: ode_first_order_linear.method
+    label: 从识别进入方法选择
+    decision_role: progression
+  - id: edge.progression.linear.method_transformation
+    edge_type: transfers_to
+    source_id: ode_first_order_linear.method
+    target_id: ode_first_order_linear.transformation
+    label: 从方法进入标准化变形
+    decision_role: progression
+  - id: edge.progression.linear.transformation_calculation
+    edge_type: transfers_to
+    source_id: ode_first_order_linear.transformation
+    target_id: ode_first_order_linear.calculation
+    label: 从变形进入积分因子计算
+    decision_role: progression
+  - id: edge.progression.linear.calculation_expression
+    edge_type: transfers_to
+    source_id: ode_first_order_linear.calculation
+    target_id: ode_first_order_linear.expression
+    label: 从计算进入结果表达
+    decision_role: progression
+  - id: edge.progression.linear.unlock_homogeneous
+    edge_type: unlock
+    source_id: ode_first_order_linear.macro_challenge
+    target_id: ode_homogeneous_first_order
+    label: 解锁一阶齐次知识域
+    decision_role: progression
+  - id: edge.progression.homogeneous.entry
+    edge_type: contains
+    source_id: ode_homogeneous_first_order
+    target_id: ode_homogeneous_first_order.concept
+    label: 进入概念训练
+    decision_role: progression
+  - id: edge.progression.homogeneous.concept_trigger
+    edge_type: transfers_to
+    source_id: ode_homogeneous_first_order.concept
+    target_id: ode_homogeneous_first_order.trigger
+    label: 从概念进入题眼识别
+    decision_role: progression
+  - id: edge.progression.homogeneous.trigger_method
+    edge_type: transfers_to
+    source_id: ode_homogeneous_first_order.trigger
+    target_id: ode_homogeneous_first_order.method
+    label: 从识别进入换元方法
+    decision_role: progression
+  - id: edge.progression.homogeneous.method_transformation
+    edge_type: transfers_to
+    source_id: ode_homogeneous_first_order.method
+    target_id: ode_homogeneous_first_order.transformation
+    label: 从方法进入换元变形
+    decision_role: progression
+  - id: edge.progression.homogeneous.transformation_calculation
+    edge_type: transfers_to
+    source_id: ode_homogeneous_first_order.transformation
+    target_id: ode_homogeneous_first_order.calculation
+    label: 从变形进入求解计算
+    decision_role: progression
+  - id: edge.progression.homogeneous.calculation_expression
+    edge_type: transfers_to
+    source_id: ode_homogeneous_first_order.calculation
+    target_id: ode_homogeneous_first_order.expression
+    label: 从计算进入回代表达
+    decision_role: progression
   - id: edge.synthesis.separable.boss
     edge_type: synthesis
     source_id: ode_separable.expression
     target_id: ode_separable.macro_challenge
     label: 汇入 Boss
+    decision_role: progression
   - id: edge.synthesis.linear.boss
     edge_type: synthesis
     source_id: ode_first_order_linear.expression
     target_id: ode_first_order_linear.macro_challenge
     label: 汇入 Boss
+    decision_role: progression
   - id: edge.synthesis.homogeneous.boss
     edge_type: synthesis
     source_id: ode_homogeneous_first_order.expression
     target_id: ode_homogeneous_first_order.macro_challenge
     label: 汇入 Boss
+    decision_role: progression
 contains:
   ode_separable:
     - ode_separable.concept

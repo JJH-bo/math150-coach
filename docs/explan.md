@@ -1,6 +1,6 @@
 # Math150 Coach Project Vision Handoff
 
-Last updated: 2026-07-02
+Last updated: 2026-07-04
 
 This document is the first file a new assistant or new thread should read before making product, engine, UI, or content decisions for this project.
 
@@ -154,6 +154,100 @@ Known current limits:
 - No database/history layer is connected.
 - Figma has not been used to write a design file yet because a target Figma file URL or plan key is still needed.
 - Full Mathematics I and 408 content are not expanded yet.
+
+## Latest Progress Addendum: 2026-07-03
+
+The chapter import pipeline now has a runtime chapter registry boundary.
+
+Implemented:
+
+- New registry module: `backend/app/challenge/chapter_registry.py`.
+- New endpoint: `GET /api/challenge/v1/chapters/registry`.
+- Atlas now marks whether each chapter region can actually start training through `runtime.can_start`.
+- `ChallengeEngine` blocks `start/status/submit/reset` for chapters that are not registered as trainable.
+- Frontend Atlas regions with `can_start=false` are disabled instead of launching the training cabin.
+
+Important correction:
+
+```text
+chapter files exist != runnable chapter training package
+```
+
+A chapter is trainable only when it has:
+
+- valid `challenge_graph.yaml`;
+- valid `questions.yaml`;
+- question coverage for every MicroNode;
+- question coverage for every MacroChallenge / Boss.
+
+Current remaining gap:
+
+- The controlled publish pipeline can now produce graph assets plus generated `questions.yaml`.
+- The generated question package includes rubrics, error repair maps, repair targets, variants, false-pass risk metadata, Boss coverage, and mastery criteria states.
+- The material input layer can now read mixed text/Markdown/PDF/Word/PPT-style material inputs and extract formulas, theorem wording, problem types, triggers, methods, wrong-answer evidence, prerequisites, downstream uses, Mathematics I value, and false-pass risks.
+- The generated question package now uses extracted formulas, theorem wording, triggers, methods, common errors, and false-pass risks in stems, expected answers, rubrics, validators, and repair checks.
+- The correction/regeneration dry-run layer now accepts teacher or AI review corrections against a candidate package, applies allowed patches, regenerates the affected question package, reruns runtime and quality gates, and returns before/after hashes, changed paths, changed question ids, and affected node ids.
+- The feedback optimization dry-run layer now analyzes provided attempt records or real local session log JSONL files, and identifies which questions, nodes, rubrics, repair maps, CompareGuards, transfer variants, Boss checks, and HiddenAbilities need revision.
+- The next major content-production block is turning feedback signals into concrete correction drafts for question text, rubric items, and repair mappings.
+
+## Latest Progress Addendum: 2026-07-04 Correction Regeneration
+
+The chapter package pipeline now has a first selective correction loop.
+
+Implemented:
+
+- New correction module: `backend/app/challenge/chapter_correction_regeneration.py`.
+- New endpoint: `POST /api/challenge/v1/authoring/chapter-package/correction-dry-run`.
+- Supports dry-run `replace` corrections for chapter fields, material evidence, MicroNodes, MacroNodes, MacroChallenges, AtomNodes, CompareNodes, GuideNodes, typed edges, and error repair mappings.
+- Produces a correction record with editor, notes, operations, changed paths, operation errors, and accepted/blocked status.
+- Recomputes candidate content hash after correction.
+- Reruns runtime validation and candidate quality gate.
+- Regenerates the deterministic training question package and compares question ids before/after.
+- Returns affected node ids, changed question ids, regeneration scope, and formal publish lock state.
+
+Important boundary:
+
+```text
+correction dry-run != persistence
+correction dry-run != formal publish
+```
+
+The endpoint does not write runtime files and does not bypass the publish plan or controlled publish executor. It exists so authoring review can iterate on a generated candidate package before building a publish plan.
+
+Current remaining gap:
+
+- No front-end diff editor exists yet.
+- No persisted version history or rollback metadata exists yet.
+- Training-attempt feedback is analyzed into revision signals, but not yet converted into finished correction drafts.
+- Worked-example parsing and symbolic normalization are still deterministic-template level, not full mathematical authoring intelligence.
+
+## Latest Progress Addendum: 2026-07-04 Feedback Optimization
+
+The content production system now has a first real-training feedback optimization layer.
+
+Implemented:
+
+- New feedback module: `backend/app/challenge/chapter_feedback_optimizer.py`.
+- New endpoint: `POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-dry-run`.
+- New real-log endpoint: `POST /api/challenge/v1/authoring/chapter-package/feedback-optimization-from-sessions-dry-run`.
+- Accepts candidate package, generated question package, and attempt records.
+- Can read real local challenge session logs from the configured session root using optional session id filters.
+- Detects false-pass excess, abnormal pass rates, diagnosis instability, rubric evidence gaps, CompareGuard weakness, migration weakness, Boss feedback gaps, ineffective repair paths, and missing HiddenAbility support.
+- Returns revision signals, quality gate, affected question ids, affected node ids, affected assets, and correction operation templates.
+
+Important boundary:
+
+```text
+feedback optimization dry-run = detects what should be revised
+correction dry-run = applies reviewed edits and regenerates assets
+controlled publish = writes runtime files only after explicit gates
+```
+
+Current remaining gap:
+
+- It proposes correction targets, but does not yet write final revised question/rubric text.
+- Feedback snapshots are not persisted into authoring history.
+- Real-attempt lab mismatch reports are not yet a first-class feedback source.
 
 ## Core Knowledge Graph Design
 

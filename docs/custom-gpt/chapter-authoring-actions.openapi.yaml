@@ -1,0 +1,280 @@
+openapi: 3.1.0
+info:
+  title: Math150 Chapter Authoring
+  version: 1.0.0
+  description: Create, inspect, repair, and validate chapter galaxy drafts.
+servers:
+  - url: https://your-domain.example
+security:
+  - GptAuthoringBearer: []
+paths:
+  /api/gpt/v1/contract:
+    get:
+      operationId: getProjectContract
+      summary: Read the current chapter authoring contract
+      responses:
+        "200":
+          description: Current contract and structured Markdown template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectContract"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/gpt/v1/drafts:
+    post:
+      operationId: createChapterDraft
+      summary: Create an immutable first revision of a complete chapter draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftCreateRequest"
+      responses:
+        "201":
+          description: Draft revision created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftResult"
+        "400":
+          $ref: "#/components/responses/RequestError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/RequestError"
+        "422":
+          $ref: "#/components/responses/RequestError"
+  /api/gpt/v1/drafts/{draft_id}:
+    parameters:
+      - $ref: "#/components/parameters/DraftId"
+    get:
+      operationId: getChapterDraft
+      summary: Read the latest stored state of a chapter draft
+      responses:
+        "200":
+          description: Current draft state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/RequestError"
+    put:
+      operationId: updateChapterDraft
+      summary: Add a corrected immutable revision to a chapter draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftUpdateRequest"
+      responses:
+        "200":
+          description: Corrected draft revision created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftResult"
+        "400":
+          $ref: "#/components/responses/RequestError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/RequestError"
+        "409":
+          $ref: "#/components/responses/RequestError"
+        "422":
+          $ref: "#/components/responses/RequestError"
+  /api/gpt/v1/drafts/{draft_id}/validate:
+    parameters:
+      - $ref: "#/components/parameters/DraftId"
+    post:
+      operationId: validateChapterDraft
+      summary: Re-run validation for the latest stored draft revision
+      responses:
+        "200":
+          description: Draft state with a structured validation report
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/DraftResult"
+                  - type: object
+                    required:
+                      - validation
+                    properties:
+                      validation:
+                        type: object
+                        additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/RequestError"
+components:
+  securitySchemes:
+    GptAuthoringBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+  parameters:
+    DraftId:
+      name: draft_id
+      in: path
+      required: true
+      description: Opaque draft identifier returned by createChapterDraft
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+  responses:
+    Unauthorized:
+      description: Missing or invalid scoped authoring credential
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    RequestError:
+      description: Structured request, revision, or chapter validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+  schemas:
+    DraftCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - chapter_id
+        - title
+        - source_markdown
+        - client_request_id
+        - contract_version
+      properties:
+        chapter_id:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9_-]{1,79}$"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        source_markdown:
+          type: string
+          minLength: 1
+          maxLength: 750000
+        client_request_id:
+          type: string
+          pattern: "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"
+          minLength: 8
+          maxLength: 128
+        contract_version:
+          type: string
+          const: chapter-galaxy-v1
+    DraftUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/DraftCreateRequest"
+        - type: object
+          required:
+            - expected_revision
+          properties:
+            expected_revision:
+              type: integer
+              minimum: 1
+    DraftResult:
+      type: object
+      required:
+        - draft_id
+        - chapter_id
+        - title
+        - status
+        - approval_ready
+        - revision
+        - content_hash
+        - metrics
+        - issues
+        - preview_url
+      properties:
+        draft_id:
+          type: string
+        chapter_id:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        approval_ready:
+          type: boolean
+          description: True only when the exact revision passes final readiness preflight
+        revision:
+          type: integer
+          minimum: 1
+        content_hash:
+          type: string
+        metrics:
+          type: object
+          additionalProperties: true
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationIssue"
+        preview_url:
+          type: string
+          format: uri
+    ValidationIssue:
+      type: object
+      additionalProperties: true
+      properties:
+        target:
+          type: string
+        code:
+          type: string
+        severity:
+          type: string
+        message:
+          type: string
+    ProjectContract:
+      type: object
+      required:
+        - contract_version
+        - workflow
+        - constraints
+        - required_sections
+        - structured_import_template
+      properties:
+        contract_version:
+          type: string
+        workflow:
+          type: array
+          items:
+            type: string
+        constraints:
+          type: object
+          additionalProperties: true
+        required_sections:
+          type: array
+          items:
+            type: string
+        structured_import_template:
+          type: string
+    ErrorDetail:
+      type: object
+      required:
+        - error_code
+        - message
+      properties:
+        error_code:
+          type: string
+        message:
+          type: string
+        field:
+          type: string
+    ErrorEnvelope:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          $ref: "#/components/schemas/ErrorDetail"

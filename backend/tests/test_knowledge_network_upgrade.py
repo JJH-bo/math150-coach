@@ -33,6 +33,18 @@ def test_challenge_graph_exposes_atom_compare_and_typed_edges() -> None:
     assert graph.macro_challenges[0].id == "ode_separable.macro_challenge"
 
 
+def test_challenge_graph_declares_the_fixed_learning_route_explicitly() -> None:
+    graph = ChallengeRepository().load_graph("ode_network_mvp")
+
+    progression_edges = [edge for edge in graph.typed_edges if edge.decision_role == "progression"]
+    pairs = {(edge.source_id, edge.target_id) for edge in progression_edges}
+
+    assert ("ode_separable", "ode_separable.concept") in pairs
+    assert ("ode_separable.concept", "ode_separable.trigger") in pairs
+    assert ("ode_separable.macro_challenge", "ode_first_order_linear") in pairs
+    assert ("ode_first_order_linear.macro_challenge", "ode_homogeneous_first_order") in pairs
+
+
 def test_atom_nodes_are_hidden_prerequisites_not_progress_nodes(tmp_path) -> None:
     payload = ChallengeEngine(processor=QueueProcessor([])).start(
         "ode_network_mvp",

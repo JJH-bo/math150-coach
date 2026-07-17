@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest_tmp/
+runtime/chapter_drafts/
 .mypy_cache/
 .ruff_cache/
 .coverage
@@ -14,6 +16,7 @@ env/
 training_sessions/
 backend/training_sessions/
 .superpowers/
+.worktrees/
 *.log
 uvicorn-*.out.log
 uvicorn-*.err.log

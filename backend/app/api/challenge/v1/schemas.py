@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.api.v1.schemas import api_error
 from app.training.session_log import validate_session_id
@@ -51,6 +51,115 @@ class ChapterDraftValidateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     markdown: str = Field(min_length=1)
+
+
+class ChapterIntelligentGenerateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_text: str | None = None
+    chapter_id: str | None = None
+    title: str | None = None
+    build_candidate: bool = True
+    materials: list["ChapterMaterialInput"] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_source_or_materials(self) -> "ChapterIntelligentGenerateRequest":
+        if self.source_text and self.source_text.strip():
+            return self
+        if self.materials:
+            return self
+        raise ValueError("source_text or materials is required")
+
+
+class ChapterMaterialInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    material_type: str | None = None
+    filename: str | None = None
+    text: str | None = None
+    content_base64: str | None = None
+    source_role: str | None = None
+
+
+class ChapterDraftHumanReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    markdown: str = Field(min_length=1)
+    reviewer: str = Field(min_length=1, max_length=80)
+    decision: Literal["request_changes", "approve_for_candidate"]
+    checklist: dict[str, bool] = Field(default_factory=dict)
+    notes: str | None = None
+
+
+class ChapterDraftCandidateDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    markdown: str = Field(min_length=1)
+    reviewer: str = Field(min_length=1, max_length=80)
+    decision: Literal["request_changes", "approve_for_candidate"]
+    checklist: dict[str, bool] = Field(default_factory=dict)
+    notes: str | None = None
+
+
+class ChapterControlledPublishRequest(ChapterDraftCandidateDryRunRequest):
+    allow_write: bool = False
+    approval_phrase: str | None = None
+    expected_publish_plan_hash: str | None = None
+
+
+class ChapterCorrectionOperation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    op: Literal["replace"]
+    target: Literal[
+        "chapter",
+        "material_evidence",
+        "micro_node",
+        "macro_node",
+        "macro_challenge",
+        "atom_node",
+        "compare_node",
+        "guide_node",
+        "typed_edge",
+        "error_repair_map",
+    ]
+    field: str = Field(min_length=1, max_length=80)
+    value: Any
+    id: str | None = None
+
+
+class ChapterCorrectionDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate: dict[str, Any]
+    corrections: list[ChapterCorrectionOperation] = Field(min_length=1)
+    editor: str = Field(min_length=1, max_length=80)
+    notes: str | None = None
+
+
+class ChapterFeedbackOptimizationDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate: dict[str, Any]
+    question_package: dict[str, Any]
+    attempt_records: list[dict[str, Any]] = Field(min_length=1)
+    analyst: str = Field(min_length=1, max_length=80)
+    min_sample_size: int = Field(default=3, ge=1, le=50)
+
+
+class ChapterFeedbackOptimizationFromSessionsDryRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate: dict[str, Any]
+    question_package: dict[str, Any]
+    session_ids: list[str] = Field(default_factory=list)
+    analyst: str = Field(min_length=1, max_length=80)
+    min_sample_size: int = Field(default=3, ge=1, le=50)
+
+    @field_validator("session_ids")
+    @classmethod
+    def validate_feedback_session_ids(cls, value: list[str]) -> list[str]:
+        return [validate_session_id(session_id) for session_id in value]
 
 
 def parse_request(model: type[BaseModel], payload: dict[str, Any]) -> BaseModel:

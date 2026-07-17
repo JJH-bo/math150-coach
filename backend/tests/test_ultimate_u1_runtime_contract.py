@@ -79,3 +79,23 @@ def test_runtime_quality_report_returns_structured_error_for_logic_graph_load_fa
     assert response.status_code == 400
     assert response.json()["detail"]["error_code"] == "challenge_error"
     assert "hidden_ability_alpha" not in json.dumps(response.json(), ensure_ascii=False)
+
+
+def test_atlas_exposes_cosmic_visual_grammar_without_detail_graph() -> None:
+    client = TestClient(create_app("mixed"))
+
+    response = client.get("/api/challenge/v1/atlas")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["visual_grammar"]["subject_role"] == "subject_galaxy"
+    assert payload["visual_grammar"]["chapter_role"] == "chapter_nebula"
+    assert payload["visual_grammar"]["detail_role"] == "knowledge_constellation"
+    region = payload["regions"][0]
+    assert region["visual_role"]["celestial_role"] == "chapter_nebula"
+    assert region["visual_role"]["primary_tone"] in {"cyan", "gold", "green"}
+    assert region["visual_role"]["detail_entry"] == "lazy_drilldown"
+    text = json.dumps(payload, ensure_ascii=False)
+    assert "logic_overlay" not in text
+    assert "current_question" not in text
+    ensure_no_trusted_fields(payload)

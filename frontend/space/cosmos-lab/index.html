@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cold Deep Space / Visual Proof</title>
+  <style>
+    :root { color-scheme: dark; background: #000; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+    body { font-family: Inter, "Microsoft YaHei", sans-serif; }
+    canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+    canvas:active { cursor: grabbing; }
+    .hud {
+      position: fixed;
+      z-index: 2;
+      top: 22px;
+      left: 24px;
+      display: grid;
+      gap: 11px;
+      color: rgba(219, 228, 240, .64);
+      font: 10px/1.45 Inter, "Microsoft YaHei", sans-serif;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 18px #000;
+      pointer-events: none;
+    }
+    .hud strong {
+      color: rgba(239, 244, 251, .78);
+      font-size: 12px;
+      font-weight: 540;
+    }
+    .hud span { color: rgba(159, 175, 196, .34); }
+    .views { display: flex; gap: 6px; pointer-events: auto; }
+    button {
+      border: 1px solid rgba(157, 177, 204, .13);
+      border-radius: 999px;
+      padding: 6px 11px;
+      color: rgba(191, 205, 223, .38);
+      background: rgba(3, 6, 11, .38);
+      backdrop-filter: blur(7px);
+      font: inherit;
+      letter-spacing: .07em;
+      cursor: pointer;
+    }
+    button.active {
+      color: rgba(232, 239, 248, .72);
+      border-color: rgba(164, 187, 216, .30);
+      background: rgba(17, 25, 36, .42);
+    }
+    .hint, .credit {
+      position: fixed;
+      z-index: 2;
+      bottom: 18px;
+      color: rgba(148, 164, 184, .24);
+      font: 9px/1.4 Inter, "Microsoft YaHei", sans-serif;
+      letter-spacing: .06em;
+      text-shadow: 0 2px 12px #000;
+    }
+    .hint { left: 25px; pointer-events: none; }
+    .credit { right: 21px; text-decoration: none; }
+    .error {
+      position: fixed;
+      z-index: 5;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 32px;
+      color: #d7e1ee;
+      background: #010205;
+      font: 14px/1.6 sans-serif;
+      text-align: center;
+    }
+    body.embed canvas { cursor: default; }
+    body.embed .hud,
+    body.embed .hint,
+    body.embed .credit { display: none; }
+  </style>
+</head>
+<body>
+  <script>
+    document.body.classList.toggle(
+      'embed',
+      new URLSearchParams(location.search).get('embed') === '1'
+    );
+  </script>
+  <canvas id="cosmos" aria-label="冷暗深空星空画面验收"></canvas>
+  <div class="hud">
+    <div><strong>Cold Deep Space / Observatory Field</strong><br><span>catalog far field · bounded molecular clouds · HDR</span></div>
+    <div class="views" aria-label="星空验收视角">
+      <button type="button" data-view="abyss" class="active">深渊</button>
+      <button type="button" data-view="cloud">暗云</button>
+      <button type="button" data-view="remote">远场</button>
+    </div>
+  </div>
+  <div class="hint">拖动观察方向 · 滚轮调整视场</div>
+  <a class="credit" href="https://svs.gsfc.nasa.gov/4451/" target="_blank" rel="noreferrer">Far field: NASA SVS · Hipparcos / Tycho-2</a>
+  <div class="error" id="error"></div>
+
+  <script type="x-shader/x-vertex" id="fullscreen-vertex">
+    #version 300 es
+    precision highp float;
+    out vec2 vUv;
+    void main() {
+      vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+      vUv = p;
+      gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="sky-fragment">
+    #version 300 es
+    precision highp float;
+
+    uniform sampler2D starMap;
+    uniform vec2 resolution;
+    uniform vec3 orientation;
+    uniform vec3 cameraOffset;
+    uniform float fov;
+    uniform float time;
+    uniform float cloudVisibility;
+    uniform vec4 gravityLens;
+    uniform vec3 viewportTransform;
+    out vec4 fragColor;
+
+    const float PI = 3.141592653589793;
+    const int CLOUD_STEPS = 28;
+
+    float hash12(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+
+    vec2 hash22(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.xx + p3.yz) * p3.zy);
+    }
+
+    float hash13(vec3 p) {
+      p = fract(p * 0.1031);
+      p += dot(p, p.zyx + 31.32);
+      return fract((p.x + p.y) * p.z);
+    }
+
+    float noise3(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash13(i), hash13(i + vec3(1,0,0)), f.x),
+            mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x),
+            mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
+    }
+
+    float fbm3(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.55;
+      mat3 rotation = mat3(
+        0.00, 0.80, 0.60,
+       -0.80, 0.36,-0.48,
+       -0.60,-0.48, 0.64
+      );
+      for (int i = 0; i < 4; i++) {
+        value += noise3(p) * amplitude;
+        p = rotation * p * 2.03 + vec3(7.1, 11.7, 3.9);
+        amplitude *= 0.47;
+      }
+      return value;
+    }
+
+    vec3 cameraRay(vec2 frag) {
+      vec2 p = (2.0 * frag - resolution) / resolution.y;
+      float tangent = tan(radians(fov) * 0.5);
+      vec3 forward = normalize(vec3(
+        cos(orientation.y) * cos(orientation.x),
+        sin(orientation.y),
+        cos(orientation.y) * sin(orientation.x)
+      ));
+      vec3 right = normalize(cross(forward, vec3(0.0, 1.0, 0.0)));
+      vec3 up = normalize(cross(right, forward));
+      float cr = cos(orientation.z);
+      float sr = sin(orientation.z);
+      vec3 rolledRight = right * cr + up * sr;
+      vec3 rolledUp = up * cr - right * sr;
+      return normalize(forward + (rolledRight * p.x + rolledUp * p.y) * tangent);
+    }
+
+    vec2 applyGravityLens(vec2 frag) {
+      vec2 p = (2.0 * frag - resolution) / resolution.y;
+      vec2 delta = p - gravityLens.xy;
+      float radius = max(gravityLens.z, 0.001);
+      float distanceToBoss = length(delta);
+      float lensWindow = 1.0 - smoothstep(radius * 1.02, radius * 3.65, distanceToBoss);
+      float horizonGuard = smoothstep(radius * 0.72, radius * 1.04, distanceToBoss);
+      float deflection = gravityLens.w * lensWindow * horizonGuard /
+        (distanceToBoss * distanceToBoss + radius * radius * 0.82);
+      vec2 direction = delta / max(distanceToBoss, 0.0001);
+      p -= direction * deflection;
+      return (p * resolution.y + resolution) * 0.5;
+    }
+
+    vec2 applyViewportTransform(vec2 frag) {
+      vec2 p = (2.0 * frag - resolution) / resolution.y;
+      p = (p - viewportTransform.xy) / max(viewportTransform.z, 0.001);
+      return (p * resolution.y + resolution) * 0.5;
+    }
+
+    vec2 skyUv(vec3 direction) {
+      return vec2(
+        fract(atan(direction.z, direction.x) / (2.0 * PI) + 0.5),
+        asin(clamp(direction.y, -1.0, 1.0)) / PI + 0.5
+      );
+    }
+
+    vec3 spectralColor(float value) {
+      vec3 blueWhite = vec3(0.54, 0.69, 1.0);
+      vec3 neutral = vec3(1.0, 0.93, 0.79);
+      vec3 amber = vec3(1.0, 0.58, 0.27);
+      vec3 red = vec3(1.0, 0.25, 0.12);
+      vec3 color = mix(blueWhite, neutral, smoothstep(0.0, 0.60, value));
+      color = mix(color, amber, smoothstep(0.60, 0.90, value));
+      return mix(color, red, smoothstep(0.91, 1.0, value));
+    }
+
+    vec3 starLayer(vec2 angularUv, vec2 grid, float seed, float probability,
+                   float gain, float sharpness, float spikeAmount) {
+      vec2 coordinate = angularUv * grid;
+      vec2 cell = floor(coordinate);
+      cell.x = mod(cell.x, grid.x);
+      vec2 local = fract(coordinate);
+      float existence = hash12(cell + seed);
+      float visible = step(1.0 - probability, existence);
+      vec2 position = 0.17 + 0.66 * hash22(cell + seed * 7.31);
+      vec2 delta = local - position;
+      float distanceSquared = dot(delta, delta);
+      float magnitudeSeed = hash12(cell.yx + seed * 13.7);
+      float magnitude = 0.20 + pow(magnitudeSeed, 9.0) * 8.0;
+      float envelope = 1.0 - smoothstep(0.25, 0.46, length(delta));
+      float core = exp(-distanceSquared * sharpness);
+      float halo = exp(-distanceSquared * sharpness * 0.22) * 0.045;
+      float spikes = (
+        exp(-abs(delta.x) * 94.0) * exp(-abs(delta.y) * 10.0) +
+        exp(-abs(delta.y) * 94.0) * exp(-abs(delta.x) * 10.0)
+      ) * spikeAmount * pow(magnitudeSeed, 16.0);
+      vec3 color = spectralColor(hash12(cell + seed * 23.4));
+      return color * visible * gain * magnitude * (core + halo + spikes) * envelope;
+    }
+
+    vec2 intersectEllipsoid(vec3 origin, vec3 direction, vec3 center, vec3 radii) {
+      vec3 ro = (origin - center) / radii;
+      vec3 rd = direction / radii;
+      float a = dot(rd, rd);
+      float b = dot(ro, rd);
+      float c = dot(ro, ro) - 1.0;
+      float h = b * b - a * c;
+      if (h <= 0.0) return vec2(1.0, -1.0);
+      h = sqrt(h);
+      return vec2((-b - h) / a, (-b + h) / a);
+    }
+
+    float cloudDensity(vec3 point, vec3 center, vec3 radii, vec3 seed) {
+      vec3 q = (point - center) / radii;
+      float radiusSquared = dot(q, q);
+      float boundaryWarp = fbm3(q * 1.72 + seed * 0.29) - 0.5;
+      float boundaryTear = noise3(q * 5.40 + seed.yzx * 0.73) - 0.5;
+      float brokenRadius = radiusSquared + boundaryWarp * 0.96 + boundaryTear * 0.24;
+      float envelope = (1.0 - smoothstep(0.35, 1.0, brokenRadius)) *
+                       smoothstep(0.0, 0.22, 1.0 - radiusSquared);
+      if (envelope <= 0.0) return 0.0;
+      vec3 drift = vec3(0.0, time * 0.0012, time * 0.0007);
+      float macro = fbm3(point * 0.31 + seed + drift);
+      float folded = 1.0 - abs(noise3(point * 1.78 + seed * 1.71) * 2.0 - 1.0);
+      float filament = noise3(point * 4.60 + seed.yzx * 2.43);
+      float structure = macro * 0.73 + folded * 0.20 + filament * 0.07;
+      float density = smoothstep(0.40, 0.71, structure);
+      float tears = smoothstep(0.34, 0.68, noise3(point * 0.72 - seed * 0.61));
+      float pores = smoothstep(0.38, 0.69, fbm3(q * 3.25 + seed.zxy * 0.47));
+      return density * envelope * (0.18 + tears * 0.52 + pores * 0.30);
+    }
+
+    vec4 integrateCloud(vec3 origin, vec3 direction, vec3 center, vec3 radii,
+                        vec3 seed, vec3 coldTint, vec3 warmTint) {
+      vec2 hit = intersectEllipsoid(origin, direction, center, radii);
+      float nearDistance = max(hit.x, 0.02);
+      float farDistance = hit.y;
+      if (farDistance <= nearDistance) return vec4(0.0);
+
+      float segment = farDistance - nearDistance;
+      float stepLength = segment / float(CLOUD_STEPS);
+      float jitter = hash12(gl_FragCoord.xy + seed.xy * 113.0);
+      float opticalDepth = 0.0;
+      vec3 scattering = vec3(0.0);
+      vec3 lightDirection = normalize(vec3(-0.42, 0.31, -0.85));
+      float forwardScatter = 0.38 + 0.62 * pow(max(dot(direction, lightDirection), 0.0), 3.0);
+
+      for (int i = 0; i < CLOUD_STEPS; i++) {
+        float distanceAlongRay = nearDistance + (float(i) + jitter) * stepLength;
+        vec3 point = origin + direction * distanceAlongRay;
+        float density = cloudDensity(point, center, radii, seed);
+        if (density <= 0.001) continue;
+        float localDepth = density * stepLength;
+        float fiberHeat = smoothstep(0.58, 0.88, noise3(point * 2.35 + seed.zxy));
+        vec3 tint = mix(coldTint, warmTint, fiberHeat * 0.34);
+        float veil = smoothstep(0.12, 0.42, density) *
+                     (1.0 - smoothstep(0.46, 0.86, density)) * fiberHeat;
+        scattering += exp(-opticalDepth * 0.56) * tint * localDepth *
+                      veil * (0.070 + forwardScatter * 0.090);
+        opticalDepth += localDepth * 0.88;
+      }
+      return vec4(scattering, opticalDepth);
+    }
+
+    void main() {
+      vec3 direction = cameraRay(applyViewportTransform(applyGravityLens(gl_FragCoord.xy)));
+      vec2 uv = skyUv(direction);
+
+      vec3 catalog = pow(max(texture(starMap, uv).rgb, 0.0), vec3(1.35));
+      float catalogLuma = dot(catalog, vec3(0.2126, 0.7152, 0.0722));
+      float catalogGain = mix(0.34, 1.10, smoothstep(0.003, 0.34, catalogLuma));
+      vec3 farField = catalog * catalogGain;
+
+      float voidGradient = 0.5 + 0.5 * direction.y;
+      farField += mix(vec3(0.00010, 0.00016, 0.00027),
+                      vec3(0.00026, 0.00031, 0.00042), voidGradient);
+
+      vec3 foreground = vec3(0.0);
+      foreground += starLayer(uv, vec2(640.0, 320.0), 11.0, 0.006, 0.018, 84.0, 0.0);
+      foreground += starLayer(uv, vec2(110.0, 55.0), 29.0, 0.008, 0.22, 128.0, 0.18);
+
+      vec4 cloudA = integrateCloud(
+        cameraOffset, direction,
+        vec3(4.10, 2.70, -6.15), vec3(3.60, 2.40, 2.30), vec3(1.7, 4.2, 8.6),
+        vec3(0.026, 0.037, 0.058), vec3(0.082, 0.033, 0.020)
+      );
+      vec4 cloudB = integrateCloud(
+        cameraOffset, direction,
+        vec3(5.15, -1.05, 5.15), vec3(3.30, 2.40, 2.60), vec3(7.4, 2.1, 3.9),
+        vec3(0.018, 0.032, 0.053), vec3(0.064, 0.026, 0.018)
+      );
+      vec4 cloudC = integrateCloud(
+        cameraOffset, direction,
+        vec3(-5.00, 3.40, 7.80), vec3(3.10, 2.20, 2.55), vec3(3.2, 9.1, 5.6),
+        vec3(0.022, 0.030, 0.047), vec3(0.050, 0.022, 0.019)
+      );
+
+      float opticalDepth = (cloudA.a + cloudB.a + cloudC.a) * cloudVisibility;
+      float transmittance = max(exp(-opticalDepth * 0.66), 0.34);
+      vec3 inScatter = (cloudA.rgb + cloudB.rgb + cloudC.rgb) * cloudVisibility;
+      vec3 color = farField * transmittance + inScatter + foreground;
+
+      float polarGuard = smoothstep(0.97, 0.995, abs(direction.y));
+      color *= 1.0 - polarGuard * 0.06;
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="blur-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D source;
+    uniform vec2 texel;
+    uniform vec2 direction;
+    uniform float threshold;
+    in vec2 vUv;
+    out vec4 fragColor;
+
+    vec3 bright(vec3 color) {
+      float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+      return color * smoothstep(threshold, threshold + 0.72, luminance);
+    }
+
+    void main() {
+      vec2 offset = texel * direction;
+      vec3 color = bright(texture(source, vUv).rgb) * 0.227027;
+      color += bright(texture(source, vUv + offset * 1.384615).rgb) * 0.316216;
+      color += bright(texture(source, vUv - offset * 1.384615).rgb) * 0.316216;
+      color += bright(texture(source, vUv + offset * 3.230769).rgb) * 0.070270;
+      color += bright(texture(source, vUv - offset * 3.230769).rgb) * 0.070270;
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="final-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D sceneTexture;
+    uniform sampler2D bloomTexture;
+    uniform float exposure;
+    uniform vec2 resolution;
+    in vec2 vUv;
+    out vec4 fragColor;
+
+    float hash12(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+
+    vec3 aces(vec3 x) {
+      const float a = 2.51;
+      const float b = 0.03;
+      const float c = 2.43;
+      const float d = 0.59;
+      const float e = 0.14;
+      return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+    }
+
+    void main() {
+      vec3 scene = texture(sceneTexture, vUv).rgb;
+      vec3 bloom = texture(bloomTexture, vUv).rgb;
+      vec3 color = aces((scene + bloom * 0.075) * exposure);
+      color = max(color - vec3(0.00035), 0.0);
+      float dither = (hash12(gl_FragCoord.xy) - 0.5) / 620.0;
+      color = pow(max(color + dither, 0.0), vec3(1.0 / 2.2));
+      vec2 centered = (vUv - 0.5) * vec2(1.08, 1.0);
+      float vignette = 1.0 - smoothstep(0.46, 1.34, length(centered));
+      color *= 0.92 + vignette * 0.08;
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector('#cosmos');
+      const errorPanel = document.querySelector('#error');
+      const embeddedMode = document.body.classList.contains('embed');
+      const gl = canvas.getContext('webgl2', {
+        alpha: false,
+        antialias: false,
+        powerPreference: 'high-performance',
+      });
+
+      if (!gl) {
+        errorPanel.style.display = 'grid';
+        errorPanel.textContent = '该星空样板需要 WebGL2。';
+        return;
+      }
+      if (!gl.getExtension('EXT_color_buffer_float')) {
+        errorPanel.style.display = 'grid';
+        errorPanel.textContent = '当前设备缺少浮点 HDR 渲染支持。';
+        return;
+      }
+
+      const source = (selector) => document.querySelector(selector).textContent.trimStart();
+      const compile = (type, shaderSource) => {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, shaderSource);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          throw new Error(gl.getShaderInfoLog(shader));
+        }
+        return shader;
+      };
+      const createProgram = (fragmentSource) => {
+        const program = gl.createProgram();
+        gl.attachShader(program, compile(gl.VERTEX_SHADER, source('#fullscreen-vertex')));
+        gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          throw new Error(gl.getProgramInfoLog(program));
+        }
+        return program;
+      };
+
+      let skyProgram;
+      let blurProgram;
+      let finalProgram;
+      try {
+        skyProgram = createProgram(source('#sky-fragment'));
+        blurProgram = createProgram(source('#blur-fragment'));
+        finalProgram = createProgram(source('#final-fragment'));
+      } catch (error) {
+        errorPanel.style.display = 'grid';
+        errorPanel.textContent = `星空着色器编译失败：${error.message}`;
+        throw error;
+      }
+
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+
+      const createFloatTexture = (width, height) => {
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        return texture;
+      };
+      const createTarget = (width, height) => {
+        const color = createFloatTexture(width, height);
+        const framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, color, 0);
+        return { width, height, color, framebuffer };
+      };
+      const destroyTarget = (target) => {
+        if (!target) return;
+        gl.deleteTexture(target.color);
+        gl.deleteFramebuffer(target.framebuffer);
+      };
+
+      const starMap = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, starMap);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+      let mapReady = false;
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => {
+        const maximumTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+        let uploadSource = image;
+        if (image.naturalWidth > maximumTextureSize || image.naturalHeight > maximumTextureSize) {
+          const scale = Math.min(maximumTextureSize / image.naturalWidth, maximumTextureSize / image.naturalHeight);
+          const stagingCanvas = document.createElement('canvas');
+          stagingCanvas.width = Math.max(1, Math.floor(image.naturalWidth * scale));
+          stagingCanvas.height = Math.max(1, Math.floor(image.naturalHeight * scale));
+          const context = stagingCanvas.getContext('2d', { alpha: false });
+          context.imageSmoothingEnabled = true;
+          context.imageSmoothingQuality = 'high';
+          context.drawImage(image, 0, 0, stagingCanvas.width, stagingCanvas.height);
+          uploadSource = stagingCanvas;
+        }
+        gl.bindTexture(gl.TEXTURE_2D, starMap);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, uploadSource);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        const anisotropy = gl.getExtension('EXT_texture_filter_anisotropic');
+        if (anisotropy) {
+          const maximum = gl.getParameter(anisotropy.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+          gl.texParameterf(gl.TEXTURE_2D, anisotropy.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, maximum));
+        }
+        mapReady = true;
+      };
+      image.onerror = () => {
+        errorPanel.style.display = 'grid';
+        errorPanel.textContent = 'NASA 星表远场加载失败。';
+      };
+      image.src = '../assets/nasa-randomized-skymap-t3-8k.jpg';
+
+      let sceneTarget;
+      let bloomA;
+      let bloomB;
+      const resize = () => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.15);
+        const width = Math.max(2, Math.round(innerWidth * dpr));
+        const height = Math.max(2, Math.round(innerHeight * dpr));
+        if (canvas.width === width && canvas.height === height) return;
+        canvas.width = width;
+        canvas.height = height;
+        [sceneTarget, bloomA, bloomB].forEach(destroyTarget);
+        sceneTarget = createTarget(width, height);
+        bloomA = createTarget(Math.max(2, width >> 2), Math.max(2, height >> 2));
+        bloomB = createTarget(Math.max(2, width >> 2), Math.max(2, height >> 2));
+      };
+
+      const bind = (texture, unit) => {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+      };
+      const draw = (destination) => {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, destination?.framebuffer || null);
+        gl.viewport(0, 0, destination?.width || canvas.width, destination?.height || canvas.height);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      };
+      const uniform = (program, name) => gl.getUniformLocation(program, name);
+
+      const skyUniforms = {
+        starMap: uniform(skyProgram, 'starMap'),
+        resolution: uniform(skyProgram, 'resolution'),
+        orientation: uniform(skyProgram, 'orientation'),
+        cameraOffset: uniform(skyProgram, 'cameraOffset'),
+        fov: uniform(skyProgram, 'fov'),
+        time: uniform(skyProgram, 'time'),
+        cloudVisibility: uniform(skyProgram, 'cloudVisibility'),
+        gravityLens: uniform(skyProgram, 'gravityLens'),
+        viewportTransform: uniform(skyProgram, 'viewportTransform'),
+      };
+      const blurUniforms = {
+        source: uniform(blurProgram, 'source'),
+        texel: uniform(blurProgram, 'texel'),
+        direction: uniform(blurProgram, 'direction'),
+        threshold: uniform(blurProgram, 'threshold'),
+      };
+      const finalUniforms = {
+        sceneTexture: uniform(finalProgram, 'sceneTexture'),
+        bloomTexture: uniform(finalProgram, 'bloomTexture'),
+        exposure: uniform(finalProgram, 'exposure'),
+        resolution: uniform(finalProgram, 'resolution'),
+      };
+
+      const presets = {
+        abyss: { yaw: 1.82, pitch: 0.22, roll: -0.03, fov: 73, cloud: 0.48, exposure: 0.84 },
+        cloud: { yaw: 0.34, pitch: -0.08, roll: 0.05, fov: 61, cloud: 1.00, exposure: 0.80 },
+        remote: { yaw: -0.58, pitch: 0.12, roll: -0.08, fov: 67, cloud: 0.34, exposure: 0.80 },
+      };
+      let activeView = 'abyss';
+      let view = { ...presets.abyss };
+      const observatory = { yaw: 0, pitch: 0, distance: 10 };
+      const gravityLens = { center: [0.98, 0.0], radius: 0.31, strength: 0.0105 };
+      const viewportTransform = { panX: 0, panY: 0, zoom: 1 };
+      const setView = (name) => {
+        activeView = presets[name] ? name : 'abyss';
+        view = { ...presets[activeView] };
+        document.querySelectorAll('[data-view]').forEach((button) => {
+          button.classList.toggle('active', button.dataset.view === activeView);
+        });
+        const url = new URL(location.href);
+        url.searchParams.set('view', activeView);
+        history.replaceState(null, '', url);
+      };
+      document.querySelectorAll('[data-view]').forEach((button) => {
+        button.addEventListener('click', () => setView(button.dataset.view));
+      });
+
+      let dragging = false;
+      let lastPointer = [0, 0];
+      const pointer = [0, 0];
+      canvas.addEventListener('pointerdown', (event) => {
+        dragging = true;
+        lastPointer = [event.clientX, event.clientY];
+        canvas.setPointerCapture(event.pointerId);
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        pointer[0] = event.clientX / innerWidth * 2 - 1;
+        pointer[1] = 1 - event.clientY / innerHeight * 2;
+        if (!dragging) return;
+        view.yaw -= (event.clientX - lastPointer[0]) * 0.0022;
+        view.pitch = Math.max(-1.15, Math.min(1.15,
+          view.pitch + (event.clientY - lastPointer[1]) * 0.0022));
+        lastPointer = [event.clientX, event.clientY];
+      });
+      canvas.addEventListener('pointerup', () => { dragging = false; });
+      canvas.addEventListener('pointercancel', () => { dragging = false; });
+      canvas.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        view.fov = Math.max(48, Math.min(86, view.fov + Math.sign(event.deltaY) * 2));
+      }, { passive: false });
+
+      const blur = (sourceTarget, destination, direction, threshold) => {
+        gl.useProgram(blurProgram);
+        bind(sourceTarget.color, 0);
+        gl.uniform1i(blurUniforms.source, 0);
+        gl.uniform2f(blurUniforms.texel, 1 / sourceTarget.width, 1 / sourceTarget.height);
+        gl.uniform2f(blurUniforms.direction, direction[0], direction[1]);
+        gl.uniform1f(blurUniforms.threshold, threshold);
+        draw(destination);
+      };
+
+      const renderCosmos = (milliseconds) => {
+        resize();
+        if (!mapReady) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, canvas.width, canvas.height);
+          gl.clearColor(0, 0, 0, 1);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          if (!embeddedMode) requestAnimationFrame(renderCosmos);
+          return;
+        }
+
+        const seconds = milliseconds * 0.001;
+        gl.useProgram(skyProgram);
+        bind(starMap, 0);
+        gl.uniform1i(skyUniforms.starMap, 0);
+        gl.uniform2f(skyUniforms.resolution, sceneTarget.width, sceneTarget.height);
+        gl.uniform3f(skyUniforms.orientation,
+          view.yaw - observatory.yaw,
+          view.pitch - observatory.pitch,
+          view.roll + observatory.yaw * 0.04);
+        gl.uniform3f(skyUniforms.cameraOffset,
+          pointer[0] * 0.020,
+          pointer[1] * 0.014,
+          (pointer[0] - pointer[1]) * 0.004);
+        gl.uniform1f(skyUniforms.fov, view.fov);
+        gl.uniform1f(skyUniforms.time, seconds);
+        gl.uniform1f(skyUniforms.cloudVisibility, view.cloud);
+        gl.uniform4f(
+          skyUniforms.gravityLens,
+          gravityLens.center[0],
+          gravityLens.center[1],
+          gravityLens.radius,
+          gravityLens.strength,
+        );
+        gl.uniform3f(
+          skyUniforms.viewportTransform,
+          viewportTransform.panX,
+          viewportTransform.panY,
+          viewportTransform.zoom,
+        );
+        draw(sceneTarget);
+
+        blur(sceneTarget, bloomA, [1.0, 0.0], 0.72);
+        blur(bloomA, bloomB, [0.0, 1.0], 0.0);
+        blur(bloomB, bloomA, [2.4, 0.0], 0.0);
+        blur(bloomA, bloomB, [0.0, 2.4], 0.0);
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.useProgram(finalProgram);
+        bind(sceneTarget.color, 0);
+        bind(bloomB.color, 1);
+        gl.uniform1i(finalUniforms.sceneTexture, 0);
+        gl.uniform1i(finalUniforms.bloomTexture, 1);
+        gl.uniform1f(finalUniforms.exposure, view.exposure);
+        gl.uniform2f(finalUniforms.resolution, canvas.width, canvas.height);
+        draw(null);
+
+        if (!embeddedMode) requestAnimationFrame(renderCosmos);
+      };
+
+      setView(new URLSearchParams(location.search).get('view') || 'abyss');
+      window.cosmosCamera = {
+        setViewportTransform(next = {}) {
+          viewportTransform.panX = Number.isFinite(next.panX) ? next.panX : viewportTransform.panX;
+          viewportTransform.panY = Number.isFinite(next.panY) ? next.panY : viewportTransform.panY;
+          viewportTransform.zoom = Number.isFinite(next.zoom) ? next.zoom : viewportTransform.zoom;
+        },
+        setObservatory(next = {}) {
+          observatory.yaw = Number.isFinite(next.yaw) ? next.yaw : observatory.yaw;
+          observatory.pitch = Number.isFinite(next.pitch) ? next.pitch : observatory.pitch;
+          observatory.distance = Number.isFinite(next.distance) ? next.distance : observatory.distance;
+        },
+        setGravityLens(next = {}) {
+          if (Array.isArray(next.center) && next.center.length >= 2) {
+            gravityLens.center[0] = Number.isFinite(next.center[0]) ? next.center[0] : gravityLens.center[0];
+            gravityLens.center[1] = Number.isFinite(next.center[1]) ? next.center[1] : gravityLens.center[1];
+          }
+          gravityLens.radius = Number.isFinite(next.radius) ? next.radius : gravityLens.radius;
+          gravityLens.strength = Number.isFinite(next.strength) ? next.strength : gravityLens.strength;
+        },
+        reset() {
+          observatory.yaw = 0;
+          observatory.pitch = 0;
+          observatory.distance = 10;
+        },
+      };
+      window.renderCosmos = renderCosmos;
+      if (!embeddedMode) requestAnimationFrame(renderCosmos);
+    })();
+  </script>
+</body>
+</html>

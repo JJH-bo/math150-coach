@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Volumetric Learning Star</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #020102; }
+    body { font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif; }
+    canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+    canvas:active { cursor: grabbing; }
+    .hud { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+    .title { position: absolute; top: 25px; left: 28px; text-transform: uppercase; letter-spacing: .17em; }
+    .title strong { display: block; color: rgba(255,238,217,.86); font-size: 11px; font-weight: 650; }
+    .title span { display: block; margin-top: 7px; color: rgba(255,143,77,.46); font-size: 8px; letter-spacing: .2em; }
+    .presets { position: absolute; top: 22px; right: 24px; display: flex; gap: 6px; pointer-events: auto; }
+    button { border: 1px solid rgba(255,116,56,.22); border-radius: 999px; padding: 8px 13px; background: rgba(12,4,3,.62); color: rgba(255,222,200,.58); font: inherit; font-size: 10px; letter-spacing: .12em; cursor: pointer; }
+    button.active { border-color: rgba(255,146,86,.68); color: #ffe7d6; background: rgba(83,22,9,.56); }
+    .hint { position: absolute; left: 28px; bottom: 20px; color: rgba(255,255,255,.22); font-size: 9px; letter-spacing: .11em; }
+    .error { position: fixed; inset: 0; display: none; place-items: center; padding: 32px; color: #ffd4c0; background: #100302; text-align: center; z-index: 5; }
+    .error.visible { display: grid; }
+  </style>
+</head>
+<body>
+  <canvas id="star"></canvas>
+  <div class="hud">
+    <div class="title"><strong>Learning Star / Living Plasma</strong><span>Implicit volume · procedural photosphere · HDR</span></div>
+    <div class="presets" aria-label="观察视角">
+      <button data-view="standard" class="active">整体</button>
+      <button data-view="close">近景</button>
+      <button data-view="limb">边缘</button>
+    </div>
+    <div class="hint">拖动改变恒星朝向 · 滚轮改变观察距离</div>
+  </div>
+  <div id="error" class="error"></div>
+
+  <script type="x-shader/x-vertex" id="fullscreen-vertex">
+    #version 300 es
+    precision highp float;
+    out vec2 vUv;
+    void main() {
+      vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+      vUv = p;
+      gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="star-fragment">
+    #version 300 es
+    precision highp float;
+    uniform vec2 resolution;
+    uniform float time;
+    uniform float scale;
+    uniform vec2 center;
+    uniform vec2 rotation;
+    out vec4 fragColor;
+
+    const float PI = 3.141592653589793;
+
+    mat2 rotate2(float a) {
+      float c = cos(a), s = sin(a);
+      return mat2(c, -s, s, c);
+    }
+
+    mat3 rotateX(float a) {
+      float c = cos(a), s = sin(a);
+      return mat3(1.0,0.0,0.0, 0.0,c,-s, 0.0,s,c);
+    }
+
+    mat3 rotateY(float a) {
+      float c = cos(a), s = sin(a);
+      return mat3(c,0.0,s, 0.0,1.0,0.0, -s,0.0,c);
+    }
+
+    float hash13(vec3 p) {
+      p = fract(p * 0.1031);
+      p += dot(p, p.zyx + 31.32);
+      return fract((p.x + p.y) * p.z);
+    }
+
+    vec3 hash33(vec3 p) {
+      p = vec3(dot(p, vec3(127.1,311.7,74.7)),
+               dot(p, vec3(269.5,183.3,246.1)),
+               dot(p, vec3(113.5,271.9,124.6)));
+      return fract(sin(p) * 43758.5453123);
+    }
+
+    float noise3(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash13(i + vec3(0,0,0)), hash13(i + vec3(1,0,0)), f.x),
+            mix(hash13(i + vec3(0,1,0)), hash13(i + vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash13(i + vec3(0,0,1)), hash13(i + vec3(1,0,1)), f.x),
+            mix(hash13(i + vec3(0,1,1)), hash13(i + vec3(1,1,1)), f.x), f.y), f.z);
+    }
+
+    float fbm3(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.52;
+      mat3 m = mat3(0.00,0.80,0.60, -0.80,0.36,-0.48, -0.60,-0.48,0.64);
+      for (int i = 0; i < 5; i++) {
+        value += noise3(p) * amplitude;
+        p = m * p * 2.03 + vec3(7.1, 11.7, 3.9);
+        amplitude *= 0.49;
+      }
+      return value;
+    }
+
+    vec2 cellular3(vec3 p) {
+      vec3 cell = floor(p);
+      vec3 local = fract(p);
+      float first = 8.0;
+      float second = 8.0;
+      float identity = 0.0;
+      for (int z = -1; z <= 1; z++) {
+        for (int y = -1; y <= 1; y++) {
+          for (int x = -1; x <= 1; x++) {
+            vec3 offset = vec3(float(x), float(y), float(z));
+            vec3 randomPoint = hash33(cell + offset);
+            vec3 delta = offset + randomPoint - local;
+            float d = dot(delta, delta);
+            if (d < first) {
+              second = first;
+              first = d;
+              identity = randomPoint.x;
+            } else if (d < second) {
+              second = d;
+            }
+          }
+        }
+      }
+      return vec2(sqrt(second) - sqrt(first), identity);
+    }
+
+    vec2 raySphere(vec3 ro, vec3 rd, float radius) {
+      float b = dot(ro, rd);
+      float c = dot(ro, ro) - radius * radius;
+      float h = b * b - c;
+      if (h < 0.0) return vec2(-1.0);
+      h = sqrt(h);
+      return vec2(-b - h, -b + h);
+    }
+
+    float activeRegion(vec3 p, vec3 axis, float size, float phase, out float facula) {
+      float angular = 1.0 - dot(p, normalize(axis));
+      float torn = fbm3(p * 7.2 + vec3(phase, -phase * 0.37, phase * 0.21));
+      float field = angular + (torn - 0.5) * size * 0.72;
+      float spot = 1.0 - smoothstep(size * 0.58, size, field);
+      facula = smoothstep(size * 1.48, size * 1.08, field) * (1.0 - spot);
+      return spot;
+    }
+
+    float prominenceArc(vec2 p, float angle, float height, float width, float phase) {
+      vec2 q = rotate2(-angle) * p;
+      vec2 ellipse = vec2((q.x - 1.0) / height, q.y / width);
+      float ringDistance = abs(length(ellipse) - 1.0);
+      float outerHalf = smoothstep(0.985, 1.025, q.x);
+      float taper = smoothstep(0.0, 0.16, abs(q.y) / width) *
+                    (1.0 - smoothstep(0.80, 1.0, abs(q.y) / width));
+      float breakup = 0.58 + 0.42 * sin(q.y * 94.0 + phase + time * 0.17);
+      float strandA = exp(-ringDistance * ringDistance * 3100.0);
+      float strandB = exp(-pow(abs(length(ellipse * vec2(1.05,0.93)) - 1.0), 2.0) * 3900.0);
+      return (strandA + strandB * 0.54) * outerHalf * taper * breakup;
+    }
+
+    vec3 background(vec2 pixelUv) {
+      vec3 color = vec3(0.0022, 0.0007, 0.0010);
+      vec2 grid = floor(pixelUv * resolution / 4.0);
+      float random = hash13(vec3(grid, 4.7));
+      float stars = smoothstep(0.9978, 1.0, random);
+      float vignette = 1.0 - smoothstep(0.2, 1.3, length(pixelUv * vec2(0.72, 1.0)));
+      color += vec3(0.025, 0.018, 0.022) * stars * (0.25 + random * 0.5);
+      color += vec3(0.006, 0.0014, 0.0010) * vignette;
+      return color;
+    }
+
+    void main() {
+      vec2 screenUv = (2.0 * gl_FragCoord.xy - resolution.xy) / resolution.y;
+      vec2 q = (screenUv - center) / scale;
+      vec3 ro = vec3(0.0, 0.0, 3.25);
+      vec3 rd = normalize(vec3(q, -2.28));
+      vec2 hit = raySphere(ro, rd, 1.0);
+
+      float closestT = max(0.0, -dot(ro, rd));
+      vec3 closestPoint = ro + rd * closestT;
+      float impact = length(closestPoint);
+      vec3 direction = normalize(closestPoint + vec3(0.0, 0.0, 1e-5));
+      float height = max(impact - 1.0, 0.0);
+      float angle = atan(direction.y, direction.x);
+
+      vec3 color = background(screenUv);
+
+      if (impact < 2.55) {
+        float broadNoise = fbm3(direction * 2.35 + vec3(time * 0.013, -time * 0.008, time * 0.005));
+        float fineNoise = fbm3(direction * 7.4 + vec3(-time * 0.021, time * 0.014, time * 0.009));
+        float lobes = pow(max(0.0, 0.5 + 0.5 * sin(angle * 5.0 + broadNoise * 4.8 - time * 0.025)), 3.6);
+        float counterLobes = pow(max(0.0, 0.5 + 0.5 * sin(angle * 3.0 - fineNoise * 3.2 + 1.7)), 5.0);
+        float fibers = pow(max(0.0, sin(angle * 17.0 + broadNoise * 8.0 + height * 20.0)), 16.0);
+        float gaps = smoothstep(0.31, 0.68, broadNoise * 0.68 + fineNoise * 0.32);
+        float coronaFade = exp(-height * 4.1) * (1.0 - smoothstep(0.88, 1.32, height));
+        float coronaDensity = coronaFade * gaps * (0.048 + lobes * 0.22 + counterLobes * 0.082 + fibers * 0.006);
+        vec3 coronaColor = mix(vec3(0.34, 0.005, 0.001), vec3(1.85, 0.24, 0.021), lobes * 0.72 + fibers * 0.24);
+        color += coronaColor * coronaDensity;
+
+        float chromosphere = exp(-height * 58.0) * (0.42 + fineNoise * 0.58);
+        color += vec3(3.4, 0.12, 0.008) * chromosphere * step(1.0, impact);
+
+        vec2 prominencePoint = closestPoint.xy;
+      }
+
+      if (hit.x > 0.0) {
+        vec3 position = ro + rd * hit.x;
+        vec3 normal = normalize(position);
+        float latitude = normal.y;
+        float differentialSpin = time * (0.030 - 0.010 * latitude * latitude);
+        vec3 surface = rotateY(rotation.x + differentialSpin) * rotateX(rotation.y) * normal;
+        vec3 warp = vec3(
+          fbm3(surface * 2.1 + vec3(time * 0.010,0.0,0.0)),
+          fbm3(surface * 2.1 + vec3(0.0,time * -0.008,3.7)),
+          fbm3(surface * 2.1 + vec3(5.1,0.0,time * 0.006))
+        ) - 0.5;
+        vec3 plasma = normalize(surface + warp * 0.19);
+
+        float convection = fbm3(plasma * 3.15 + vec3(time * 0.008, -time * 0.005, 1.7));
+        float meso = fbm3(plasma * 7.2 + warp * 1.8 - vec3(time * 0.012, 0.0, time * 0.007));
+        vec2 cells = cellular3(plasma * (31.0 + convection * 4.0));
+        float cellInterior = smoothstep(0.018, 0.105, cells.x);
+        float granularA = noise3(plasma * 34.0 + warp * 5.7 +
+            vec3(time * 0.018, -time * 0.011, time * 0.007));
+        float granularB = noise3(plasma * 73.0 - warp * 3.8 +
+            vec3(-time * 0.025, time * 0.016, 9.4));
+        float granuleField = granularA * 0.58 + granularB * 0.22 +
+            cellInterior * 0.10 + meso * 0.10;
+        float granule = smoothstep(0.24, 0.74, granuleField);
+        float darkLane = 1.0 - smoothstep(0.17, 0.33, granuleField);
+        float cellHeat = clamp(0.10 + granule * 0.58 + granularB * 0.12 +
+            meso * 0.16 + convection * 0.12, 0.0, 1.0);
+
+        float faculaA, faculaB;
+        float spotA = activeRegion(plasma, vec3(-0.42, 0.18, 0.89), 0.0048, 2.4, faculaA);
+        float spotB = activeRegion(plasma, vec3(0.39, -0.29, 0.87), 0.0028, 7.1, faculaB);
+        float spot = max(spotA, spotB * 0.82);
+        float facula = max(faculaA, faculaB * 0.74);
+
+        float mu = clamp(dot(normal, -rd), 0.0, 1.0);
+        float limbDarkening = 0.27 + 0.73 * pow(mu, 0.46);
+        float boiling = (0.52 + convection * 0.78) * (0.76 + meso * 0.34);
+
+        vec3 laneColor = vec3(0.055, 0.0010, 0.00035);
+        vec3 emberColor = vec3(0.38, 0.015, 0.0009);
+        vec3 hotColor = vec3(1.85, 0.24, 0.012);
+        vec3 whiteHot = vec3(4.8, 1.05, 0.11);
+        vec3 surfaceColor = mix(laneColor, emberColor, smoothstep(0.08, 0.42, cellHeat));
+        surfaceColor = mix(surfaceColor, hotColor, smoothstep(0.40, 0.78, cellHeat));
+        surfaceColor = mix(surfaceColor, whiteHot, pow(smoothstep(0.75, 1.0, cellHeat), 2.2));
+        surfaceColor *= boiling * limbDarkening;
+        float brightGranule = pow(granule, 3.2) * (0.52 + 0.48 * granularB) *
+            smoothstep(0.24, 0.76, meso + convection * 0.18);
+        surfaceColor *= 0.64 + granule * 0.48;
+        surfaceColor *= 1.0 - darkLane * 0.16;
+        surfaceColor += vec3(0.86, 0.092, 0.0042) * brightGranule;
+        surfaceColor = mix(surfaceColor, vec3(0.085, 0.0015, 0.0012), spot * 0.82);
+        surfaceColor += vec3(1.35, 0.12, 0.006) * facula * (0.34 + 0.66 * pow(1.0 - mu, 0.6));
+        surfaceColor += vec3(1.8, 0.065, 0.004) * pow(1.0 - mu, 7.0) * (0.46 + meso * 0.54);
+        color = surfaceColor;
+      }
+
+      float vignette = 1.0 - smoothstep(0.62, 1.55, length(screenUv * vec2(0.72, 1.0)));
+      color *= 0.72 + vignette * 0.28;
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="blur-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D source;
+    uniform vec2 texel;
+    uniform vec2 direction;
+    uniform float threshold;
+    in vec2 vUv;
+    out vec4 fragColor;
+
+    vec3 bright(vec3 color) {
+      float peak = max(color.r, max(color.g, color.b));
+      float contribution = max(peak - threshold, 0.0) / max(peak, 1e-4);
+      return color * contribution;
+    }
+
+    void main() {
+      vec2 offset = texel * direction;
+      vec3 color = bright(texture(source, vUv).rgb) * 0.227027;
+      color += bright(texture(source, vUv + offset * 1.384615).rgb) * 0.316216;
+      color += bright(texture(source, vUv - offset * 1.384615).rgb) * 0.316216;
+      color += bright(texture(source, vUv + offset * 3.230769).rgb) * 0.070270;
+      color += bright(texture(source, vUv - offset * 3.230769).rgb) * 0.070270;
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script type="x-shader/x-fragment" id="composite-fragment">
+    #version 300 es
+    precision highp float;
+    uniform sampler2D sceneTexture;
+    uniform sampler2D bloomTexture;
+    uniform float exposure;
+    in vec2 vUv;
+    out vec4 fragColor;
+
+    vec3 aces(vec3 x) {
+      const float a = 2.51;
+      const float b = 0.03;
+      const float c = 2.43;
+      const float d = 0.59;
+      const float e = 0.14;
+      return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+    }
+
+    void main() {
+      vec3 scene = texture(sceneTexture, vUv).rgb;
+      vec3 bloom = texture(bloomTexture, vUv).rgb;
+      vec3 color = scene + bloom * 0.48;
+      color = aces(color * exposure);
+      color = pow(color, vec3(1.0 / 2.2));
+      fragColor = vec4(color, 1.0);
+    }
+  </script>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector('#star');
+      const errorPanel = document.querySelector('#error');
+      const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+      if (!gl || !gl.getExtension('EXT_color_buffer_float')) {
+        errorPanel.textContent = '当前浏览器或显卡不支持这个体积恒星所需的 WebGL2 浮点渲染。';
+        errorPanel.classList.add('visible');
+        return;
+      }
+
+      const source = (id) => document.querySelector(id).textContent.trimStart();
+      const vertexSource = source('#fullscreen-vertex');
+
+      function compile(type, shaderSource) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, shaderSource);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          throw new Error(gl.getShaderInfoLog(shader));
+        }
+        return shader;
+      }
+
+      function program(fragmentSource) {
+        const result = gl.createProgram();
+        gl.attachShader(result, compile(gl.VERTEX_SHADER, vertexSource));
+        gl.attachShader(result, compile(gl.FRAGMENT_SHADER, fragmentSource));
+        gl.linkProgram(result);
+        if (!gl.getProgramParameter(result, gl.LINK_STATUS)) {
+          throw new Error(gl.getProgramInfoLog(result));
+        }
+        return result;
+      }
+
+      let starProgram, blurProgram, compositeProgram;
+      try {
+        starProgram = program(source('#star-fragment'));
+        blurProgram = program(source('#blur-fragment'));
+        compositeProgram = program(source('#composite-fragment'));
+      } catch (error) {
+        errorPanel.textContent = `恒星着色器初始化失败：${error.message}`;
+        errorPanel.classList.add('visible');
+        return;
+      }
+
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+
+      function target(width, height) {
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
+        const framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+        return { texture, framebuffer, width, height };
+      }
+
+      function destroyTarget(value) {
+        if (!value) return;
+        gl.deleteTexture(value.texture);
+        gl.deleteFramebuffer(value.framebuffer);
+      }
+
+      let sceneTarget;
+      let bloomA;
+      let bloomB;
+
+      function resize() {
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+        const width = Math.max(2, Math.round(innerWidth * pixelRatio));
+        const height = Math.max(2, Math.round(innerHeight * pixelRatio));
+        if (canvas.width === width && canvas.height === height) return;
+        canvas.width = width;
+        canvas.height = height;
+        destroyTarget(sceneTarget);
+        destroyTarget(bloomA);
+        destroyTarget(bloomB);
+        sceneTarget = target(width, height);
+        bloomA = target(Math.max(2, width >> 2), Math.max(2, height >> 2));
+        bloomB = target(Math.max(2, width >> 2), Math.max(2, height >> 2));
+      }
+
+      const presets = {
+        standard: { scale: 0.76, center: [0.17, -0.02], exposure: 0.66 },
+        close: { scale: 1.12, center: [0.10, -0.03], exposure: 0.61 },
+        limb: { scale: 1.02, center: [0.66, -0.02], exposure: 0.64 },
+      };
+      let activeView = 'standard';
+      let view = { ...presets.standard, center: [...presets.standard.center] };
+      const rotation = [0.18, -0.11];
+
+      function setView(name) {
+        activeView = presets[name] ? name : 'standard';
+        const preset = presets[activeView];
+        view = { ...preset, center: [...preset.center] };
+        document.querySelectorAll('[data-view]').forEach((button) => {
+          button.classList.toggle('active', button.dataset.view === activeView);
+        });
+        const url = new URL(location.href);
+        url.searchParams.set('view', activeView);
+        history.replaceState(null, '', url);
+      }
+
+      document.querySelectorAll('[data-view]').forEach((button) => {
+        button.addEventListener('click', () => setView(button.dataset.view));
+      });
+
+      let dragging = false;
+      let previous = [0, 0];
+      canvas.addEventListener('pointerdown', (event) => {
+        dragging = true;
+        previous = [event.clientX, event.clientY];
+        canvas.setPointerCapture(event.pointerId);
+      });
+      canvas.addEventListener('pointermove', (event) => {
+        if (!dragging) return;
+        rotation[0] += (event.clientX - previous[0]) * 0.006;
+        rotation[1] = Math.max(-1.1, Math.min(1.1, rotation[1] + (event.clientY - previous[1]) * 0.004));
+        previous = [event.clientX, event.clientY];
+      });
+      canvas.addEventListener('pointerup', () => { dragging = false; });
+      canvas.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        view.scale = Math.max(0.52, Math.min(1.55, view.scale * Math.exp(-event.deltaY * 0.0007)));
+      }, { passive: false });
+
+      function uniform(programValue, name) {
+        return gl.getUniformLocation(programValue, name);
+      }
+
+      const starUniforms = {
+        resolution: uniform(starProgram, 'resolution'),
+        time: uniform(starProgram, 'time'),
+        scale: uniform(starProgram, 'scale'),
+        center: uniform(starProgram, 'center'),
+        rotation: uniform(starProgram, 'rotation'),
+      };
+      const blurUniforms = {
+        source: uniform(blurProgram, 'source'),
+        texel: uniform(blurProgram, 'texel'),
+        direction: uniform(blurProgram, 'direction'),
+        threshold: uniform(blurProgram, 'threshold'),
+      };
+      const compositeUniforms = {
+        sceneTexture: uniform(compositeProgram, 'sceneTexture'),
+        bloomTexture: uniform(compositeProgram, 'bloomTexture'),
+        exposure: uniform(compositeProgram, 'exposure'),
+      };
+
+      function drawTo(destination) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, destination?.framebuffer || null);
+        gl.viewport(0, 0, destination?.width || canvas.width, destination?.height || canvas.height);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+      }
+
+      function bindTexture(texture, unit) {
+        gl.activeTexture(gl.TEXTURE0 + unit);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+      }
+
+      function blur(sourceTarget, destination, direction, threshold) {
+        gl.useProgram(blurProgram);
+        bindTexture(sourceTarget.texture, 0);
+        gl.uniform1i(blurUniforms.source, 0);
+        gl.uniform2f(blurUniforms.texel, 1 / sourceTarget.width, 1 / sourceTarget.height);
+        gl.uniform2f(blurUniforms.direction, direction[0], direction[1]);
+        gl.uniform1f(blurUniforms.threshold, threshold);
+        drawTo(destination);
+      }
+
+      function render(milliseconds) {
+        resize();
+        const seconds = milliseconds * 0.001;
+
+        gl.disable(gl.BLEND);
+        gl.useProgram(starProgram);
+        gl.uniform2f(starUniforms.resolution, canvas.width, canvas.height);
+        gl.uniform1f(starUniforms.time, seconds);
+        gl.uniform1f(starUniforms.scale, view.scale);
+        gl.uniform2f(starUniforms.center, view.center[0], view.center[1]);
+        gl.uniform2f(starUniforms.rotation, rotation[0], rotation[1]);
+        drawTo(sceneTarget);
+
+        blur(sceneTarget, bloomA, [1.0, 0.0], 1.15);
+        blur(bloomA, bloomB, [0.0, 1.0], 0.0);
+        blur(bloomB, bloomA, [2.2, 0.0], 0.0);
+        blur(bloomA, bloomB, [0.0, 2.2], 0.0);
+
+        gl.useProgram(compositeProgram);
+        bindTexture(sceneTarget.texture, 0);
+        bindTexture(bloomB.texture, 1);
+        gl.uniform1i(compositeUniforms.sceneTexture, 0);
+        gl.uniform1i(compositeUniforms.bloomTexture, 1);
+        gl.uniform1f(compositeUniforms.exposure, view.exposure);
+        drawTo(null);
+        requestAnimationFrame(render);
+      }
+
+      setView(new URLSearchParams(location.search).get('view') || 'standard');
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

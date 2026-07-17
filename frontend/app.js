@@ -78,6 +78,7 @@ const selectedNodeView = document.querySelector("#selectedNodeView");
 const taskCard = document.querySelector("#taskCard");
 const coachView = document.querySelector("#coachView");
 const overallStats = document.querySelector("#overallStats");
+const qualitySummary = document.querySelector("#qualitySummary");
 const toast = document.querySelector("#toast");
 const atlasLayer = document.querySelector("#atlasLayer");
 const startAtlas = document.querySelector("#startAtlas");
@@ -95,6 +96,7 @@ const importReport = document.querySelector("#importReport");
 
 let lastPayload = null;
 let atlasPayload = null;
+let qualityPayload = null;
 let selectedNodeId = null;
 let currentChapterId = localStorage.getItem("math150-current-chapter-id") || "ode_network_mvp";
 let panelCloseTimer = null;
@@ -149,6 +151,7 @@ function init() {
   closeImportBtn?.addEventListener("click", closeImportPanel);
   loadTemplateBtn?.addEventListener("click", loadDraftTemplate);
   validateDraftBtn?.addEventListener("click", validateChapterDraft);
+  importReport?.addEventListener("click", handleImportReportClick);
   closeNodePanelBtn.addEventListener("click", closeNodePanel);
   graphView.addEventListener("click", handleGraphClick);
   setupMapCamera();
@@ -201,7 +204,7 @@ function renderAtlas(payload) {
       <h2>${escapeHtml(payload.title || "课程星图")}</h2>
       <p>只加载章节摘要。点击星系后，再进入该章节的详细知识网。</p>
     </div>
-    <div class="atlas-galaxy">
+    <div class="atlas-galaxy cosmic-subject-galaxy">
       ${regions.map((region) => renderAtlasRegion(region)).join("")}
     </div>
   `;
@@ -213,7 +216,7 @@ function renderAtlas(payload) {
     </div>
     <div class="atlas-mini-list">
       ${regions.map((region) => `
-        <button type="button" class="atlas-mini-region" data-chapter-id="${escapeHtml(region.id)}" onclick="startAtlasChapter('${escapeHtml(region.id)}')">
+        <button type="button" class="atlas-mini-region" data-chapter-id="${escapeHtml(region.id)}" ${atlasRegionDisabledAttrs(region)} onclick="startAtlasChapter('${escapeHtml(region.id)}')">
           <strong>${escapeHtml(region.title)}</strong>
           <span>${escapeHtml(atlasRegionMeta(region))}</span>
         </button>
@@ -243,9 +246,11 @@ function renderAtlasRegion(region) {
   return `
     <button
       type="button"
-      class="atlas-region ${region.id === currentChapterId ? "selected" : ""}"
+      class="atlas-region chapter-nebula ${visualClassForRegion(region)} ${region.id === currentChapterId ? "selected" : ""}"
       style="left:${x}%;top:${y}%"
       data-chapter-id="${escapeHtml(region.id)}"
+      data-celestial-role="${escapeHtml(region.visual_role?.celestial_role || "chapter_nebula")}"
+      ${atlasRegionDisabledAttrs(region)}
       onclick="startAtlasChapter('${escapeHtml(region.id)}')"
     >
       <span class="atlas-region-core"></span>
@@ -261,7 +266,27 @@ function atlasRegionMeta(region) {
   return `${summary.macro_count || 0} 大节点 · ${summary.micro_count || 0} 小节点 · ${summary.boss_count || 0} Boss`;
 }
 
+function visualClassForRegion(region) {
+  const role = region.visual_role || {};
+  const tone = role.primary_tone || "cyan";
+  const density = role.density || "medium";
+  return `tone-${tone} density-${density}`;
+}
+
+function atlasRegionCanStart(region) {
+  return region?.runtime?.can_start !== false;
+}
+
+function atlasRegionDisabledAttrs(region) {
+  return atlasRegionCanStart(region) ? "" : 'disabled aria-disabled="true"';
+}
+
 function startAtlasChapter(chapterId) {
+  const region = (atlasPayload?.regions || []).find((item) => item.id === chapterId);
+  if (region && !atlasRegionCanStart(region)) {
+    renderUnavailableTask("This chapter package is not trainable yet.");
+    return;
+  }
   currentChapterId = chapterId || currentChapterId;
   localStorage.setItem("math150-current-chapter-id", currentChapterId);
   startChallenge(currentChapterId);
@@ -461,6 +486,9 @@ async function validateChapterDraft() {
       body: { markdown: chapterDraftInput.value },
     });
     renderImportReport(payload);
+    injectAuthoringReadiness(payload);
+    injectDraftPreviewGraph(payload.preview);
+    injectHumanReviewPanel(payload);
   } finally {
     validateDraftBtn.disabled = false;
   }
@@ -489,13 +517,337 @@ function renderImportReport(payload) {
   `;
 }
 
+function injectAuthoringReadiness(payload) {
+  const readinessHtml = renderAuthoringReadiness(payload?.readiness, payload?.report);
+  if (!readinessHtml) return;
+  importReport.querySelector(".draft-counts")?.insertAdjacentHTML("afterend", readinessHtml);
+}
+
+function renderAuthoringReadiness(readiness, report) {
+  if (!readiness) return "";
+  const statusLabel = {
+    review_ready: "Ready for human review",
+    blocked: "Draft needs fixes",
+  }[readiness.status] || "Draft readiness unknown";
+  const nextLabel = {
+    human_review: "Next: human review",
+    fix_validation_errors: "Next: fix blocking issues",
+  }[readiness.next_action] || "Next: keep refining draft";
+  const checks = readiness.checks || [];
+  return `
+    <div class="authoring-readiness ${escapeHtml(readiness.status || "unknown")}">
+      <div class="authoring-readiness-head">
+        <strong>${escapeHtml(statusLabel)}</strong>
+        <span>${escapeHtml(nextLabel)}</span>
+      </div>
+      <div class="quality-gate-list">
+        ${checks.map((check) => {
+          const targets = focusTargetsForGate(check, report);
+          return `
+            <button
+              type="button"
+              class="quality-gate ${escapeHtml(check.state || "unknown")}"
+              data-gate-code="${escapeHtml(check.code || "gate")}"
+              data-focus-targets="${escapeHtml(targets.join(","))}"
+            >
+              <strong>${escapeHtml(check.label || check.code || "gate")}</strong>
+              <em>${escapeHtml(check.summary || "")}</em>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function focusTargetsForGate(check, report) {
+  const issues = [...(report?.errors || []), ...(report?.warnings || [])];
+  if (check.code === "formal_publish_locked" || check.code === "human_review_required") return [];
+  if (check.code === "graph_valid") return uniqueStrings((report?.errors || []).map((issue) => issue.target));
+  if (check.code === "visible_budget") {
+    return uniqueStrings(issues
+      .filter((issue) => /MicroNode|visible|MacroNode/i.test(issue.message || ""))
+      .map((issue) => issue.target));
+  }
+  if (check.code === "repair_targets") {
+    return uniqueStrings(issues
+      .filter((issue) => /repair|root_cause/i.test(`${issue.target || ""} ${issue.message || ""}`))
+      .map((issue) => issue.target));
+  }
+  return [];
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.filter(Boolean).map(String))];
+}
+
+function injectDraftPreviewGraph(preview) {
+  const graphHtml = renderDraftPreviewGraph(preview);
+  if (!graphHtml) return;
+  const anchor = importReport.querySelector(".authoring-readiness")
+    || importReport.querySelector(".draft-counts");
+  anchor?.insertAdjacentHTML("afterend", graphHtml);
+}
+
+function injectHumanReviewPanel(payload) {
+  const reviewHtml = renderHumanReviewPanel(payload?.human_review, payload?.report);
+  if (!reviewHtml) return;
+  importReport.insertAdjacentHTML("beforeend", reviewHtml);
+}
+
+function renderHumanReviewPanel(humanReview, report) {
+  if (!humanReview) return "";
+  const checks = humanReview.required_checklist || [];
+  const approveDisabled = report?.passed ? "" : "disabled";
+  const statusLabel = {
+    pending: "Pending review",
+    blocked_by_validation: "Blocked by validation",
+  }[humanReview.status] || "Review required";
+  return `
+    <div class="human-review-panel">
+      <div class="human-review-head">
+        <strong>${escapeHtml(statusLabel)}</strong>
+        <span>${humanReview.candidate_build_allowed ? "Candidate dry-run unlocked" : "Candidate dry-run locked"}</span>
+      </div>
+      <label class="review-field">
+        <span>Reviewer</span>
+        <input id="humanReviewReviewer" type="text" value="human-reviewer" autocomplete="off">
+      </label>
+      <div class="review-check-list">
+        ${checks.map((check) => `
+          <label class="review-check">
+            <input type="checkbox" data-review-check="${escapeHtml(check.code)}">
+            <span>${escapeHtml(check.label || check.code)}</span>
+          </label>
+        `).join("")}
+      </div>
+      <label class="review-field">
+        <span>Notes</span>
+        <textarea id="humanReviewNotes" rows="3" placeholder="Review notes"></textarea>
+      </label>
+      <div class="review-actions">
+        <button type="button" class="ghost-button" data-review-decision="request_changes">Request changes</button>
+        <button type="button" data-review-decision="approve_for_candidate" ${approveDisabled}>Approve candidate</button>
+      </div>
+      <div class="human-review-result" aria-live="polite"></div>
+    </div>
+  `;
+}
+
+function renderDraftPreviewGraph(preview) {
+  const nodes = (preview?.nodes || []).filter((node) => node.id).slice(0, 36);
+  if (!nodes.length) return "";
+  const layout = draftPreviewLayout(nodes);
+  const edges = (preview?.edges || [])
+    .filter((edge) => layout[edge.source_id] && layout[edge.target_id])
+    .slice(0, 64);
+  return `
+    <div class="draft-preview-graph" aria-label="Draft graph preview">
+      <svg class="draft-preview-edges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        ${edges.map((edge) => {
+          const source = layout[edge.source_id];
+          const target = layout[edge.target_id];
+          return `
+            <line
+              class="draft-preview-edge ${cssToken(edge.edge_type || "link")}"
+              data-edge-id="${escapeHtml(edge.id || "")}"
+              data-source-id="${escapeHtml(edge.source_id || "")}"
+              data-target-id="${escapeHtml(edge.target_id || "")}"
+              x1="${source.x}"
+              y1="${source.y}"
+              x2="${target.x}"
+              y2="${target.y}"
+            ></line>
+          `;
+        }).join("")}
+      </svg>
+      ${nodes.map((node) => {
+        const point = layout[node.id];
+        return `
+          <span
+            class="draft-preview-node ${draftPreviewNodeClass(node)}"
+            data-node-id="${escapeHtml(node.id)}"
+            style="--x: ${point.x}; --y: ${point.y};"
+            title="${escapeHtml(node.title || node.id)}"
+          >
+            <strong>${escapeHtml(node.title || node.id)}</strong>
+            <em>${escapeHtml(draftPreviewNodeLabel(node))}</em>
+          </span>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function draftPreviewLayout(nodes) {
+  const layers = {
+    macro_node: [],
+    micro_node: [],
+    logic_node: [],
+    macro_challenge: [],
+  };
+  nodes.forEach((node) => {
+    layers[draftPreviewLayer(node)].push(node);
+  });
+  const yByLayer = {
+    macro_node: 15,
+    micro_node: 38,
+    logic_node: 63,
+    macro_challenge: 85,
+  };
+  return Object.entries(layers).reduce((layout, [layer, layerNodes]) => {
+    const count = layerNodes.length;
+    layerNodes.forEach((node, index) => {
+      const x = count <= 1 ? 50 : 18 + (64 * index) / (count - 1);
+      const stagger = count > 3 ? (index % 2 === 0 ? -3 : 3) : 0;
+      layout[node.id] = {
+        x: Number(x.toFixed(2)),
+        y: yByLayer[layer] + stagger,
+      };
+    });
+    return layout;
+  }, {});
+}
+
+function draftPreviewLayer(node) {
+  if (node.node_kind === "macro_node") return "macro_node";
+  if (node.node_kind === "micro_node") return "micro_node";
+  if (node.node_kind === "macro_challenge") return "macro_challenge";
+  return "logic_node";
+}
+
+function draftPreviewNodeClass(node) {
+  const layer = draftPreviewLayer(node);
+  if (layer === "macro_challenge") return `boss ${cssToken(node.node_kind)}`;
+  if (layer === "macro_node") return `macro ${cssToken(node.node_kind)}`;
+  if (layer === "micro_node") return `micro ${cssToken(node.node_kind)}`;
+  return `logic ${cssToken(node.node_kind)}`;
+}
+
+function draftPreviewNodeLabel(node) {
+  if (node.node_kind === "macro_node") return "Macro";
+  if (node.node_kind === "micro_node") return "Micro";
+  if (node.node_kind === "macro_challenge") return "Boss";
+  return node.node_kind || "Logic";
+}
+
+function cssToken(value) {
+  return String(value || "unknown").toLowerCase().replace(/[^a-z0-9_-]+/g, "-");
+}
+
+function handleImportReportClick(event) {
+  const reviewControl = event.target.closest("[data-review-decision]");
+  if (reviewControl && importReport.contains(reviewControl)) {
+    submitHumanReviewRecord(reviewControl.getAttribute("data-review-decision"));
+    return;
+  }
+  const focusControl = event.target.closest("[data-focus-targets]");
+  if (!focusControl || !importReport.contains(focusControl)) return;
+  const targets = (focusControl.getAttribute("data-focus-targets") || "")
+    .split(",")
+    .map((target) => target.trim())
+    .filter(Boolean);
+  focusDraftPreviewGraph(targets, focusControl);
+}
+
+function focusDraftPreviewGraph(targets, activeControl) {
+  const targetSet = new Set(targets);
+  const graph = importReport.querySelector(".draft-preview-graph");
+  if (!graph) return;
+  const hasFocus = targetSet.size > 0;
+  graph.classList.toggle("has-focus", hasFocus);
+  importReport.querySelectorAll(".quality-gate, .issue-focus").forEach((control) => {
+    control.classList.toggle("active", control === activeControl && hasFocus);
+  });
+  graph.querySelectorAll(".draft-preview-node").forEach((node) => {
+    const nodeId = node.getAttribute("data-node-id") || "";
+    node.classList.toggle("focused", targetSet.has(nodeId));
+    node.classList.toggle("dimmed", hasFocus && !targetSet.has(nodeId));
+  });
+  graph.querySelectorAll(".draft-preview-edge").forEach((edge) => {
+    const sourceId = edge.getAttribute("data-source-id") || "";
+    const targetId = edge.getAttribute("data-target-id") || "";
+    const focused = targetSet.has(sourceId) || targetSet.has(targetId);
+    edge.classList.toggle("focused", focused);
+    edge.classList.toggle("dimmed", hasFocus && !focused);
+  });
+}
+
+async function submitHumanReviewRecord(decision) {
+  if (!decision || !chapterDraftInput?.value.trim()) return;
+  const panel = importReport.querySelector(".human-review-panel");
+  const result = panel?.querySelector(".human-review-result");
+  const buttons = panel?.querySelectorAll("[data-review-decision]") || [];
+  const checklist = {};
+  panel?.querySelectorAll("[data-review-check]").forEach((control) => {
+    checklist[control.getAttribute("data-review-check")] = control.checked;
+  });
+  buttons.forEach((button) => {
+    button.disabled = true;
+  });
+  if (result) result.textContent = "Recording review...";
+  try {
+    const payload = await request("/authoring/chapter-draft/human-review", {
+      method: "POST",
+      body: {
+        markdown: chapterDraftInput.value,
+        reviewer: panel?.querySelector("#humanReviewReviewer")?.value.trim() || "human-reviewer",
+        decision,
+        checklist,
+        notes: panel?.querySelector("#humanReviewNotes")?.value.trim() || null,
+      },
+    });
+    if (result) result.innerHTML = renderHumanReviewResult(payload);
+  } catch (error) {
+    if (result) result.textContent = error.message;
+  } finally {
+    buttons.forEach((button) => {
+      button.disabled = false;
+    });
+  }
+}
+
+function renderHumanReviewResult(payload) {
+  const record = payload.review_record || {};
+  const candidateLabel = payload.candidate_build_allowed
+    ? "Candidate dry-run allowed"
+    : "Candidate dry-run locked";
+  return `
+    <strong>${escapeHtml(record.status || "review_recorded")}</strong>
+    <span>${escapeHtml(candidateLabel)}</span>
+    <em>Formal publish locked</em>
+  `;
+}
+
 function renderIssueList(title, issues) {
   if (!issues.length) return "";
   return `
     <div class="issue-list">
       <strong>${escapeHtml(title)}</strong>
       <ul>
-        ${issues.map((issue) => `<li><span>${escapeHtml(issue.target || "draft")}</span>${escapeHtml(issue.message || "")}</li>`).join("")}
+        ${issues.map((issue) => {
+          const target = issue.target || "draft";
+          const code = issue.code || "draft_issue";
+          const severity = issue.severity || "issue";
+          const targetKind = issue.target_kind || "draft";
+          const suggestedFix = issue.suggested_fix || "";
+          return `
+            <li class="issue-item ${escapeHtml(cssToken(severity))}">
+              <button type="button" class="issue-focus" data-focus-targets="${escapeHtml(target)}">
+                ${escapeHtml(target)}
+              </button>
+              <div class="issue-copy">
+                <div class="issue-meta">
+                  <span class="issue-severity">${escapeHtml(severity)}</span>
+                  <span class="issue-code">${escapeHtml(code)}</span>
+                  <span class="issue-kind">${escapeHtml(targetKind)}</span>
+                </div>
+                <p>${escapeHtml(issue.message || "")}</p>
+                ${suggestedFix ? `<em class="suggested-fix">${escapeHtml(suggestedFix)}</em>` : ""}
+              </div>
+            </li>
+          `;
+        }).join("")}
       </ul>
     </div>
   `;
@@ -514,6 +866,13 @@ function render(payload, options = {}) {
   if (options.enterWorld) showGraphMode();
   hudSession.textContent = currentSessionId();
   renderStats(challenge);
+  const chapterId = challenge.network?.chapter_id || currentChapterId;
+  if (qualityPayload?.chapter_id === chapterId) {
+    renderQualitySummary(qualityPayload);
+  } else {
+    renderQualitySummary(null, { loading: true });
+    loadRuntimeQuality(chapterId).catch(() => renderQualitySummary(null));
+  }
   renderGraph(challenge, { focusCurrent: options.focusCurrent });
   renderNodePanel(challenge, payload);
 }
@@ -575,6 +934,44 @@ function renderStats(challenge) {
     statBlock(`${Math.round(averageMastery)}`, "平均掌握度"),
     statBlock(repairCount ? `${repairCount} 个` : "无", "需要修复"),
   ].join("");
+}
+
+async function loadRuntimeQuality(chapterId) {
+  if (!chapterId) return null;
+  const payload = await request(`/quality/${encodeURIComponent(chapterId)}`);
+  qualityPayload = payload;
+  renderQualitySummary(payload);
+  return payload;
+}
+
+function renderQualitySummary(payload, options = {}) {
+  if (!qualitySummary) return;
+  if (options.loading) {
+    qualitySummary.innerHTML = `
+      <span class="quality-dot unknown"></span>
+      <span>${escapeHtml("图谱质量检测中")}</span>
+    `;
+    return;
+  }
+  if (!payload?.report) {
+    qualitySummary.innerHTML = `
+      <span class="quality-dot unknown"></span>
+      <span>${escapeHtml("图谱质量暂不可用")}</span>
+    `;
+    return;
+  }
+  const report = payload.report;
+  const passed = Boolean(report.passed);
+  const warnings = Number(report.warning_count || 0);
+  const errors = Number(report.error_count || 0);
+  const tone = passed ? (warnings ? "warn" : "pass") : "fail";
+  const label = passed
+    ? (warnings ? `${warnings} 个质量提示` : "图谱质量通过")
+    : `${errors} 个阻断问题`;
+  qualitySummary.innerHTML = `
+    <span class="quality-dot ${tone}"></span>
+    <span>${escapeHtml(label)}</span>
+  `;
 }
 
 function renderGraph(challenge, options = {}) {
@@ -844,7 +1241,7 @@ function renderEdges(layout, challenge) {
       const target = layout.nodes[edge.target_id];
       if (!source || !target) return;
       const active = isCurrentNode(challenge, edge.source_id) || isCurrentNode(challenge, edge.target_id) || selectedNodeId === edge.source_id || selectedNodeId === edge.target_id;
-      lines.push(svgOrbitCurve(source, target, `${edge.edge_type} secondary-network${active ? " active" : ""}`));
+      lines.push(svgOrbitCurve(source, target, `${edge.edge_type} light-language secondary-network${active ? " active" : ""}`));
     });
   const overlay = challenge.logic_overlay || {};
   if (overlay.active) {
@@ -862,7 +1259,8 @@ function renderEdges(layout, challenge) {
         const target = layout.nodes[edge.target_id];
         if (!source || !target) return;
         const active = selectedNodeId === edge.source_id || selectedNodeId === edge.target_id || logicEdgeTouchesCurrent(challenge, edge);
-        lines.push(svgOrbitCurve(source, target, `logic_edge ${edge.edge_type}${active ? " active" : ""}`));
+        const repairClass = edge.edge_type === "repairs" ? " repair-beam" : "";
+        lines.push(svgOrbitCurve(source, target, `logic_edge light-language ${edge.edge_type}${repairClass}${active ? " active" : ""}`));
       });
   }
 
@@ -1298,6 +1696,7 @@ function renderCoach(payload) {
       <h3>${escapeHtml(payload.status_label || statusText(passState))}</h3>
       <p>${escapeHtml(payload.coach_summary || payload.learner_explanation || "已收到本次作答。")}</p>
     </section>
+    ${renderDiagnosticVerdict(payload)}
     ${renderAbilityState(payload)}
     ${renderLogicInsight(payload.logic_insight)}
     <section class="coach-block">
@@ -1314,6 +1713,43 @@ function renderCoach(payload) {
       ${renderList(payload.evidence_gaps || [])}
     </section>
   `;
+}
+
+function renderDiagnosticVerdict(payload) {
+  const attempt = payload.challenge_attempt || {};
+  const insight = payload.logic_insight || {};
+  const root = attempt.root_cause || payload.root_cause;
+  const repairTarget = insight.primary_target_node_id || attempt.repair_target_node_id || payload.repair_target_node_id;
+  const hasPlan = payload.progression_advice || payload.next_action_hint || payload.next_step_plan;
+  if (!root && !repairTarget && !hasPlan) return "";
+  const rootLabel = root ? (errorLabels[root] || root) : "证据不足";
+  const repairTitle = publicRepairTargetTitle(payload.challenge, repairTarget);
+  const repairHtml = repairTitle
+    ? `<span class="repair-target-beacon">修复目标：${escapeHtml(repairTitle)}</span>`
+    : `<span class="repair-target-beacon muted">等待更多证据</span>`;
+  const nextPlan = Array.isArray(payload.next_step_plan)
+    ? payload.next_step_plan[0]
+    : payload.next_step_plan;
+  return `
+    <section class="coach-block diagnostic-verdict">
+      <div class="diagnostic-verdict-head">
+        <strong>根因裁决：${escapeHtml(rootLabel)}</strong>
+        ${repairHtml}
+      </div>
+      <p>${escapeHtml(payload.progression_advice || payload.next_action_hint || "系统会优先收集足够证据，再决定是否推进。")}</p>
+      <p>${escapeHtml(nextPlan || "补充步骤和自我说明，可以让诊断更可靠。")}</p>
+    </section>
+  `;
+}
+
+function publicRepairTargetTitle(challenge, nodeId) {
+  if (!challenge || !nodeId) return "";
+  return networkNodeById(challenge, nodeId, "micro_nodes")?.title
+    || networkNodeById(challenge, nodeId, "macro_nodes")?.title
+    || networkNodeById(challenge, nodeId, "macro_challenges")?.title
+    || networkNodeById(challenge, nodeId, "compare_nodes")?.title
+    || networkNodeById(challenge, nodeId, "guide_nodes")?.title
+    || "";
 }
 
 function renderAbilityState(payload) {
