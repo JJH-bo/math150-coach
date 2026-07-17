@@ -34,7 +34,7 @@ def test_enums_import_with_stable_values() -> None:
 
 
 def test_main_app_imports() -> None:
-    assert app.title == "Math150 Coach Engine"
+    assert app.title == "Math150 AI Classroom"
 
 
 def test_score_vector_supports_notes_missing_dimensions_and_overall_score() -> None:

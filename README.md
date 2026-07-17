@@ -1,8 +1,45 @@
-# Math150 Coach Engine
+# Math150 AI Classroom
 
-Math150 Coach Engine is a backend foundation for a knowledge-graph diagnostic training system targeting a 150-point goal in Graduate Entrance Exam Mathematics I.
+The project is being rebuilt from a training universe into an AI learning
+universe. Its active product spine is an authoring Studio plus a read-only
+Classroom Runtime: a custom GPT can deliver chapter knowledge as structured
+core modules, progressive learning segments, and optional detail branches,
+while the learner receives a coherent classroom package instead of a chain of
+challenge nodes.
 
-This is not a simple question bank. The engine is designed around knowledge-node progression, multi-dimensional scoring, weighted error diagnosis, precise rollback/forward decisions, validated variant generation, and review scheduling.
+## AI Classroom Foundation
+
+Project A establishes the Route Two foundation inside the existing repository:
+
+- `/api/studio/v1` is the authenticated authoring surface for capabilities,
+  draft creation and replacement, validation, publishing, and rollback.
+- `/api/classroom/v1` is the learner-facing, read-only runtime for the active
+  classroom catalog, complete packages, and individual core modules.
+- Classroom packages use free-form modules and ordered content blocks. They are
+  not constrained to 3-5 planets, and a module may contain any number of
+  progressive segments and recursively expandable detail branches.
+- Draft revisions, release IDs, activation receipts, publish operations, and
+  rollback operations are deterministic and idempotent.
+- The new classroom namespace has no dependency on diagnosis, scoring, mastery,
+  review scheduling, question banks, recommendation engines, or Boss nodes.
+
+For local Studio access, set a private authoring key and a writable data root:
+
+```powershell
+$env:STUDIO_API_KEY = "replace-with-a-local-secret"
+$env:CLASSROOM_DATA_ROOT = "$PWD\backend\classroom_data\local"
+uvicorn app.main:app --app-dir backend --reload
+```
+
+The repository does not call GPT and does not require an OpenAI API key. A
+custom GPT calls the Studio Action endpoints with the configured bearer token;
+this keeps model choice and GPT-side orchestration outside the learning
+runtime. A valid example package is available at
+`backend/classroom_data/seed/calculus-foundations.json`.
+
+The training and challenge code described below is retained temporarily as
+legacy regression coverage. It is not part of the new AI Classroom product
+model and will be removed or isolated in later migration projects.
 
 ## Project Vision Handoff
 

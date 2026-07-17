@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -62,3 +65,18 @@ def test_content_hash_is_stable_across_mapping_order() -> None:
 
     assert content_hash(payload) == content_hash(reordered)
     assert content_hash(payload).startswith("sha256:")
+
+
+def test_checked_in_seed_matches_the_valid_package_contract() -> None:
+    seed_path = (
+        Path(__file__).resolve().parents[1]
+        / "classroom_data"
+        / "seed"
+        / "calculus-foundations.json"
+    )
+    seed = json.loads(seed_path.read_text(encoding="utf-8"))
+
+    package = ClassroomPackage.model_validate(seed)
+
+    assert package.package_id == "calculus-foundations"
+    assert package.courses[0].chapters[0].modules[0].id == "limit-core"

@@ -103,3 +103,23 @@ def test_update_requires_correct_revision_and_idempotency_key(
 
     assert stale.status_code == 409
     assert stale.json()["detail"]["error_code"] == "classroom_revision_conflict"
+
+
+def test_openapi_has_stable_action_operation_ids(tmp_path, monkeypatch) -> None:
+    schema = client(tmp_path, monkeypatch).get("/openapi.json").json()
+    operations = {
+        operation["operationId"]
+        for path in schema["paths"].values()
+        for operation in path.values()
+        if isinstance(operation, dict) and "operationId" in operation
+    }
+
+    assert {
+        "getStudioCapabilities",
+        "createClassroomDraft",
+        "getClassroomDraft",
+        "updateClassroomDraft",
+        "validateClassroomDraft",
+        "publishClassroomDraft",
+        "rollbackClassroomPackage",
+    } <= operations
