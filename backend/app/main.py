@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from copy import deepcopy
 from pathlib import Path
 
@@ -15,6 +16,38 @@ from app.config import AppProfile, resolve_app_profile
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 CLASSROOM_FRONTEND_DIR = FRONTEND_DIR / "classroom"
 MODEL_RUNTIME_DIR = FRONTEND_DIR / "model-runtime"
+
+
+def _make_action_compatible_schema(schema: dict) -> dict:
+    compatible = deepcopy(schema)
+    schemas = compatible["components"]["schemas"]
+
+    content_block = schemas["ContentBlock"]
+    detail_branch = schemas["DetailBranch"]
+
+    leaf_content_block = deepcopy(content_block)
+    leaf_content_block["title"] = "ActionLeafContentBlock"
+    leaf_content_block["properties"].pop("detail_branches", None)
+
+    nested_detail_branch = deepcopy(detail_branch)
+    nested_detail_branch["title"] = "ActionNestedDetailBranch"
+    nested_detail_branch["properties"]["blocks"]["items"] = {
+        "$ref": "#/components/schemas/ActionLeafContentBlock"
+    }
+
+    nested_content_block = deepcopy(content_block)
+    nested_content_block["title"] = "ActionNestedContentBlock"
+    nested_content_block["properties"]["detail_branches"]["items"] = {
+        "$ref": "#/components/schemas/ActionNestedDetailBranch"
+    }
+
+    detail_branch["properties"]["blocks"]["items"] = {
+        "$ref": "#/components/schemas/ActionNestedContentBlock"
+    }
+    schemas["ActionNestedContentBlock"] = nested_content_block
+    schemas["ActionNestedDetailBranch"] = nested_detail_branch
+    schemas["ActionLeafContentBlock"] = leaf_content_block
+    return compatible
 
 
 def create_app(profile: AppProfile | str | None = None) -> FastAPI:
@@ -45,8 +78,14 @@ def create_app(profile: AppProfile | str | None = None) -> FastAPI:
             include_in_schema=False,
         )
         def studio_action_schema(request: Request) -> JSONResponse:
-            schema = deepcopy(action_contract.openapi())
-            schema["servers"] = [{"url": str(request.base_url).rstrip("/")}]
+            schema = _make_action_compatible_schema(
+                action_contract.openapi()
+            )
+            public_origin = os.getenv(
+                "AI_CLASSROOM_PUBLIC_ORIGIN",
+                str(request.base_url),
+            ).rstrip("/")
+            schema["servers"] = [{"url": public_origin}]
             return JSONResponse(
                 schema,
                 headers={"Cache-Control": "public, max-age=300"},

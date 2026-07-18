@@ -11,6 +11,44 @@ from app.main import create_app
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def _component_refs(value: object) -> set[str]:
+    refs: set[str] = set()
+    if isinstance(value, dict):
+        ref = value.get("$ref")
+        prefix = "#/components/schemas/"
+        if isinstance(ref, str) and ref.startswith(prefix):
+            refs.add(ref.removeprefix(prefix))
+        for child in value.values():
+            refs.update(_component_refs(child))
+    elif isinstance(value, list):
+        for child in value:
+            refs.update(_component_refs(child))
+    return refs
+
+
+def _has_component_cycle(schemas: dict[str, object]) -> bool:
+    graph = {
+        name: _component_refs(schema)
+        for name, schema in schemas.items()
+    }
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(name: str) -> bool:
+        if name in visiting:
+            return True
+        if name in visited:
+            return False
+        visiting.add(name)
+        if any(visit(target) for target in graph.get(name, set())):
+            return True
+        visiting.remove(name)
+        visited.add(name)
+        return False
+
+    return any(visit(name) for name in graph)
+
+
 def test_action_schema_is_available_only_when_studio_is_mounted(
     monkeypatch,
 ) -> None:
@@ -79,6 +117,45 @@ def test_action_schema_contains_only_authenticated_studio_operations(
     )
 
 
+def test_action_schema_uses_configured_public_https_origin(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(
+        "AI_CLASSROOM_PUBLIC_ORIGIN",
+        "https://math150.example/",
+    )
+
+    schema = (
+        TestClient(
+            create_app("mixed"),
+            base_url="http://internal-service:8000",
+        )
+        .get("/api/studio/v1/action-schema.json")
+        .json()
+    )
+
+    assert schema["servers"] == [{"url": "https://math150.example"}]
+
+
+def test_action_schema_has_no_component_reference_cycles(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("STUDIO_API_KEY", "do-not-expose-this-secret")
+    schema = (
+        TestClient(create_app("mixed"))
+        .get("/api/studio/v1/action-schema.json")
+        .json()
+    )
+
+    component_schemas = schema["components"]["schemas"]
+    assert not _has_component_cycle(component_schemas)
+    assert {
+        "ActionNestedContentBlock",
+        "ActionNestedDetailBranch",
+        "ActionLeafContentBlock",
+    } <= component_schemas.keys()
+
+
 def test_privacy_page_is_public_in_every_profile() -> None:
     for profile in ("learner", "internal", "mixed"):
         response = TestClient(create_app(profile)).get("/privacy")
@@ -119,6 +196,7 @@ def test_railway_runbook_keeps_volume_and_secret_out_of_source() -> None:
     assert "mount" in readme
     assert "`/var/data`" in readme
     assert "`STUDIO_API_KEY`" in readme
+    assert "`AI_CLASSROOM_PUBLIC_ORIGIN`" in readme
     assert "Generate Domain" in readme
     assert "render.yaml" not in readme
 

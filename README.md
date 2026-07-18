@@ -144,6 +144,8 @@ roots would not publish into the same classroom.
 `/health`, and restart only failed processes. The Railway service must use:
 
 - `APP_PROFILE=mixed`;
+- `AI_CLASSROOM_PUBLIC_ORIGIN=https://<generated-domain>` after generating
+  the public domain;
 - one persistent volume mounted at `/var/data`;
 - `CLASSROOM_DATA_ROOT=/var/data`;
 - a private, randomly generated `STUDIO_API_KEY`;
@@ -162,12 +164,14 @@ Create a Railway project from `JJH-bo/math150-coach`, select the
 volume at `/var/data`. In Service Settings > Networking, choose
 **Generate Domain**. After deployment:
 
-1. Open `/health`, `/`, and `/privacy`.
-2. Import `/api/studio/v1/action-schema.json` in the Custom GPT Action editor.
-3. Choose API Key authentication, select Bearer, and enter the generated
+1. Set `AI_CLASSROOM_PUBLIC_ORIGIN` to the generated HTTPS origin, without a
+   trailing slash.
+2. Open `/health`, `/`, and `/privacy`.
+3. Import `/api/studio/v1/action-schema.json` in the Custom GPT Action editor.
+4. Choose API Key authentication, select Bearer, and enter the generated
    `STUDIO_API_KEY` from Railway Variables.
-4. Use the deployed `/privacy` URL as the Action privacy policy.
-5. Test `getStudioCapabilities`, then the draft/validate/publish flow.
+5. Use the deployed `/privacy` URL as the Action privacy policy.
+6. Test `getStudioCapabilities`, then the draft/validate/publish flow.
 
 Do not copy the Studio secret into source files, GPT instructions, classroom
 content, screenshots, or learner-side JavaScript.
