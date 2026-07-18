@@ -235,9 +235,9 @@ function observeContent() {
 }
 
 function closeModule() {
-  saveScene();
   disposeActiveModule();
   state.moduleId = null;
+  saveScene();
   showOnly(dom.atlasView);
   window.scrollTo({ top: 0, behavior: "instant" });
 }

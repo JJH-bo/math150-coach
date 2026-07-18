@@ -31,6 +31,8 @@ test("renderer connects formulas, explanations, examples, and details", () => {
 
   assert.match(html, /data-content-id="formula"/);
   assert.match(html, /class="formula-pair"/);
+  assert.match(html, /class="limit-operator"/);
+  assert.doesNotMatch(html, /\\lim_|\\to/);
   assert.match(html, /<details[^>]+data-detail-id="detail-1"/);
   assert.match(html, /<ol class="solution-steps">/);
 });

@@ -12,7 +12,10 @@ from app.classroom.repository import (
     ClassroomRepository,
 )
 from app.classroom.validation import ClassroomPackageValidator
-from tools.register_seed_models import install_seed_models
+try:
+    from tools.register_seed_models import install_seed_models
+except ModuleNotFoundError:
+    from register_seed_models import install_seed_models
 
 
 def bootstrap(

@@ -16,6 +16,30 @@ function safeUri(value) {
   return /^(https?:\/\/|\/(?!\/)|data:image\/)/.test(uri) ? escapeHtml(uri) : "";
 }
 
+function mathSymbols(value) {
+  return value
+    .replaceAll("\\to", "→")
+    .replaceAll("\\infty", "∞")
+    .replaceAll("\\le", "≤")
+    .replaceAll("\\ge", "≥")
+    .replaceAll("\\ne", "≠")
+    .replaceAll("\\cdot", "·")
+    .replaceAll("\\times", "×");
+}
+
+export function formatMath(latex) {
+  let value = escapeHtml(latex);
+  value = value.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, (_, numerator, denominator) =>
+    `<span class="math-fraction"><span>${mathSymbols(numerator)}</span><span>${mathSymbols(denominator)}</span></span>`
+  );
+  value = value.replace(/\\lim_\{([^{}]+)\}/g, (_, condition) =>
+    `<span class="limit-operator"><span>lim</span><small>${mathSymbols(condition)}</small></span>`
+  );
+  value = value.replace(/_\{([^{}]+)\}/g, "<sub>$1</sub>");
+  value = value.replace(/\^\{([^{}]+)\}/g, "<sup>$1</sup>");
+  return mathSymbols(value);
+}
+
 function steps(values, className = "derivation-steps") {
   return `<ol class="${className}">${(values || []).map((item) =>
     `<li>${text(typeof item === "string" ? item : item.explanation || item.text || JSON.stringify(item))}</li>`
@@ -48,8 +72,8 @@ function renderBody(block) {
     return `<h${level}>${text(data.text || data.title)}</h${level}>`;
   }
   if (block.kind === "callout") return `<aside class="callout"><strong>${text(data.title || "核心结论")}</strong><div>${text(data.markdown || data.text)}</div></aside>`;
-  if (block.kind === "math") return `<div class="display-math" role="math">${text(data.latex)}</div>`;
-  if (block.kind === "formula_explanation") return `<div class="formula-pair"><div class="formula" role="math">${text(data.latex)}</div><div class="formula-explanation">${text(data.explanation)}</div></div>`;
+  if (block.kind === "math") return `<div class="display-math" role="math">${formatMath(data.latex)}</div>`;
+  if (block.kind === "formula_explanation") return `<div class="formula-pair"><div class="formula" role="math">${formatMath(data.latex)}</div><div class="formula-explanation">${text(data.explanation)}</div></div>`;
   if (block.kind === "derivation") return `<section class="derivation"><h3>${text(data.title || "推导")}</h3>${steps(data.steps)}</section>`;
   if (block.kind === "comparison") return `<div class="comparison-grid"><section><strong>${text(data.left?.title)}</strong><p>${text(data.left?.body)}</p></section><section><strong>${text(data.right?.title)}</strong><p>${text(data.right?.body)}</p></section></div>`;
   if (block.kind === "worked_example") return `<section class="worked-example"><p class="example-label">完整例子</p><h3>${text(data.prompt || data.title)}</h3>${steps(data.steps, "solution-steps")}</section>`;
