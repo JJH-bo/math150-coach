@@ -14,6 +14,8 @@ from app.config import AppProfile, resolve_app_profile
 
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
+CLASSROOM_FRONTEND_DIR = FRONTEND_DIR / "classroom"
+MODEL_RUNTIME_DIR = FRONTEND_DIR / "model-runtime"
 
 
 def create_app(profile: AppProfile | str | None = None) -> FastAPI:
@@ -31,6 +33,18 @@ def create_app(profile: AppProfile | str | None = None) -> FastAPI:
     if resolved_profile in {AppProfile.LEARNER, AppProfile.MIXED}:
         application.include_router(learner_v1_router)
         application.include_router(classroom_v1_router)
+        if MODEL_RUNTIME_DIR.exists():
+            application.mount(
+                "/classroom-runtime",
+                StaticFiles(directory=MODEL_RUNTIME_DIR),
+                name="classroom-model-runtime",
+            )
+        if CLASSROOM_FRONTEND_DIR.exists():
+            application.mount(
+                "/classroom",
+                StaticFiles(directory=CLASSROOM_FRONTEND_DIR, html=True),
+                name="classroom",
+            )
     if resolved_profile == AppProfile.MIXED:
         application.include_router(challenge_v1_router)
         if FRONTEND_DIR.exists():
