@@ -1,0 +1,37 @@
+{
+  "contract_version": "teaching_model_v1",
+  "model_id": "binary-search-array",
+  "title": "二分查找状态观察器",
+  "purpose": "同步呈现 low、high、mid、比较结果和区间收缩。",
+  "domains": ["algorithms"],
+  "parameters": [
+    {"id": "target", "type": "integer", "default": 23},
+    {"id": "speed", "type": "number", "default": 1, "minimum": 0.25, "maximum": 3}
+  ],
+  "states": [
+    {"id": "ready", "title": "准备"},
+    {"id": "searching", "title": "查找中"},
+    {"id": "found", "title": "已找到"}
+  ],
+  "actions": [
+    {"id": "step", "title": "推进一步", "payload_fields": []},
+    {"id": "reset-search", "title": "重置", "payload_fields": []}
+  ],
+  "targets": ["low", "high", "mid", "active-range", "found-cell"],
+  "interactions": ["explicit_control", "parameter_change"],
+  "viewport_modes": ["inline", "fullscreen"],
+  "quality_profiles": ["balanced", "reduced"],
+  "scenarios": [
+    {
+      "id": "find-23",
+      "title": "查找 23",
+      "initial_state": "ready",
+      "parameters": {"target": 23, "speed": 1},
+      "commands": [
+        {"kind": "perform_action", "target": "step", "payload": {}},
+        {"kind": "perform_action", "target": "step", "payload": {}}
+      ]
+    }
+  ],
+  "fallback_description": "有序数组中 low 和 high 逐步收缩，第二步在下标 5 找到 23。"
+}

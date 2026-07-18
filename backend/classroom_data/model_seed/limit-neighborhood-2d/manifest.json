@@ -1,0 +1,37 @@
+{
+  "contract_version": "teaching_model_v1",
+  "model_id": "limit-neighborhood-2d",
+  "title": "极限邻域观察器",
+  "purpose": "把函数图像、去心邻域、目标值和极限逼近过程保持在同一视野。",
+  "domains": ["calculus"],
+  "parameters": [
+    {"id": "delta", "type": "number", "default": 0.5, "minimum": 0.05, "maximum": 2.0},
+    {"id": "theme", "type": "choice", "default": "cyan", "choices": ["cyan", "amber"]}
+  ],
+  "states": [
+    {"id": "overview", "title": "整体观察"},
+    {"id": "approach", "title": "逼近目标"},
+    {"id": "hole", "title": "观察可去间断点"}
+  ],
+  "actions": [
+    {"id": "highlight-target", "title": "突出目标值", "payload_fields": []},
+    {"id": "clear-highlight", "title": "清除突出显示", "payload_fields": []}
+  ],
+  "targets": ["curve", "hole", "target-value", "x-neighborhood"],
+  "interactions": ["parameter_change"],
+  "viewport_modes": ["inline", "fullscreen"],
+  "quality_profiles": ["balanced", "reduced"],
+  "scenarios": [
+    {
+      "id": "approach-target",
+      "title": "从邻域观察目标值",
+      "initial_state": "overview",
+      "parameters": {"delta": 0.5, "theme": "cyan"},
+      "commands": [
+        {"kind": "set_state", "target": "approach"},
+        {"kind": "perform_action", "target": "highlight-target", "payload": {}}
+      ]
+    }
+  ],
+  "fallback_description": "函数 y=x+1 在 x=1 附近趋近 y=2，x=1 处以空心点表示。"
+}
