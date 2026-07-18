@@ -18,7 +18,7 @@ from app.api.studio.v1.schemas import (
     UpdateDraftRequest,
     UpdateModelDraftRequest,
 )
-from app.api.v1.schemas import api_error
+from app.api.errors import api_error
 from app.classroom.authoring import (
     ClassroomAuthoringService,
     ClassroomValidationError,

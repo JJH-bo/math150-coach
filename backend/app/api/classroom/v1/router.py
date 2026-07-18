@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Response
 
-from app.api.v1.schemas import api_error
+from app.api.errors import api_error
 from app.classroom.model_repository import (
     ModelNotFoundError,
     ModelRepositoryError,

@@ -3,13 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.classroom.v1.router import router as classroom_v1_router
-from app.api.challenge.v1.router import router as challenge_v1_router
-from app.api.learner.v1.router import router as learner_v1_router
 from app.api.studio.v1.router import router as studio_v1_router
-from app.api.v1.router import router as api_v1_router
 from app.config import AppProfile, resolve_app_profile
 
 
@@ -22,17 +20,20 @@ def create_app(profile: AppProfile | str | None = None) -> FastAPI:
     resolved_profile = resolve_app_profile(profile)
     application = FastAPI(
         title="Math150 AI Classroom",
-        version="0.2.0",
-        description="AI Classroom Studio and runtime alongside isolated legacy APIs.",
+        version="1.0.0",
+        description="GPT authoring Studio and read-only AI Classroom runtime.",
     )
     application.state.app_profile = resolved_profile.value
 
     if resolved_profile in {AppProfile.INTERNAL, AppProfile.MIXED}:
-        application.include_router(api_v1_router)
         application.include_router(studio_v1_router)
     if resolved_profile in {AppProfile.LEARNER, AppProfile.MIXED}:
-        application.include_router(learner_v1_router)
         application.include_router(classroom_v1_router)
+
+        @application.get("/", include_in_schema=False)
+        def classroom_entry() -> RedirectResponse:
+            return RedirectResponse("/classroom/", status_code=307)
+
         if MODEL_RUNTIME_DIR.exists():
             application.mount(
                 "/classroom-runtime",
@@ -45,16 +46,12 @@ def create_app(profile: AppProfile | str | None = None) -> FastAPI:
                 StaticFiles(directory=CLASSROOM_FRONTEND_DIR, html=True),
                 name="classroom",
             )
-    if resolved_profile == AppProfile.MIXED:
-        application.include_router(challenge_v1_router)
-        if FRONTEND_DIR.exists():
-            application.mount("/trainer", StaticFiles(directory=FRONTEND_DIR, html=True), name="trainer")
 
     @application.get("/health")
     def health() -> dict[str, str]:
         return {
             "status": "ok",
-            "phase": "phase_4_1_profile_gating",
+            "product": "ai_classroom",
             "app_profile": resolved_profile.value,
         }
 

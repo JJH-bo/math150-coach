@@ -6,7 +6,7 @@ import secrets
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.api.v1.schemas import api_error
+from app.api.errors import api_error
 
 
 bearer = HTTPBearer(auto_error=False)
