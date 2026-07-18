@@ -48,8 +48,17 @@ def generate(seed_root: Path, output_root: Path) -> list[dict]:
                 service.artifact(job.job_id, "screenshot.png"),
                 output_root / screenshot_name,
             )
+            durable_report = {
+                **result.report,
+                "job_id": "<generated-preview-job>",
+            }
             (output_root / report_name).write_text(
-                json.dumps(result.report, ensure_ascii=False, sort_keys=True, indent=2)
+                json.dumps(
+                    durable_report,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    indent=2,
+                )
                 + "\n",
                 encoding="utf-8",
                 newline="\n",

@@ -24,7 +24,9 @@ async function main() {
     page.on("response", (response) => {
       if (response.status() >= 400) report.failed_responses.push({ status: response.status(), url: response.url() });
     });
-    await page.goto(`${baseUrl}/classroom/`, { waitUntil: "networkidle" });
+    await page.goto(`${baseUrl}/`, { waitUntil: "networkidle" });
+    report.checks.root_redirected_to_classroom =
+      new URL(page.url()).pathname === "/classroom/";
     await page.waitForSelector(".module-destination");
     await page.screenshot({ path: path.join(outputRoot, "desktop-atlas.png") });
     report.checks.module_destinations = await page.locator(".module-destination").count();
@@ -85,7 +87,18 @@ async function main() {
     report.checks.mobile_horizontal_overflow = await mobilePage.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     await mobile.close();
 
-    report.checks.legacy_requests = requests.filter((url) => url.includes("/api/challenge"));
+    report.checks.forbidden_product_requests = requests.filter((url) =>
+      url.includes("/api/challenge")
+    );
+    report.base_url = "<local-classroom-server>";
+    report.requests = requests.map((url) => {
+      if (url.startsWith("blob:")) return "blob:<teaching-model-module>";
+      return new URL(url).pathname;
+    });
+    report.failed_responses = report.failed_responses.map((failure) => ({
+      ...failure,
+      url: new URL(failure.url).pathname,
+    }));
     fs.writeFileSync(path.join(outputRoot, "browser-report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
     process.stdout.write(JSON.stringify(report));
   } finally {

@@ -16,6 +16,11 @@ def test_cosmic_classroom_real_browser_flow(tmp_path) -> None:
     checks = report["checks"]
 
     assert report["errors"] == []
+    assert report["failed_responses"] == []
+    assert report["base_url"] == "<local-classroom-server>"
+    assert report["requests"][0] == "/"
+    assert not any("127.0.0.1" in request for request in report["requests"])
+    assert checks["root_redirected_to_classroom"] is True
     assert checks["module_destinations"] >= 1
     assert checks["formula_pair_visible"] is True
     assert checks["model_visible"] is True
@@ -29,6 +34,6 @@ def test_cosmic_classroom_real_browser_flow(tmp_path) -> None:
     assert checks["desktop_horizontal_overflow"] <= 0
     assert checks["mobile_horizontal_overflow"] <= 0
     assert checks["mobile_model_visible"] is True
-    assert checks["legacy_requests"] == []
+    assert checks["forbidden_product_requests"] == []
     assert "score" not in report["scene_snapshot"]
     assert "diagnosis" not in report["scene_snapshot"]
