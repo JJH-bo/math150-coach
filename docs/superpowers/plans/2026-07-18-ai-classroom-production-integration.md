@@ -6,7 +6,7 @@
 
 **Architecture:** Package the existing mixed-profile FastAPI application, Node preview worker, Playwright dependency, and Chromium in one Docker service. Mount one persistent data root, expose a filtered production-origin Action schema and public privacy policy, then configure and test the Custom GPT against the deployed service.
 
-**Tech Stack:** Python 3.12, FastAPI, Pydantic v2, Node.js, Playwright, Chromium, Docker, Render Blueprint, pytest.
+**Tech Stack:** Python 3.12, FastAPI, Pydantic v2, Node.js, Playwright, Chromium, Docker, Railway config-as-code, pytest.
 
 ## Global Constraints
 
@@ -41,15 +41,16 @@
 - Create: `package-lock.json`
 - Create: `Dockerfile`
 - Create: `.dockerignore`
-- Create: `render.yaml`
+- Create: `railway.json`
+- Delete: `render.yaml`
 - Modify: `backend/tests/test_production_integration.py`
 
 - [ ] Add failing static contract tests for the Docker runtime, preview
-  environment, mixed profile, persistent data root, generated secret, health
-  check, one instance, and persistent disk.
+  environment, mixed profile, persistent data root, health check, Docker
+  builder, and restart policy.
 - [ ] Run the focused tests and confirm RED.
 - [ ] Pin the Node Playwright dependency and generate its lockfile.
-- [ ] Add a Python/Node/Chromium Dockerfile and Render Blueprint.
+- [ ] Add a Python/Node/Chromium Dockerfile and Railway config-as-code.
 - [ ] Run the focused tests and confirm GREEN.
 
 ### Task 3: Regression and Runtime Verification
@@ -68,13 +69,20 @@
 - [ ] Push `feature/ai-classroom-foundation` to origin.
 - [ ] Confirm the remote branch points to the tested commit.
 
-### Task 5: Render Deployment
+### Task 5: Railway Deployment
 
-- [ ] Open the Render deployment flow for the pushed repository.
-- [ ] Create the Blueprint service and persistent disk.
+- [ ] Open Railway and create a project from
+  `JJH-bo/math150-coach`, branch `feature/ai-classroom-foundation`.
+- [ ] Add a volume mounted at `/var/data`.
+- [ ] Configure `APP_PROFILE=mixed`, `CLASSROOM_DATA_ROOT=/var/data`,
+  `MODEL_PREVIEW_NODE=/usr/bin/node`,
+  `MODEL_PREVIEW_BROWSER=/usr/bin/chromium`, `NODE_PATH=/app/node_modules`,
+  `PYTHON_EXECUTABLE=/usr/local/bin/python`, and a newly generated
+  `STUDIO_API_KEY`.
+- [ ] Generate a Railway public domain.
 - [ ] Confirm or hand off only platform login, CAPTCHA, or paid-plan checkout.
 - [ ] Wait for build and health checks.
-- [ ] Verify the generated secret remains private.
+- [ ] Verify the Studio secret remains private.
 - [ ] Record the production HTTPS origin without storing the secret.
 - [ ] Verify persistent content survives a redeploy.
 

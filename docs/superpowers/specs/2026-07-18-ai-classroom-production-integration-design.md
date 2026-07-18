@@ -17,14 +17,15 @@ tracking, challenge gates, or any other learner-analysis system.
 
 ## 2. Selected Deployment Shape
 
-The selected production target is one Docker web service on Render:
+The selected production target is one Docker web service on Railway:
 
 - `APP_PROFILE=mixed` exposes both authenticated Studio authoring and the
   read-only classroom runtime;
 - a persistent disk mounted at `/var/data` is the single
   `CLASSROOM_DATA_ROOT`;
 - one instance avoids concurrent writes to the current file repository;
-- Render generates the Studio bearer secret rather than storing it in Git;
+- the Studio bearer secret is generated locally and entered only in Railway
+  Variables rather than stored in Git;
 - the image contains Python, Node.js, Playwright, Chromium, and suitable fonts;
 - a startup bootstrap copies the checked-in seed into an empty persistent disk
   without overwriting later authored releases;
@@ -33,10 +34,13 @@ The selected production target is one Docker web service on Render:
 - `/api/studio/v1/action-schema.json` is a public schema document describing
   only authenticated Studio operations.
 
-Render is selected because the existing FastAPI application and real-browser
-preview worker can run unchanged in a Docker service with a persistent disk.
-A serverless frontend deployment would require replacing the Python runtime,
-filesystem repository, subprocess worker, and Chromium execution path.
+Railway is selected because it detects the existing root `Dockerfile`, supports
+GitHub branch deployments, service variables, public HTTPS domains, and a
+persistent volume mounted at `/var/data`. Its trial does not require a credit
+card, so the complete runtime can be validated before choosing an ongoing
+plan. A serverless frontend deployment would require replacing the Python
+runtime, filesystem repository, subprocess worker, and Chromium execution
+path.
 
 ## 3. GPT Action Boundary
 
@@ -97,15 +101,20 @@ ephemeral browser context.
 
 ## 6. Deployment and Integration Flow
 
-1. Commit and push the Docker, Render Blueprint, schema, privacy, and tests.
-2. Create the Render Blueprint from the repository and provision its disk.
-3. Wait for the Docker build and health check to pass.
-4. Verify the public classroom, privacy page, Action schema, Studio bearer
+1. Commit and push the Docker, Railway config-as-code, schema, privacy, and
+   tests.
+2. Create a Railway project from the GitHub repository and select the
+   `feature/ai-classroom-foundation` branch.
+3. Set `APP_PROFILE=mixed`, `CLASSROOM_DATA_ROOT=/var/data`, preview runtime
+   paths, and a newly generated `STUDIO_API_KEY` in Railway Variables.
+4. Attach one volume to `/var/data` and generate a Railway public domain.
+5. Wait for the Docker build and health check to pass.
+6. Verify the public classroom, privacy page, Action schema, Studio bearer
    protection, and real-browser preview prerequisites.
-5. Import the schema URL into the user's Custom GPT.
-6. Configure Bearer authentication with the generated Render secret.
-7. set the GPT Action privacy URL to the deployed `/privacy` endpoint.
-8. Exercise capabilities, draft, validation, publish, and learner reads through
+7. Import the schema URL into the user's Custom GPT.
+8. Configure Bearer authentication with the generated secret.
+9. Set the GPT Action privacy URL to the deployed `/privacy` endpoint.
+10. Exercise capabilities, draft, validation, publish, and learner reads through
    the public service.
 
 Platform login, CAPTCHA, and paid-plan confirmation remain user-controlled
@@ -116,9 +125,23 @@ actions. They do not change the architecture or repository implementation.
 ### Separate Studio and learner services
 
 Rejected for the first release. The current repository is atomic and durable
-on one filesystem, but two services cannot share a Render persistent disk.
+on one filesystem, but independent services cannot mount one Railway volume
+concurrently.
 Splitting them would require a database or object-storage migration before the
 GPT-published release could become visible to the learner.
+
+### Render Blueprint
+
+Rejected after the first deployment attempt because account creation required
+an hCaptcha flow and the user elected to change providers. Render-specific
+configuration is removed rather than retained as an ambiguous second
+production target.
+
+### Fly.io
+
+Rejected for the first release. It can run the Docker image and mount a volume,
+but new organizations require a credit card. Railway allows the runtime to be
+validated on its trial before a billing decision.
 
 ### Rewrite for a serverless site platform
 
@@ -136,7 +159,7 @@ registered model versions, and preview evidence.
 Production integration is complete when:
 
 1. The repository contains a reproducible production image and hosting
-   Blueprint with a persistent data root.
+   config-as-code file with a persistent data root documented for the service.
 2. All tests prove profile visibility, Action schema filtering and security,
    privacy availability, secret non-disclosure, and deployment file contracts.
 3. The pushed service is healthy over HTTPS and survives a deploy with its
