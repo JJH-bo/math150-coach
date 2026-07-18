@@ -33,6 +33,9 @@ REMOVED_PRODUCT_PATHS = (
     "frontend/index.html",
     "frontend/styles.css",
     "tools/run_real_attempt_lab.py",
+    "docs/ai_coordination",
+    "docs/explan.md",
+    "docs/scoring_spec.md",
 )
 
 

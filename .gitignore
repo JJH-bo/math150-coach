@@ -11,8 +11,8 @@ venv/
 env/
 
 # Local runtime state
-training_sessions/
-backend/training_sessions/
+classroom_data/
+backend/classroom_data/local/
 .superpowers/
 .worktrees/
 *.log

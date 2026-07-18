@@ -1,417 +1,195 @@
 # Math150 AI Classroom
 
-The project is being rebuilt from a training universe into an AI learning
-universe. Its active product spine is an authoring Studio plus a read-only
-Classroom Runtime: a custom GPT can deliver chapter knowledge as structured
-core modules, progressive learning segments, and optional detail branches,
-while the learner receives a coherent classroom package instead of a chain of
-challenge nodes.
+Math150 AI Classroom turns chapter knowledge supplied by a custom GPT into a
+coherent learning universe.
 
-## AI Classroom Foundation
+The GPT authors complete core modules. Each module can unfold at the learner's
+pace through ordered content blocks, local detail branches, and persistent
+teaching models. A module is a complete learning destination rather than a
+fixed chain of small tasks.
 
-Project A establishes the Route Two foundation inside the existing repository:
+## Product Surfaces
 
-- `/api/studio/v1` is the authenticated authoring surface for capabilities,
-  draft creation and replacement, validation, publishing, and rollback.
-- `/api/classroom/v1` is the learner-facing, read-only runtime for the active
-  classroom catalog, complete packages, and individual core modules.
-- Classroom packages use free-form modules and ordered content blocks. They are
-  not constrained to 3-5 planets, and a module may contain any number of
-  progressive segments and recursively expandable detail branches.
-- Draft revisions, release IDs, activation receipts, publish operations, and
-  rollback operations are deterministic and idempotent.
-- The new classroom namespace has no dependency on diagnosis, scoring, mastery,
-  review scheduling, question banks, recommendation engines, or Boss nodes.
+- **Studio API** — `/api/studio/v1` gives the custom GPT a broad, authenticated
+  authoring environment for packages and teaching models.
+- **Classroom Runtime API** — `/api/classroom/v1` exposes immutable published
+  releases to the learner interface.
+- **Learning universe** — `/classroom/` provides the chapter atlas, reading
+  stage, in-place details, and model observatory.
+- **Default entry** — `/` redirects to `/classroom/` in learner and mixed
+  profiles.
 
-For local Studio access, set a private authoring key and a writable data root:
+The repository itself does not call an AI provider and does not need a provider
+API key. The custom GPT is the author and calls Studio Actions using the
+private `STUDIO_API_KEY`.
 
-```powershell
-$env:STUDIO_API_KEY = "replace-with-a-local-secret"
-$env:CLASSROOM_DATA_ROOT = "$PWD\backend\classroom_data\local"
-uvicorn app.main:app --app-dir backend --reload
-```
+## Learning Package
 
-The repository does not call GPT and does not require an OpenAI API key. A
-custom GPT calls the Studio Action endpoints with the configured bearer token;
-this keeps model choice and GPT-side orchestration outside the learning
-runtime. A valid example package is available at
+`classroom_package_v1` supports:
+
+- any number of courses, chapters, and complete core modules;
+- ordered semantic blocks for prose, headings, formulas with explanations,
+  derivations, comparisons, worked examples, code, tables, media, groups,
+  model references, and expandable details;
+- recursively nested detail branches for “没学懂，再详细展开”;
+- exact-version references to teaching models;
+- typed content-to-model bindings with explicit return behavior;
+- deterministic drafts, validation reports, immutable releases, activation,
+  idempotent writes, and rollback to an earlier release.
+
+The sample package is
 `backend/classroom_data/seed/calculus-foundations.json`.
-
-The training and challenge code described below is retained temporarily as
-legacy regression coverage. It is not part of the new AI Classroom product
-model and will be removed or isolated in later migration projects.
 
 ## Teaching Model Workshop
 
-Project B adds a controlled code-and-preview environment for teaching models:
+`teaching_model_v1` gives the GPT a controlled source-and-preview loop:
 
-- Studio model drafts contain a strict `teaching_model_v1` manifest and one
-  browser ES module.
-- Model source can be created, read, revised, validated, previewed, inspected,
-  and registered through `/api/studio/v1`.
-- Registration produces immutable `m-<hash>` versions and is blocked unless a
-  successful preview matches the current draft hash, reports no uncaught
-  errors, and disposes every tracked animation frame and event listener.
-- Classroom packages pin exact model versions and use typed content bindings
-  with explicit return behavior.
-- `/api/classroom/v1/models/...` exposes only registered manifests and source
-  required by the learner runtime.
+1. Create or update a model draft containing a strict manifest and one browser
+   ES module.
+2. Validate the lifecycle contract and declared parameters, commands, events,
+   and snapshots.
+3. Request a real-browser preview and inspect its durable report/screenshots.
+4. Register only the exact draft revision whose preview completed without
+   uncaught errors or retained resources.
+5. Pin the resulting immutable `m-<hash>` version in a classroom package.
 
-The checked-in reference paths are:
+Model source executes only inside a browser context. The reusable host owns
+mount, update, snapshot, restore, command dispatch, animation frames, event
+listeners, and disposal.
 
-- `limit-neighborhood-2d`, a Canvas 2D model for limits and neighborhoods;
-- `binary-search-array`, an algorithm-state model for interval contraction.
+Checked-in reference models:
 
-Install the reference models into a local data root:
+- `limit-neighborhood-2d`
+- `binary-search-array`
+
+## Custom GPT Authoring Flow
+
+The GPT should begin with:
+
+```text
+GET /api/studio/v1/capabilities
+Authorization: Bearer <STUDIO_API_KEY>
+```
+
+The capabilities response declares the accepted block vocabulary and teaching
+model contract. The normal write flow is:
+
+```text
+POST /api/studio/v1/model-drafts
+PUT  /api/studio/v1/model-drafts/{draft_id}
+POST /api/studio/v1/model-drafts/{draft_id}/validate
+POST /api/studio/v1/model-drafts/{draft_id}/previews
+GET  /api/studio/v1/previews/{job_id}
+POST /api/studio/v1/model-drafts/{draft_id}/register
+
+POST /api/studio/v1/drafts
+PUT  /api/studio/v1/drafts/{draft_id}
+POST /api/studio/v1/drafts/{draft_id}/validate
+POST /api/studio/v1/drafts/{draft_id}/publish
+```
+
+Every mutable request requires an `Idempotency-Key`. Updates and publication
+also require the expected revision, so retries are safe and concurrent edits
+cannot silently overwrite one another.
+
+The complete OpenAPI document is available at `/openapi.json` in `internal`
+and `mixed` profiles.
+
+## Quick Start
+
+Install Python dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Bootstrap the sample package and registered reference models:
 
 ```powershell
 $env:PYTHONPATH = "backend"
-python tools/register_seed_models.py --data-root backend/classroom_data/local
+python tools/bootstrap_ai_classroom.py `
+  --data-root backend/classroom_data/local
 ```
 
-Real screenshot generation requires Node.js, Playwright, and Chrome or Edge.
-The worker uses explicit executable settings so a missing environment becomes
-a durable failed preview job instead of a fake artifact:
+Run the combined local profile:
 
 ```powershell
-$env:MODEL_PREVIEW_NODE = "C:\path\to\node.exe"
-$env:NODE_PATH = "C:\path\to\node_modules"
-$env:MODEL_PREVIEW_BROWSER = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-$env:PYTHONPATH = "backend"
-python tools/generate_project_b_preview_evidence.py
-```
-
-Authored JavaScript is never evaluated by Python. It runs in an ephemeral
-browser context with network requests blocked; the reusable host owns the
-model lifecycle and resource tracking.
-
-## Cosmic Classroom Runtime
-
-Project C adds the learner-facing learning universe. A chapter region contains
-complete core-module destinations; opening one produces a reading-first lesson
-with progressive content, in-place detail branches, and an exact-version
-teaching model that remains available beside the lesson.
-
-Bootstrap a local sample package and its registered model versions:
-
-```powershell
-$env:PYTHONPATH = "backend"
-python tools/bootstrap_ai_classroom.py --data-root backend/classroom_data/local
-```
-
-Run the learner profile against that same data root:
-
-```powershell
-$env:APP_PROFILE = "learner"
+$env:APP_PROFILE = "mixed"
+$env:STUDIO_API_KEY = "replace-with-a-private-local-secret"
 $env:CLASSROOM_DATA_ROOT = "$PWD\backend\classroom_data\local"
 uvicorn app.main:app --app-dir backend --reload
 ```
 
-Open `http://127.0.0.1:8000/classroom/`. The browser persists only
-`classroom_scene_v1` continuity fields: package and immutable release identity,
-course/chapter/module/content location, scroll and open-detail state, model
-snapshot, viewport quality, and motion preference. It never stores score,
-diagnosis, mastery, review, recommendation, or answer history.
+Open `http://127.0.0.1:8000/`.
 
-If an authored model cannot load, the lesson content remains usable and the
-model dock shows a readable fallback. Reduced motion follows the operating
-system preference and can also be toggled in the atlas.
+## Deployment Profiles
 
-Generate the checked-in desktop/mobile browser evidence with real Node,
-Playwright, and Chrome:
+| `APP_PROFILE` | Studio | Classroom API/UI | Root entry |
+| --- | --- | --- | --- |
+| `internal` | yes | no | 404 |
+| `learner` | no | yes | `/classroom/` |
+| `mixed` | yes | yes | `/classroom/` |
+
+`mixed` is the local default. A public learner deployment should use
+`APP_PROFILE=learner`; the private authoring deployment should use
+`APP_PROFILE=internal`.
+
+## Runtime Continuity
+
+The browser stores only `classroom_scene_v1` continuity:
+
+- package and immutable release identity;
+- course, chapter, module, and active content location;
+- scroll position and open detail IDs;
+- teaching-model snapshot;
+- viewport quality and motion preference.
+
+If a teaching model cannot load, lesson content remains readable and the model
+dock shows a fallback. Reduced motion follows the system preference and can be
+enabled in the atlas.
+
+## Verification
+
+Run the complete retained Python suite:
+
+```powershell
+$env:PYTHONPATH = "backend"
+python -m pytest -q
+```
+
+Run browser-module tests with Node:
+
+```powershell
+node --test frontend/classroom/*.test.mjs frontend/model-runtime/*.test.mjs
+```
+
+Real preview and classroom evidence additionally require Playwright plus Chrome
+or Edge:
 
 ```powershell
 $env:MODEL_PREVIEW_NODE = "C:\path\to\node.exe"
 $env:NODE_PATH = "C:\path\to\node_modules"
 $env:MODEL_PREVIEW_BROWSER = "C:\Program Files\Google\Chrome\Application\chrome.exe"
 $env:PYTHONPATH = "backend"
+
+python tools/generate_project_b_preview_evidence.py
 python tools/generate_project_c_evidence.py
 ```
 
-The evidence is written to `docs/preview-artifacts/project-c/`; the automated
-gate is `python -m pytest backend/tests/test_cosmic_classroom_browser.py -q`.
+Evidence is checked in under:
 
-## Project Vision Handoff
+- `docs/preview-artifacts/project-b/`
+- `docs/preview-artifacts/project-c/`
 
-For a new thread or a new assistant, read [docs/explan.md](docs/explan.md) first. It captures the product vision, current engine boundaries, UI direction, knowledge-network philosophy, development requirements, and known-good verification baseline.
-
-## Current Phase
-
-Phase 0 / 0.5 / 0.6 are complete. They built the foundation:
-
-- Python backend skeleton.
-- Minimal FastAPI app.
-- Pydantic domain models.
-- Rule documents for scoring, diagnosis, rollback/forward, and question generation.
-- A sample ODE knowledge graph.
-- Rule-based diagnosis, rollback, and forward decision contracts.
-- Golden cases and executable eval checks for the ODE sample chapter.
-
-Phase 1 is complete. It added the default `CompositeScoringEngine` path with manual override, rubric scoring, lightweight math validation, weak rule signals, detailed scorer audit output, and an inactive LLM stub.
-
-Phase 1.1 is scoring-boundary hardening. It adds red-team tests and fixes for keyword-only answers, rubric required/optional behavior, arbitrary-constant handling, initial-value answer checks, answer aliases, and rule-only forward-safety.
-
-Phase 2 is complete. It strengthens diagnosis with root-cause analysis, primary/secondary/derived error roles, scorer evidence tracing, learner-facing explanations, recommended training actions, and separate diagnosis golden evals.
-
-Phase 2.1 is complete. It adds diagnosis red-team hardening for mixed causes, rubric/math-validator conflicts, optional-only and rule-only weak evidence, condition-miss gates, and Chinese coach-style learner explanations.
-
-Phase 2.2-lite is complete. It hardens the movement contract between rollback, forward, diagnosis recommendations, and next-action hints before any Phase 3 API is exposed.
-
-Phase 3.1 is complete. It adds a minimal internal/dev API and a `LearningOrchestrator` that safely exposes the existing scoring, diagnosis, rollback, forward, and next-action outputs without changing engine logic.
-
-Phase 3.2 is complete. It adds real FastAPI TestClient HTTP red-team tests for API response shape, debug gating, override rejection, malformed requests, and movement consistency.
-
-Phase 3.3 is complete. It freezes the Phase 3 contract with a freeze report, dependency snapshot, final verification record, and explicit boundaries for future phases.
-
-Phase 4.0-lite is complete. It adds a server-side YAML question catalog and a learner-safe public API under `/api/learner/v1`. Learner clients submit only `question_id`, `user_answer`, optional response steps, and optional self-explanation; trusted answer keys, rubrics, solution outlines, and validator config are loaded only from the server catalog.
-
-Phase 4.0.1 is complete. It freezes the Phase 4.0-lite contract, adds a freeze report, and prevents catalog `validator_config` from overriding reserved domain metadata, override, debug, trace, or raw movement keys.
-
-Phase 4.1 is complete. It adds `APP_PROFILE` route gating and OpenAPI separation for learner, internal, and mixed deployment profiles without changing endpoint behavior or engine logic.
-
-Phase 4.1.1 is complete. It freezes the profile-gating contract and records the final profile boundary audit.
-
-Phase 4.2 is complete. It adds server-side catalog validation hardening through a lightweight `CatalogValidator` without changing API behavior or engine logic.
-
-Phase 4.2.1 is complete. It freezes the catalog validation contract and records the final validation boundary audit.
-
-Phase 4.3 is complete. It adds an authoring/import workflow skeleton with authoring-only models, validation reports, deterministic content-hash generation for publish candidates, and a human review gate. It does not write the formal catalog, add endpoints, add a database, add UI, add auth, add LLM integration, or change scoring/diagnosis/movement behavior.
-
-Phase 4.3.1 is complete. It freezes the authoring/import workflow skeleton and records the final dry-run, draft isolation, human review gate, content-hash, source metadata, and known-limit audit.
-
-Phase 4.4 is complete. It adds a minimal authoring-side import CLI and dry-run batch workflow with `validate-draft`, `validate-batch`, and `build-candidate-dry-run`. The CLI only reads authoring drafts, emits reports/previews, and never writes the formal catalog or registers learner API data.
-
-Phase 4.4.1 is complete. It freezes the CLI dry-run boundary, including stdout JSON, path safety, strict/non-strict batch behavior, human review gate, source/copyright isolation, and learner API isolation.
-
-Phase 4.5 P0 is complete. It adds a minimal local trainer CLI over the learner-safe API for listing public questions, showing a public question, submitting a learner answer, and appending a lightweight local JSONL session log. It does not add endpoints, database persistence, frontend UI, next-question selection, mastery/review behavior, formal catalog writes, or new engine logic.
-
-Phase 4.5.1 is complete. It freezes the Local Trainer boundary, including command contract, stdout JSON, debug boundary, session log contract, path-safety contract, trusted-field denylist, and unchanged API/engine/catalog boundaries.
-
-Phase 4.6 trial execution is complete. It verified that the frozen Local Trainer can run `list` / `show` / `submit`, generate JSONL session logs, and avoid trusted field leaks. The main issue found was learner-facing output clarity.
-
-Phase 4.7 P0 is complete. It adds deterministic Local Trainer coach-output projection fields such as `coach_summary`, `status_label`, `progression_advice`, `evidence_gaps`, `friendly_score_summary`, and `next_step_plan`. It does not change engines, APIs, learner projector behavior, catalog, or real decisions.
-
-Phase 4.7.1 is complete. It freezes the coach-output boundary, records the final audit checklist, and confirms that Phase 4.7 P0 remains a deterministic Local Trainer projection layer rather than a new decision engine.
-
-Phase 4.7.2 audit is complete. It confirmed that `response_steps` and `self_explanation` are transported correctly, but current scorers do not consume those fields.
-
-Phase 4.7.3 is complete. It adds display-only response-evidence integration for Local Trainer coach output through `response_evidence_present` and `unscored_dimensions`, so unscored dimensions are not mislabeled as learner omissions when steps/explanation were submitted. It does not change scoring, diagnosis, rollback, forward, API behavior, catalog, or eval cases.
-
-Phase 4.8 is complete. It adds 8 authoring-only ODE catalog expansion drafts, one authoring batch manifest, validation reports, and dry-run candidate previews under the authoring workspace only. It does not modify the formal catalog, manifest, formal question YAML, engines, APIs, Local Trainer, coach output, or golden evals.
-
-Phase 4.8.1 is complete. It freezes the authoring draft boundary and confirms that the Phase 4.8 candidates remain authoring-only, dry-run previews are not published questions, content hashes do not imply formal publish, the learner API still exposes only `ode-sep-001`, and no candidate selection or formal publish was performed.
-
-Phase 4.8.2 is complete. It defines the human review and candidate selection plan for the 8 authoring-only ODE candidates, including a weighted review rubric, hard-fail rules, candidate review template, selection target of 3-5 candidates, and Phase 4.8.3 execution guidance. It does not perform actual candidate selection, formal publish, catalog writes, code changes, scoring integration, or feature expansion.
-
-Phase 4.8.3A is complete. It exports a trusted-only human review packet for the 8 authoring-only ODE candidates, including public fields, trusted answers, rubrics, validator config, source metadata, validation report paths, dry-run preview paths, content hashes, and blank review templates. It does not perform scoring, candidate recommendation, candidate selection, formal publish, catalog writes, code changes, scoring integration, or feature expansion.
-
-Phase 4.8.3B is complete. It records human reviewer hard-fail and 100-point review results for the 8 authoring-only ODE candidates, including per-candidate review records and a human reviewer recommendation summary. It does not modify candidates, publish, import, write formal catalog files, change code, or perform scoring integration.
-
-Phase 4.8.4 is complete. It plans how the human-review-recommended Top 3 candidates should move toward a later publish workflow, including required authoring revisions, rubric and alias review, validation/dry-run flow, learner-safe boundaries, and go/no-go criteria. It does not modify drafts, publish, import, write formal catalog files, change code, or perform scoring integration.
-
-Phase 4.8.5 is complete. It revises only the Top 3 authoring-only drafts, generates Phase 4.8.5 validation reports and dry-run previews, and confirms the formal catalog and learner API remain unchanged. It does not publish, import, modify formal catalog files or manifest, change code, add endpoints, or perform scoring integration.
-
-Knowledge Network Challenge MVP is implemented. It treats existing `KnowledgeNode` entries as MacroNodes / BigNodes, adds independent MicroNodes and MacroChallenge tasks in `backend/challenge_data`, and stores local challenge progress in JSON. The original CLI-only `ode_mvp` slice is still present for regression tests.
-
-Minimal Browser Challenge Trainer is implemented for local use. It adds a thin `/api/challenge/v1` wrapper around the existing `ChallengeEngine`, mounts a static trainer at `/trainer`, and adds a three-MacroNode ODE runtime slice under `backend/challenge_data/ode_network_mvp`. It does not write the formal catalog, add a database, change scoring/diagnosis/movement engines, or expose challenge questions through the learner API.
-
-Logic Knowledge Graph slice is implemented for `ode_network_mvp`. It adds non-trainable guide nodes, a hidden ability layer in `logic_graph.yaml`, cue-based ability evidence states, and a `LogicEvidenceEngine` that maps existing scoring/diagnosis evidence to precise hidden abilities and learner-safe repair focus. This does not become a new decision engine: scoring, diagnosis, rollback, and forward ownership remain unchanged.
-
-Ultimate Knowledge Graph / Diagnosis Core P1 is implemented on the current ODE network slice. It adds hidden ability roles, richer typed-edge semantics, a `KnowledgeGraphQualityValidator`, hidden-logic contradiction signals inside `DiagnosisTrace`, surface-keyword-only low-confidence handling, partial concept understanding handling, and MacroChallenge repair-target precision from hidden ability evidence. This is an engine-capability upgrade, not a题库 or chapter expansion.
-
-No database, user accounts, real LLM API, complete symbolic ODE validation, or full Mathematics I graph is included.
-
-The frozen `/api/v1` API remains an internal/dev API. The `/api/learner/v1` API is the learner-safe public surface. `APP_PROFILE=mixed` remains the local default; production learner deployments should set `APP_PROFILE=learner`.
-
-## Install
-
-```bash
-cd math150-coach
-pip install -r requirements.txt
-```
-
-If you prefer installing manually:
-
-```bash
-pip install fastapi uvicorn pydantic pytest pyyaml
-pip install httpx2
-```
-
-## Run Tests
-
-```bash
-cd math150-coach
-pytest
-```
-
-## Run Golden Evals
-
-```bash
-cd math150-coach
-python evals/run_evals.py
-```
-
-## Run the Minimal Local Trainer
-
-The local trainer uses the existing learner-safe API in-process. It does not expose trusted catalog fields.
-
-```bash
-cd math150-coach/backend
-python -m app.training.local_trainer list
-python -m app.training.local_trainer show ode-sep-001
-python -m app.training.local_trainer submit ode-sep-001 --answer "This is separable; separate variables; dy/y = 2x dx; integrate; ln|y|=x^2+C."
-```
-
-Submit appends a lightweight JSONL row under the current directory's `training_sessions/` by default. This is not a database or formal attempt persistence.
-
-## Run the Local Knowledge Challenge MVP
-
-The challenge MVP is local-only. It uses independent challenge YAML under `backend/challenge_data/ode_mvp`, not the formal learner catalog.
-
-```bash
-cd math150-coach/backend
-python -m app.training.local_trainer challenge-start ode_mvp --session-id ode-run-001
-python -m app.training.local_trainer challenge-status --session-id ode-run-001
-python -m app.training.local_trainer challenge-submit --session-id ode-run-001 --answer "A separable equation lets variables be separated, with y terms on one side and x terms on the other."
-python -m app.training.local_trainer challenge-reset --session-id ode-run-001 --all
-```
-
-The MVP graph uses:
+## Repository Map
 
 ```text
-MacroNode contains MicroNodes
-MicroNodes mastered -> MacroNode available
-MacroChallenge pass -> MacroNode mastered
-MacroChallenge fail -> root cause maps to one target MicroNode
-MicroNode fail -> stay on the same MicroNode
+backend/app/api/studio/v1/       GPT authoring API
+backend/app/api/classroom/v1/    read-only learner API
+backend/app/classroom/           package, release, model, preview domain
+backend/classroom_data/          package and model seeds
+frontend/classroom/              learner learning universe
+frontend/model-runtime/          teaching-model host and preview shell
+tools/                           bootstrap and browser evidence tools
+docs/superpowers/                accepted Route Two designs and plans
 ```
-
-## Run the Browser Challenge Trainer
-
-The browser trainer is the easiest entry point for the knowledge-network challenge flow. It uses `ode_network_mvp`, which currently contains three ODE MacroNodes:
-
-- `ode_separable`
-- `ode_first_order_linear`
-- `ode_homogeneous_first_order`
-
-Start the local app:
-
-```bash
-cd math150-coach
-uvicorn app.main:app --app-dir backend --reload
-```
-
-Then open:
-
-```text
-http://127.0.0.1:8000/trainer/
-```
-
-The page calls only `/api/challenge/v1/*`. That API is a thin wrapper around `ChallengeEngine`; scoring still comes from `CompositeScoringEngine`, diagnosis still comes from `DiagnosisEngine`, and movement still comes from the existing challenge state transition rules.
-
-## Phase U1 Ultimate ODE Proof Slice
-
-Phase U1 keeps the runtime content on the current `ode_network_mvp` slice while improving the ultimate architecture proof: runtime graph quality projection, cosmic atlas visual grammar, quality HUD, and diagnostic verdict display. It does not add new chapter content, publish authoring drafts, add a database, connect a real LLM, or change scoring/diagnosis/movement ownership.
-
-## Run the Minimal App
-
-```bash
-cd math150-coach
-uvicorn app.main:app --app-dir backend --reload
-```
-
-Then open:
-
-```text
-http://127.0.0.1:8000/health
-http://127.0.0.1:8000/api/v1/health
-http://127.0.0.1:8000/api/learner/v1/health
-```
-
-`/health` is the legacy minimal health route. `/api/v1/health` is the frozen Phase 3 internal/dev API health route. `/api/learner/v1/health` is the Phase 4.0-lite learner-safe API health route.
-
-`APP_PROFILE` controls which versioned API surface is registered:
-
-- `learner`: only `/api/learner/v1/*`;
-- `internal`: only `/api/v1/*`;
-- `mixed`: both surfaces, local default.
-
-Root `/health` is retained in every profile as a minimal deployment health check and does not list internal or learner route capabilities.
-
-## Implemented Boundaries
-
-Implemented:
-
-- Stable enum strings for YAML, API, and tests.
-- ScoreVector with per-dimension score, evidence, notes, optional missing dimensions, and an overall score helper.
-- ErrorVector with weighted multi-error entries.
-- DiagnosisResult with a full explanation chain.
-- NodeAction with rollback, forward, review, node-status, and mastery update placeholders.
-- ODE sample nodes and golden cases.
-- Phase 1 CompositeScoringEngine with manual override, rubric, lightweight math validation, weak rule signals, and inactive LLM stub.
-- Phase 1.1 red-team scoring tests for rule-only, rubric-missing, constant, initial-value, alias, and false-pass boundaries.
-- Phase 2 DiagnosisEngine detailed path with root cause, error chain, evidence sources, diagnosis trace, and recommended actions.
-- Phase 2.1 diagnosis red-team tests, 25 diagnosis golden cases, and Chinese learner explanations.
-- Phase 2.2-lite movement red-team tests, movement golden cases, and clear RollbackEngine / ForwardEngine ownership boundaries.
-- Phase 3.1 internal/dev API routes for health, nodes, score evaluation, diagnosis, next action, and attempt submission.
-- Public API request validation that recursively rejects override/scenario injection fields.
-- Learner/debug/internal response layering.
-- Phase 3.2 real HTTP API red-team coverage with FastAPI TestClient.
-- Phase 3.3 freeze report and dependency snapshot.
-- Separate scoring, diagnosis, and movement golden evals.
-- Phase 4.0-lite YAML question catalog with manifest, public presentation, and trusted scoring layers.
-- Phase 4.0-lite learner-safe public routes for health, question lookup, node question listing, and attempt submission.
-- Server-side trusted Question hydration before calling `LearningOrchestrator`.
-- Recursive learner request rejection for answer keys, rubrics, solution outlines, validator config, debug fields, scenarios, and overrides.
-- Learner-safe response projection with no answer key, rubric, solution outline, scorer trace, diagnosis trace, or raw movement level leakage.
-- Phase 4.0.1 freeze report and catalog `validator_config` reserved-key protection.
-- Phase 4.1 `APP_PROFILE` route gating and profile-specific OpenAPI separation.
-- Phase 4.2 catalog validation hardening for identity, public/trusted layering, rubric, validator config, dimension consistency, leak checks, version format, and content-hash format.
-- Phase 4.3 authoring/import skeleton with `AuthoringDraft`, `SourceMetadata`, `HumanReviewChecklist`, `CatalogValidationReport`, deterministic authoring-side content hash, and dry-run publish candidate creation.
-- Phase 4.4 minimal import CLI with path-safe authoring IO, import manifest parsing, batch reports, dry-run candidate previews, stable exit codes, strict/non-strict batch behavior, and no formal catalog writes.
-- Phase 4.5 P0 local trainer CLI with learner-safe list/show/submit commands, stdout JSON, local JSONL session logs, session path safety, and trusted-field denylist checks.
-- Phase 4.5.1 freeze report and Local Trainer boundary audit.
-- Phase 4.6 usability trial report for the frozen Local Trainer.
-- Phase 4.7 P0 Local Trainer coach-output projection with learner-friendly submit fields and raw scorer-name cleanup.
-- Phase 4.7.1 freeze report and coach-output boundary audit.
-- Phase 4.7.2 response evidence integration audit.
-- Phase 4.7.3 display-only response evidence fields for Local Trainer output and session logs.
-- Phase 4.8 authoring-only minimal ODE catalog expansion drafts, validation reports, and dry-run previews.
-- Phase 4.8.1 freeze report and authoring draft boundary audit.
-- Phase 4.8.2 human review and candidate selection plan.
-- Phase 4.8.3A trusted-only human review packet export.
-- Phase 4.8.3B human reviewer review records and recommendation summary.
-- Phase 4.8.4 formal publish planning for the human-review-recommended Top 3 candidates.
-- Phase 4.8.5 authoring-only revisions for the human-review-recommended Top 3 candidates, with validation reports and dry-run previews.
-- Local Knowledge Network Challenge MVP with one ODE MacroNode slice, six MicroNode types, one MacroChallenge, local JSON progress, deterministic task selection, and Local Trainer challenge commands.
-- Minimal Browser Challenge Trainer with `/trainer`, `/api/challenge/v1`, and a three-MacroNode ODE challenge slice in `backend/challenge_data/ode_network_mvp`.
-- Ultimate graph/diagnosis core P1 with logic graph quality validation, hidden ability roles, hidden-logic contradiction evidence, and precise MacroChallenge repair targets.
-
-Not implemented yet:
-
-- Persistent database.
-- User accounts.
-- Real LLM scoring.
-- Full symbolic math validation.
-- Full mastery accumulation algorithm.
-- Full Mathematics I knowledge graph.
-- Production-grade frontend experience.
-- Persistent catalog authoring or catalog management UI.
-- Strong runtime content-hash verification.
-- Formal catalog import/write workflow.
-- Formal catalog publish/export CLI.
-- Full local trainer history browser.
-- Next-question recommendation.
-- Full knowledge-network graph beyond the current ODE first-order slice.
-- Automatic chapter knowledge-point extraction from unstructured uploads.
-- Database-backed challenge progress.
-
-## Next Phase
-
-Phase 3 is frozen. Phase 4.8 authoring-only catalog expansion is complete and frozen by Phase 4.8.1. Phase 4.8.2 is complete as a human review and candidate selection plan. Phase 4.8.3A is complete as a trusted-only review packet export. Phase 4.8.3B is complete as human review record export. Phase 4.8.4 is complete as formal publish planning only. Phase 4.8.5 is complete as authoring-only revision of the Top 3 candidates.
-
-```text
-Phase 4.8.5.1 Authoring Revision Boundary Freeze
-```
-
-The recommended next step is a freeze/audit of the Phase 4.8.5 authoring-only revisions. Do not directly perform formal publish. Do not directly edit the formal catalog or manifest. Do not add databases, frontend, user accounts, auth, mastery, review scheduling, attempt persistence, history, next-question recommendation, scoring integration, broad catalog expansion, or LLM integration before explicit approval.
