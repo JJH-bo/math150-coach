@@ -92,8 +92,10 @@ Every mutable request requires an `Idempotency-Key`. Updates and publication
 also require the expected revision, so retries are safe and concurrent edits
 cannot silently overwrite one another.
 
-The complete OpenAPI document is available at `/openapi.json` in `internal`
-and `mixed` profiles.
+The GPT-ready, Studio-only OpenAPI document is available at
+`/api/studio/v1/action-schema.json` in `internal` and `mixed` profiles. It
+declares the current deployment origin and Bearer authentication without
+exposing the credential. `/openapi.json` remains the general developer schema.
 
 ## Quick Start
 
@@ -130,9 +132,37 @@ Open `http://127.0.0.1:8000/`.
 | `learner` | no | yes | `/classroom/` |
 | `mixed` | yes | yes | `/classroom/` |
 
-`mixed` is the local default. A public learner deployment should use
-`APP_PROFILE=learner`; the private authoring deployment should use
-`APP_PROFILE=internal`.
+`mixed` is the local default and the first production shape: Studio endpoints
+remain private through Bearer authentication while learner endpoints are
+public. Separate `internal` and `learner` services are supported only when
+they share a future database or object repository; two independent filesystem
+roots would not publish into the same classroom.
+
+## Production Deployment
+
+`render.yaml` defines one Docker web service in Singapore with:
+
+- `APP_PROFILE=mixed`;
+- one persistent disk mounted at `/var/data`;
+- a platform-generated `STUDIO_API_KEY`;
+- one instance for safe filesystem writes;
+- a `/health` health check;
+- system Node.js and Chromium plus pinned Playwright `1.61.1`.
+
+The container bootstraps checked-in models and the sample classroom only when
+needed, then starts Uvicorn. Existing persistent content is not replaced.
+
+Create the Render Blueprint from this repository and branch. After deployment:
+
+1. Open `/health`, `/`, and `/privacy`.
+2. Import `/api/studio/v1/action-schema.json` in the Custom GPT Action editor.
+3. Choose API Key authentication, select Bearer, and enter the generated
+   `STUDIO_API_KEY` from the Render service environment.
+4. Use the deployed `/privacy` URL as the Action privacy policy.
+5. Test `getStudioCapabilities`, then the draft/validate/publish flow.
+
+Do not copy the Studio secret into source files, GPT instructions, classroom
+content, screenshots, or learner-side JavaScript.
 
 ## Runtime Continuity
 

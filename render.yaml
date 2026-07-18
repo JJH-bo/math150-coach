@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: math150-ai-classroom
+    runtime: docker
+    repo: https://github.com/JJH-bo/math150-coach
+    branch: feature/ai-classroom-foundation
+    region: singapore
+    plan: starter
+    numInstances: 1
+    autoDeployTrigger: commit
+    healthCheckPath: /health
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    disk:
+      name: classroom-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: APP_PROFILE
+        value: mixed
+      - key: CLASSROOM_DATA_ROOT
+        value: /var/data
+      - key: STUDIO_API_KEY
+        generateValue: true
+      - key: MODEL_PREVIEW_NODE
+        value: /usr/bin/node
+      - key: MODEL_PREVIEW_BROWSER
+        value: /usr/bin/chromium
+      - key: NODE_PATH
+        value: /app/node_modules
+      - key: PYTHON_EXECUTABLE
+        value: /usr/local/bin/python

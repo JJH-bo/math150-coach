@@ -1,0 +1,17 @@
+.git
+.github
+.worktrees
+.openai
+.venv
+venv
+node_modules
+classroom_data
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+docs/preview-artifacts
+test-results
+playwright-report
+.env
+.env.*
+!.env.example
