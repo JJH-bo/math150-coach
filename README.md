@@ -85,6 +85,52 @@ Authored JavaScript is never evaluated by Python. It runs in an ephemeral
 browser context with network requests blocked; the reusable host owns the
 model lifecycle and resource tracking.
 
+## Cosmic Classroom Runtime
+
+Project C adds the learner-facing learning universe. A chapter region contains
+complete core-module destinations; opening one produces a reading-first lesson
+with progressive content, in-place detail branches, and an exact-version
+teaching model that remains available beside the lesson.
+
+Bootstrap a local sample package and its registered model versions:
+
+```powershell
+$env:PYTHONPATH = "backend"
+python tools/bootstrap_ai_classroom.py --data-root backend/classroom_data/local
+```
+
+Run the learner profile against that same data root:
+
+```powershell
+$env:APP_PROFILE = "learner"
+$env:CLASSROOM_DATA_ROOT = "$PWD\backend\classroom_data\local"
+uvicorn app.main:app --app-dir backend --reload
+```
+
+Open `http://127.0.0.1:8000/classroom/`. The browser persists only
+`classroom_scene_v1` continuity fields: package and immutable release identity,
+course/chapter/module/content location, scroll and open-detail state, model
+snapshot, viewport quality, and motion preference. It never stores score,
+diagnosis, mastery, review, recommendation, or answer history.
+
+If an authored model cannot load, the lesson content remains usable and the
+model dock shows a readable fallback. Reduced motion follows the operating
+system preference and can also be toggled in the atlas.
+
+Generate the checked-in desktop/mobile browser evidence with real Node,
+Playwright, and Chrome:
+
+```powershell
+$env:MODEL_PREVIEW_NODE = "C:\path\to\node.exe"
+$env:NODE_PATH = "C:\path\to\node_modules"
+$env:MODEL_PREVIEW_BROWSER = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+$env:PYTHONPATH = "backend"
+python tools/generate_project_c_evidence.py
+```
+
+The evidence is written to `docs/preview-artifacts/project-c/`; the automated
+gate is `python -m pytest backend/tests/test_cosmic_classroom_browser.py -q`.
+
 ## Project Vision Handoff
 
 For a new thread or a new assistant, read [docs/explan.md](docs/explan.md) first. It captures the product vision, current engine boundaries, UI direction, knowledge-network philosophy, development requirements, and known-good verification baseline.
