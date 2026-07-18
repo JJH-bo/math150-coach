@@ -47,6 +47,16 @@ def _make_action_compatible_schema(schema: dict) -> dict:
     schemas["ActionNestedContentBlock"] = nested_content_block
     schemas["ActionNestedDetailBranch"] = nested_detail_branch
     schemas["ActionLeafContentBlock"] = leaf_content_block
+
+    for path_item in compatible["paths"].values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            for response in operation.get("responses", {}).values():
+                for media in response.get("content", {}).values():
+                    response_schema = media.get("schema", {})
+                    if response_schema.get("type") == "object":
+                        response_schema.setdefault("properties", {})
     return compatible
 
 

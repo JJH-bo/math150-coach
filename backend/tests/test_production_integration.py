@@ -156,6 +156,30 @@ def test_action_schema_has_no_component_reference_cycles(
     } <= component_schemas.keys()
 
 
+def test_action_schema_object_responses_have_property_skeletons(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("STUDIO_API_KEY", "do-not-expose-this-secret")
+    schema = (
+        TestClient(create_app("mixed"))
+        .get("/api/studio/v1/action-schema.json")
+        .json()
+    )
+
+    object_responses = [
+        media["schema"]
+        for path_item in schema["paths"].values()
+        for operation in path_item.values()
+        if isinstance(operation, dict)
+        for response in operation.get("responses", {}).values()
+        for media in response.get("content", {}).values()
+        if media.get("schema", {}).get("type") == "object"
+    ]
+
+    assert object_responses
+    assert all("properties" in response for response in object_responses)
+
+
 def test_privacy_page_is_public_in_every_profile() -> None:
     for profile in ("learner", "internal", "mixed"):
         response = TestClient(create_app(profile)).get("/privacy")
