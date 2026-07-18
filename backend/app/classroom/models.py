@@ -107,8 +107,58 @@ class ModelInstanceReference(StrictModel):
     instance_id: str
     model_id: str
     model_version: str
-    preset: str | None = None
-    initial_state: dict[str, Any] = Field(default_factory=dict)
+    initial_state: str
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    viewport_mode: str = "inline"
+    quality_profile: str = "balanced"
+    allowed_interactions: list[str] = Field(default_factory=list)
+    fallback_description: str = Field(min_length=1, max_length=2000)
+
+
+class BindingTriggerKind(str, Enum):
+    BLOCK_ENTER = "block_enter"
+    BLOCK_LEAVE = "block_leave"
+    BLOCK_ACTIVATE = "block_activate"
+    DETAIL_BRANCH_OPEN = "detail_branch_open"
+    DETAIL_BRANCH_CLOSE = "detail_branch_close"
+    EXPLICIT_CONTROL = "explicit_control"
+    PARAMETER_CHANGE = "parameter_change"
+
+
+class BindingTrigger(StrictModel):
+    kind: BindingTriggerKind
+    detail_branch_id: str | None = None
+    control_id: str | None = None
+
+
+class BindingEffectKind(str, Enum):
+    SET_STATE = "set_state"
+    PERFORM_ACTION = "perform_action"
+    UPDATE_PARAMETERS = "update_parameters"
+    PLAY = "play"
+    PAUSE = "pause"
+    RESET = "reset"
+    STEP = "step"
+    HIGHLIGHT_TARGET = "highlight_target"
+    CLEAR_HIGHLIGHT = "clear_highlight"
+    SAVE_SNAPSHOT = "save_snapshot"
+    RESTORE_SNAPSHOT = "restore_snapshot"
+
+
+class BindingEffect(StrictModel):
+    kind: BindingEffectKind
+    target: str | None = None
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class ContentModelBinding(StrictModel):
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,119}$")
+    content_id: str
+    instance_id: str
+    trigger: BindingTrigger
+    effect: BindingEffect
+    restore_previous: bool = False
+    return_effect: BindingEffect | None = None
 
 
 class AssetReference(StrictModel):
@@ -124,6 +174,7 @@ class ClassroomPackage(StrictModel):
     title: str = Field(min_length=1, max_length=240)
     courses: list[Course] = Field(min_length=1)
     model_instances: list[ModelInstanceReference] = Field(default_factory=list)
+    model_bindings: list[ContentModelBinding] = Field(default_factory=list)
     assets: list[AssetReference] = Field(default_factory=list)
 
 
