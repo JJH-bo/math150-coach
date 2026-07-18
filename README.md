@@ -140,24 +140,32 @@ roots would not publish into the same classroom.
 
 ## Production Deployment
 
-`render.yaml` defines one Docker web service in Singapore with:
+`railway.json` tells Railway to build the checked-in `Dockerfile`, wait for
+`/health`, and restart only failed processes. The Railway service must use:
 
 - `APP_PROFILE=mixed`;
-- one persistent disk mounted at `/var/data`;
-- a platform-generated `STUDIO_API_KEY`;
+- one persistent volume mounted at `/var/data`;
+- `CLASSROOM_DATA_ROOT=/var/data`;
+- a private, randomly generated `STUDIO_API_KEY`;
+- `MODEL_PREVIEW_NODE=/usr/bin/node`;
+- `MODEL_PREVIEW_BROWSER=/usr/bin/chromium`;
+- `NODE_PATH=/app/node_modules`;
+- `PYTHON_EXECUTABLE=/usr/local/bin/python`;
 - one instance for safe filesystem writes;
-- a `/health` health check;
 - system Node.js and Chromium plus pinned Playwright `1.61.1`.
 
 The container bootstraps checked-in models and the sample classroom only when
 needed, then starts Uvicorn. Existing persistent content is not replaced.
 
-Create the Render Blueprint from this repository and branch. After deployment:
+Create a Railway project from `JJH-bo/math150-coach`, select the
+`feature/ai-classroom-foundation` branch, add the variables above, and attach a
+volume at `/var/data`. In Service Settings > Networking, choose
+**Generate Domain**. After deployment:
 
 1. Open `/health`, `/`, and `/privacy`.
 2. Import `/api/studio/v1/action-schema.json` in the Custom GPT Action editor.
 3. Choose API Key authentication, select Bearer, and enter the generated
-   `STUDIO_API_KEY` from the Render service environment.
+   `STUDIO_API_KEY` from Railway Variables.
 4. Use the deployed `/privacy` URL as the Action privacy policy.
 5. Test `getStudioCapabilities`, then the draft/validate/publish flow.
 

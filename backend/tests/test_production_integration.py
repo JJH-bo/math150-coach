@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
-import yaml
 from fastapi.testclient import TestClient
 
 from app.main import create_app
@@ -95,23 +95,32 @@ def test_action_schema_and_privacy_are_not_added_to_general_openapi() -> None:
     assert "/privacy" not in schema["paths"]
 
 
-def test_render_blueprint_uses_mixed_profile_and_persistent_data_root() -> None:
-    blueprint = yaml.safe_load((ROOT / "render.yaml").read_text(encoding="utf-8"))
-    service = blueprint["services"][0]
-    env = {item["key"]: item for item in service["envVars"]}
+def test_railway_config_uses_docker_healthcheck_and_safe_restart_policy() -> None:
+    config = json.loads((ROOT / "railway.json").read_text(encoding="utf-8"))
 
-    assert service["type"] == "web"
-    assert service["runtime"] == "docker"
-    assert service["healthCheckPath"] == "/health"
-    assert service["numInstances"] == 1
-    assert service["disk"]["mountPath"] == "/var/data"
-    assert service["disk"]["sizeGB"] >= 1
-    assert env["APP_PROFILE"]["value"] == "mixed"
-    assert env["CLASSROOM_DATA_ROOT"]["value"] == "/var/data"
-    assert env["STUDIO_API_KEY"]["generateValue"] is True
-    assert "value" not in env["STUDIO_API_KEY"]
-    assert env["MODEL_PREVIEW_BROWSER"]["value"] == "/usr/bin/chromium"
-    assert env["NODE_PATH"]["value"] == "/app/node_modules"
+    assert config["$schema"] == "https://railway.com/railway.schema.json"
+    assert config["build"] == {
+        "builder": "DOCKERFILE",
+        "dockerfilePath": "Dockerfile",
+    }
+    assert config["deploy"] == {
+        "healthcheckPath": "/health",
+        "healthcheckTimeout": 300,
+        "restartPolicyType": "ON_FAILURE",
+        "restartPolicyMaxRetries": 10,
+    }
+    assert not (ROOT / "render.yaml").exists()
+
+
+def test_railway_runbook_keeps_volume_and_secret_out_of_source() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "Railway" in readme
+    assert "mount" in readme
+    assert "`/var/data`" in readme
+    assert "`STUDIO_API_KEY`" in readme
+    assert "Generate Domain" in readme
+    assert "render.yaml" not in readme
 
 
 def test_docker_image_bootstraps_before_starting_the_server() -> None:
