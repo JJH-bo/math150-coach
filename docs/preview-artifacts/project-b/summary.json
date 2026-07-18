@@ -1,0 +1,26 @@
+{
+  "artifacts": [
+    {
+      "draft_content_hash": "sha256:9d599c49d791656696991eb1792131fde46f45d1b99f7de72f6480fa6d434b34",
+      "model_id": "limit-neighborhood-2d",
+      "report": "limit-desktop.json",
+      "scenario_id": "approach-target",
+      "screenshot": "limit-desktop.png",
+      "viewport": {
+        "height": 800,
+        "width": 1280
+      }
+    },
+    {
+      "draft_content_hash": "sha256:f68d8ad029754c372bc6f72dd01fae68efa226b8b001b38affb4d3fc008f9dfc",
+      "model_id": "binary-search-array",
+      "report": "binary-search-mobile.json",
+      "scenario_id": "find-23",
+      "screenshot": "binary-search-mobile.png",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    }
+  ]
+}

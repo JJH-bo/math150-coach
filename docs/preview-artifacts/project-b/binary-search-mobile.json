@@ -1,0 +1,38 @@
+{
+  "console_messages": [],
+  "draft_content_hash": "sha256:f68d8ad029754c372bc6f72dd01fae68efa226b8b001b38affb4d3fc008f9dfc",
+  "draft_id": "binary-search-array-evidence",
+  "draft_revision": 1,
+  "job_id": "preview-8f736aa26aff4a0582ee",
+  "model_id": "binary-search-array",
+  "model_logs": [],
+  "resources_after_dispose": 0,
+  "resources_before_dispose": {
+    "frames": 0,
+    "listeners": 0
+  },
+  "scenario_id": "find-23",
+  "snapshot": {
+    "high": 6,
+    "low": 4,
+    "mid": 5,
+    "status": "found",
+    "steps": 2,
+    "target": 23,
+    "values": [
+      2,
+      5,
+      8,
+      12,
+      16,
+      23,
+      38
+    ]
+  },
+  "uncaught_errors": [],
+  "viewport": {
+    "device_scale_factor": 1,
+    "height": 844,
+    "width": 390
+  }
+}

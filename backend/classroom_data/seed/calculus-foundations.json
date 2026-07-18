@@ -72,7 +72,53 @@
       "title": "高等数学"
     }
   ],
-  "model_instances": [],
+  "model_bindings": [
+    {
+      "content_id": "limit-formula",
+      "effect": {
+        "kind": "set_state",
+        "target": "approach"
+      },
+      "id": "limit-formula-approach",
+      "instance_id": "limit-neighborhood-view",
+      "restore_previous": true,
+      "trigger": {
+        "kind": "block_enter"
+      }
+    },
+    {
+      "content_id": "limit-intro",
+      "effect": {
+        "kind": "perform_action",
+        "target": "highlight-target"
+      },
+      "id": "limit-detail-highlight",
+      "instance_id": "limit-neighborhood-view",
+      "restore_previous": true,
+      "trigger": {
+        "detail_branch_id": "limit-intro-detail",
+        "kind": "detail_branch_open"
+      }
+    }
+  ],
+  "model_instances": [
+    {
+      "allowed_interactions": [
+        "parameter_change"
+      ],
+      "fallback_description": "函数 y=x+1 在 x=1 附近趋近 y=2，x=1 处以空心点表示。",
+      "initial_state": "overview",
+      "instance_id": "limit-neighborhood-view",
+      "model_id": "limit-neighborhood-2d",
+      "model_version": "m-9d599c49d7916566",
+      "parameters": {
+        "delta": 0.5,
+        "theme": "cyan"
+      },
+      "quality_profile": "balanced",
+      "viewport_mode": "inline"
+    }
+  ],
   "package_id": "calculus-foundations",
   "schema_version": "classroom_package_v1",
   "title": "微积分基础课堂"

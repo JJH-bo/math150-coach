@@ -41,6 +41,50 @@ The training and challenge code described below is retained temporarily as
 legacy regression coverage. It is not part of the new AI Classroom product
 model and will be removed or isolated in later migration projects.
 
+## Teaching Model Workshop
+
+Project B adds a controlled code-and-preview environment for teaching models:
+
+- Studio model drafts contain a strict `teaching_model_v1` manifest and one
+  browser ES module.
+- Model source can be created, read, revised, validated, previewed, inspected,
+  and registered through `/api/studio/v1`.
+- Registration produces immutable `m-<hash>` versions and is blocked unless a
+  successful preview matches the current draft hash, reports no uncaught
+  errors, and disposes every tracked animation frame and event listener.
+- Classroom packages pin exact model versions and use typed content bindings
+  with explicit return behavior.
+- `/api/classroom/v1/models/...` exposes only registered manifests and source
+  required by the learner runtime.
+
+The checked-in reference paths are:
+
+- `limit-neighborhood-2d`, a Canvas 2D model for limits and neighborhoods;
+- `binary-search-array`, an algorithm-state model for interval contraction.
+
+Install the reference models into a local data root:
+
+```powershell
+$env:PYTHONPATH = "backend"
+python tools/register_seed_models.py --data-root backend/classroom_data/local
+```
+
+Real screenshot generation requires Node.js, Playwright, and Chrome or Edge.
+The worker uses explicit executable settings so a missing environment becomes
+a durable failed preview job instead of a fake artifact:
+
+```powershell
+$env:MODEL_PREVIEW_NODE = "C:\path\to\node.exe"
+$env:NODE_PATH = "C:\path\to\node_modules"
+$env:MODEL_PREVIEW_BROWSER = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+$env:PYTHONPATH = "backend"
+python tools/generate_project_b_preview_evidence.py
+```
+
+Authored JavaScript is never evaluated by Python. It runs in an ephemeral
+browser context with network requests blocked; the reusable host owns the
+model lifecycle and resource tracking.
+
 ## Project Vision Handoff
 
 For a new thread or a new assistant, read [docs/explan.md](docs/explan.md) first. It captures the product vision, current engine boundaries, UI direction, knowledge-network philosophy, development requirements, and known-good verification baseline.
