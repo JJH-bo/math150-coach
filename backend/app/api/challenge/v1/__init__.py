@@ -1,2 +1,0 @@
-"""Versioned local challenge API."""
-

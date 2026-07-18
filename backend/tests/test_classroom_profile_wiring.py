@@ -21,9 +21,11 @@ def test_learner_and_mixed_profiles_expose_classroom_runtime() -> None:
     assert "/api/classroom/v1/catalog" not in paths("internal")
 
 
-def test_new_classroom_routes_do_not_remove_legacy_routes_yet() -> None:
+def test_mixed_profile_contains_only_current_product_api_namespaces() -> None:
     mixed = paths("mixed")
 
-    assert "/api/challenge/v1/health" in mixed
     assert "/api/classroom/v1/catalog" in mixed
     assert "/api/studio/v1/capabilities" in mixed
+    assert not any(path.startswith("/api/v1") for path in mixed)
+    assert not any(path.startswith("/api/learner/v1") for path in mixed)
+    assert not any(path.startswith("/api/challenge/v1") for path in mixed)

@@ -1,7 +1,0 @@
-catalog_schema_version: "1.0"
-questions:
-  - questions/ode-sep-001.yaml
-  - questions/ode-sep-draft-001.yaml
-  - questions/ode-sep-retired-001.yaml
-  - questions/ode-sep-internal-001.yaml
-
