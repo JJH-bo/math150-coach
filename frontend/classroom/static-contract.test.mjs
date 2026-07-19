@@ -24,6 +24,12 @@ test("application uses only Classroom Runtime and wires continuity interactions"
   assert.doesNotMatch(app.toLowerCase(), /api\/challenge|submitanswer|mastery|diagnosis|score|boss/);
 });
 
+test("package-specific learner entry selects the requested published classroom", () => {
+  assert.match(app, /new URLSearchParams\(window\.location\.search\)/);
+  assert.match(app, /\.get\("package_id"\)/);
+  assert.match(app, /catalog\.packages\.find/);
+});
+
 test("visual system prioritizes reading, responsive model dock, and reduced motion", () => {
   assert.match(css, /\.classroom-grid/);
   assert.match(css, /position:\s*sticky/);
