@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -8,6 +9,7 @@ from fastapi.testclient import TestClient
 from app.api.studio.v1.router import create_studio_router
 from app.classroom.authoring import ClassroomAuthoringService
 from app.classroom.idempotency import IdempotencyLedger
+from app.classroom.model_contracts import TeachingModelManifest
 from app.classroom.model_repository import TeachingModelRepository
 from app.classroom.repository import ClassroomRepository
 from classroom_fixtures import classroom_package_payload
@@ -96,7 +98,19 @@ def test_workspace_discovers_existing_authoring_targets(
     ][0]["id"] == "limit-core"
     assert payload["drafts"][0]["draft_id"] == "limits"
     assert payload["drafts"][0]["revision"] == 1
+    assert payload["drafts"][0]["matches_active_content"] is True
+    assert payload["drafts"][0]["recommended_for_update"] is True
     assert payload["registered_models"]
+    assert all(
+        model["recommended_for_use"] is True
+        for model in payload["registered_models"]
+    )
+    assert payload["pagination"]["drafts"] == {
+        "total": 1,
+        "returned": 1,
+        "has_more": False,
+        "next_offset": None,
+    }
     assert payload["authoring_policy"] == {
         "routine_authoring_requires_confirmation": False,
         "publish_after_validation": True,
@@ -105,6 +119,125 @@ def test_workspace_discovers_existing_authoring_targets(
         "learner_analysis_capabilities": [],
         "rollback_scope": "explicit_request_or_failed_just_published_release",
     }
+
+
+def test_workspace_is_bounded_and_marks_one_recommended_duplicate_draft(
+    tmp_path, monkeypatch
+) -> None:
+    studio = client(tmp_path, monkeypatch)
+    for index in range(3):
+        package = classroom_package_payload()
+        package["package_id"] = f"package-{index}"
+        package["title"] = f"Package {index}"
+        studio.post(
+            "/api/studio/v1/drafts",
+            headers=headers(operation=f"create-package-{index}"),
+            json={"draft_id": f"draft-{index}", "package": package},
+        )
+    for suffix in ("primary", "alternate"):
+        studio.post(
+            "/api/studio/v1/drafts",
+            headers=headers(operation=f"create-{suffix}"),
+            json={
+                "draft_id": f"limits-{suffix}",
+                "package": classroom_package_payload(),
+            },
+        )
+
+    first_page = studio.get(
+        "/api/studio/v1/workspace?offset=0&limit=2",
+        headers={"Authorization": "Bearer studio-test-key"},
+    ).json()
+    second_page = studio.get(
+        "/api/studio/v1/workspace?offset=2&limit=2",
+        headers={"Authorization": "Bearer studio-test-key"},
+    ).json()
+    third_page = studio.get(
+        "/api/studio/v1/workspace?offset=4&limit=2",
+        headers={"Authorization": "Bearer studio-test-key"},
+    ).json()
+
+    assert len(first_page["drafts"]) == 2
+    assert first_page["pagination"]["drafts"] == {
+        "total": 5,
+        "returned": 2,
+        "has_more": True,
+        "next_offset": 2,
+    }
+    assert len(second_page["drafts"]) == 2
+    assert second_page["pagination"]["drafts"]["has_more"] is True
+    assert len(third_page["drafts"]) == 1
+    assert third_page["pagination"]["drafts"]["has_more"] is False
+    all_drafts = (
+        first_page["drafts"]
+        + second_page["drafts"]
+        + third_page["drafts"]
+    )
+    calculus_drafts = [
+        draft
+        for draft in all_drafts
+        if draft["package_id"] == "calculus-foundations"
+    ]
+    assert len(calculus_drafts) == 2
+    assert sum(draft["recommended_for_update"] for draft in calculus_drafts) == 1
+    assert all(draft["candidate_count"] == 2 for draft in calculus_drafts)
+
+
+def test_workspace_recommends_latest_registered_model_version(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("STUDIO_API_KEY", "studio-test-key")
+    seed = Path(__file__).resolve().parents[1] / "classroom_data" / "model_seed"
+    manifest = TeachingModelManifest.model_validate(
+        json.loads(
+            (seed / "limit-neighborhood-2d" / "manifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+    )
+    source = (seed / "limit-neighborhood-2d" / "source.js").read_text(
+        encoding="utf-8"
+    )
+    model_repository = TeachingModelRepository(tmp_path)
+    first = model_repository.create_draft("model-first", manifest, source)
+    model_repository.register(
+        first,
+        validation={"passed": True},
+        preview_job_id="preview-first",
+    )
+    second = model_repository.create_draft(
+        "model-second",
+        manifest,
+        f"{source}\n// second version\n",
+    )
+    latest = model_repository.register(
+        second,
+        validation={"passed": True},
+        preview_job_id="preview-second",
+    )
+    service = ClassroomAuthoringService(
+        ClassroomRepository(tmp_path),
+        IdempotencyLedger(tmp_path / "operations"),
+        model_repository=model_repository,
+    )
+    app = FastAPI()
+    app.include_router(create_studio_router(lambda: service))
+
+    payload = TestClient(app).get(
+        "/api/studio/v1/workspace",
+        headers={"Authorization": "Bearer studio-test-key"},
+    ).json()
+    versions = [
+        model
+        for model in payload["registered_models"]
+        if model["model_id"] == manifest.model_id
+    ]
+
+    assert len(versions) == 2
+    assert sum(model["recommended_for_use"] for model in versions) == 1
+    assert next(
+        model for model in versions if model["recommended_for_use"]
+    )["version"] == latest.version
 
 
 def test_create_validate_publish_and_rollback_workflow(tmp_path, monkeypatch) -> None:

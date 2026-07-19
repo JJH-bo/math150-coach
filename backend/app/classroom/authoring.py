@@ -50,8 +50,19 @@ class ClassroomAuthoringService:
             mode="json", exclude_none=True
         )
 
-    def workspace(self, *, public_origin: str) -> dict:
+    def workspace(
+        self,
+        *,
+        public_origin: str,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> dict:
         origin = public_origin.rstrip("/")
+        active_releases = self.repository.list_active_releases()
+        active_by_package = {
+            release.package_id: release
+            for release in active_releases
+        }
         active_packages = [
             {
                 "package_id": release.package_id,
@@ -60,42 +71,127 @@ class ClassroomAuthoringService:
                 "content_hash": release.content_hash,
                 "courses": self._course_summaries(release.package.courses),
             }
-            for release in self.repository.list_active_releases()
+            for release in active_releases
         ]
+        draft_records = self.repository.list_drafts()
+        draft_groups: dict[str, list] = {}
+        for draft in draft_records:
+            draft_groups.setdefault(draft.package.package_id, []).append(draft)
+        recommended_drafts = {
+            package_id: max(
+                candidates,
+                key=lambda item: (
+                    item.updated_at or "",
+                    item.revision,
+                    item.draft_id,
+                ),
+            ).draft_id
+            for package_id, candidates in draft_groups.items()
+        }
         drafts = [
             {
                 "draft_id": draft.draft_id,
                 "revision": draft.revision,
                 "content_hash": draft.content_hash,
+                "updated_at": draft.updated_at,
                 "package_id": draft.package.package_id,
                 "title": draft.package.title,
                 "courses": self._course_summaries(draft.package.courses),
+                "matches_active_content": (
+                    draft.package.package_id in active_by_package
+                    and draft.content_hash
+                    == active_by_package[draft.package.package_id].content_hash
+                ),
+                "recommended_for_update": (
+                    recommended_drafts[draft.package.package_id]
+                    == draft.draft_id
+                ),
+                "candidate_count": len(
+                    draft_groups[draft.package.package_id]
+                ),
+                "selection_reason": (
+                    "only_candidate"
+                    if len(draft_groups[draft.package.package_id]) == 1
+                    else (
+                        "latest_updated_at"
+                        if any(
+                            candidate.updated_at is not None
+                            for candidate in draft_groups[
+                                draft.package.package_id
+                            ]
+                        )
+                        else "legacy_highest_revision"
+                    )
+                ),
             }
-            for draft in self.repository.list_drafts()
+            for draft in draft_records
         ]
-        registered_models = (
-            [
+        model_records = (
+            self.model_repository.list_registered()
+            if self.model_repository is not None
+            else []
+        )
+        model_groups: dict[str, list] = {}
+        for record in model_records:
+            model_groups.setdefault(record.model_id, []).append(record)
+        recommended_models = {
+            model_id: max(
+                versions,
+                key=lambda item: (item.registered_at, item.version),
+            ).version
+            for model_id, versions in model_groups.items()
+        }
+        registered_models = [
                 {
                     "model_id": record.model_id,
                     "version": record.version,
                     "content_hash": record.content_hash,
+                    "registered_at": record.registered_at,
+                    "recommended_for_use": (
+                        recommended_models[record.model_id] == record.version
+                    ),
+                    "version_count": len(model_groups[record.model_id]),
+                    "selection_reason": (
+                        "only_version"
+                        if len(model_groups[record.model_id]) == 1
+                        else "latest_registered_at"
+                    ),
                     "manifest": record.manifest.model_dump(
                         mode="json",
                         exclude_none=True,
                     ),
                 }
-                for record in self.model_repository.list_registered()
-            ]
-            if self.model_repository is not None
-            else []
+                for record in model_records
+        ]
+        active_page, active_pagination = self._page(
+            active_packages,
+            offset=offset,
+            limit=limit,
+        )
+        draft_page, draft_pagination = self._page(
+            drafts,
+            offset=offset,
+            limit=limit,
+        )
+        model_page, model_pagination = self._page(
+            registered_models,
+            offset=offset,
+            limit=limit,
         )
         return {
             "studio_version": "studio_v1",
             "public_origin": origin,
             "learner_entry_url": f"{origin}/classroom/",
-            "active_packages": active_packages,
-            "drafts": drafts,
-            "registered_models": registered_models,
+            "active_packages": active_page,
+            "drafts": draft_page,
+            "registered_models": model_page,
+            "pagination": {
+                "offset": offset,
+                "limit": limit,
+                "active_packages": active_pagination,
+                "drafts": draft_pagination,
+                "registered_models": model_pagination,
+            },
             "authoring_policy": {
                 "routine_authoring_requires_confirmation": False,
                 "publish_after_validation": True,
@@ -106,6 +202,23 @@ class ClassroomAuthoringService:
                     "explicit_request_or_failed_just_published_release"
                 ),
             },
+        }
+
+    @staticmethod
+    def _page(
+        items: list[dict],
+        *,
+        offset: int,
+        limit: int,
+    ) -> tuple[list[dict], dict]:
+        page = items[offset : offset + limit]
+        next_offset = offset + limit
+        has_more = next_offset < len(items)
+        return page, {
+            "total": len(items),
+            "returned": len(page),
+            "has_more": has_more,
+            "next_offset": next_offset if has_more else None,
         }
 
     def update_draft(

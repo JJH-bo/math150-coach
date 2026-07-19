@@ -77,6 +77,13 @@ models, and the autonomous authoring policy. This prevents the GPT from
 guessing identifiers or asking the user for project addresses, `draft_id`
 values, or `package_id` values.
 
+The workspace response is bounded with `offset` and `limit` query parameters
+and reports totals, returned counts, and `next_offset` for packages, drafts,
+and models. When several drafts share a package or several versions share a
+model ID, the server marks exactly one recommended target and explains the
+selection basis. The GPT follows these signals rather than inventing its own
+recency rule.
+
 `GET /api/studio/v1/capabilities` separately declares the accepted block
 vocabulary and teaching model contract. After the user supplies lecture
 material and says to make, start, or import it, the GPT is expected to select

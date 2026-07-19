@@ -14,6 +14,7 @@ from app.classroom.models import (
     ClassroomPackage,
     DraftRecord,
     ReleaseRecord,
+    utc_now,
 )
 
 
@@ -49,6 +50,7 @@ class ClassroomRepository:
             revision=1,
             content_hash=content_hash(package),
             package=package,
+            updated_at=utc_now(),
         )
         self._write_json(path, record)
         return record
@@ -83,6 +85,7 @@ class ClassroomRepository:
             revision=current.revision + 1,
             content_hash=content_hash(package),
             package=package,
+            updated_at=utc_now(),
         )
         self._write_json(self._draft_path(draft_id), record)
         return record

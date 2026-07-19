@@ -61,7 +61,18 @@ The response is a compact authoring bootstrap containing:
 One bootstrap operation is preferred over several disconnected list endpoints
 because it reduces Action round trips and gives the GPT a consistent snapshot
 for target selection. Existing detailed get operations remain available after
-the GPT chooses a target.
+the GPT chooses a target. The response uses bounded, deterministic
+`offset`/`limit` pagination with per-collection counts and continuation
+offsets, so persistent history cannot silently grow one Action response
+without limit.
+
+When several drafts share a `package_id`, the server marks exactly one
+`recommended_for_update` target using persisted update time, then revision and
+stable ID as legacy fallbacks. It also reports the candidate count and whether
+each draft matches the active release. When several model versions share a
+`model_id`, the latest registered version is marked
+`recommended_for_use`. These are server-owned selection rules; the GPT does
+not infer recency from hash-like version names.
 
 ## 4. Repository and Service Changes
 
@@ -70,8 +81,9 @@ authoring service gains `workspace()` and composes draft summaries, active
 release summaries, registered model summaries, and the configured public
 origin.
 
-The workspace response includes summaries rather than complete package bodies
-to keep Action payloads manageable. The GPT retrieves one full draft with
+The workspace response includes bounded summaries rather than complete package
+bodies to keep Action payloads manageable. The GPT follows `next_offset` until
+the relevant collections are complete, then retrieves one full draft with
 `getClassroomDraft` only after selecting it.
 
 The endpoint remains protected by the existing Studio bearer credential and

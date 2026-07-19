@@ -203,6 +203,7 @@ def test_workspace_action_response_is_fully_described(monkeypatch) -> None:
         "active_packages",
         "drafts",
         "registered_models",
+        "pagination",
         "authoring_policy",
     } <= workspace["properties"].keys()
 

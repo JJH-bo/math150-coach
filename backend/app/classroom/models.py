@@ -7,6 +7,10 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -183,6 +187,7 @@ class DraftRecord(StrictModel):
     revision: int = Field(ge=1)
     content_hash: str
     package: ClassroomPackage
+    updated_at: str | None = None
 
 
 class ReleaseRecord(StrictModel):
@@ -199,5 +204,5 @@ class ActivationReceipt(StrictModel):
     previous_version: str | None = None
     content_hash: str
     activated_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=utc_now
     )

@@ -4,7 +4,15 @@ import os
 from collections.abc import Callable
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+)
 from fastapi.responses import FileResponse
 
 from app.api.studio.v1.auth import require_studio_key
@@ -120,13 +128,21 @@ def create_studio_router(
         operation_id="getStudioWorkspace",
         response_model=StudioWorkspaceResponse,
     )
-    def workspace(request: Request) -> StudioWorkspaceResponse:
+    def workspace(
+        request: Request,
+        offset: int = Query(default=0, ge=0),
+        limit: int = Query(default=50, ge=1, le=100),
+    ) -> StudioWorkspaceResponse:
         public_origin = os.getenv(
             "AI_CLASSROOM_PUBLIC_ORIGIN",
             str(request.base_url),
         ).rstrip("/")
         return _map_errors(
-            lambda: service_factory().workspace(public_origin=public_origin)
+            lambda: service_factory().workspace(
+                public_origin=public_origin,
+                offset=offset,
+                limit=limit,
+            )
         )
 
     @router.get("/models", operation_id="listTeachingModels")

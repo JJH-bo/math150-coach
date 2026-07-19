@@ -221,6 +221,7 @@ class TeachingModelRepository:
             source=source,
             validation={"passed": True, "issues": [], "source": "checked-in-seed"},
             preview_job_id="checked-in-seed",
+            registered_at="1970-01-01T00:00:00+00:00",
         )
 
     @staticmethod

@@ -81,15 +81,28 @@ class WorkspaceClassroomDraft(StudioRequest):
     draft_id: str
     revision: int = Field(ge=1)
     content_hash: str
+    updated_at: str | None = None
     package_id: str
     title: str
     courses: list[WorkspaceCourseSummary]
+    matches_active_content: bool
+    recommended_for_update: bool
+    candidate_count: int = Field(ge=1)
+    selection_reason: Literal[
+        "only_candidate",
+        "latest_updated_at",
+        "legacy_highest_revision",
+    ]
 
 
 class WorkspaceRegisteredModel(StudioRequest):
     model_id: str
     version: str
     content_hash: str
+    registered_at: str
+    recommended_for_use: bool
+    version_count: int = Field(ge=1)
+    selection_reason: Literal["only_version", "latest_registered_at"]
     manifest: TeachingModelManifest
 
 
@@ -104,6 +117,21 @@ class WorkspaceAuthoringPolicy(StudioRequest):
     ]
 
 
+class WorkspacePageSummary(StudioRequest):
+    total: int = Field(ge=0)
+    returned: int = Field(ge=0)
+    has_more: bool
+    next_offset: int | None = Field(default=None, ge=0)
+
+
+class WorkspacePagination(StudioRequest):
+    offset: int = Field(ge=0)
+    limit: int = Field(ge=1, le=100)
+    active_packages: WorkspacePageSummary
+    drafts: WorkspacePageSummary
+    registered_models: WorkspacePageSummary
+
+
 class StudioWorkspaceResponse(StudioRequest):
     studio_version: Literal["studio_v1"]
     public_origin: str
@@ -111,4 +139,5 @@ class StudioWorkspaceResponse(StudioRequest):
     active_packages: list[WorkspaceActivePackage]
     drafts: list[WorkspaceClassroomDraft]
     registered_models: list[WorkspaceRegisteredModel]
+    pagination: WorkspacePagination
     authoring_policy: WorkspaceAuthoringPolicy

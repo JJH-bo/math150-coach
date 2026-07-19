@@ -35,6 +35,8 @@ Railway.
 - [ ] Write a failing repository test for deterministic draft listing.
 - [ ] Write a failing Studio test for active package, draft, model, public
   origin, and autonomy policy summaries.
+- [ ] Write failing tests for bounded pagination and authoritative selection
+  among duplicate-package drafts and multiple model versions.
 - [ ] Write a failing Action-schema test for `getStudioWorkspace`.
 - [ ] Run focused tests and confirm RED.
 
@@ -47,6 +49,8 @@ Railway.
 
 - [ ] Implement deterministic classroom draft listing.
 - [ ] Compose compact workspace summaries in the authoring service.
+- [ ] Add bounded pagination, continuation metadata, and server-owned
+  recommended-target signals.
 - [ ] Add the authenticated `GET /api/studio/v1/workspace` operation.
 - [ ] Run focused tests and confirm GREEN.
 
