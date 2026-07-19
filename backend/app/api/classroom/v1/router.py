@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 import os
 from collections.abc import Callable
 from pathlib import Path
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.errors import api_error
 from app.classroom.model_repository import (
@@ -18,9 +21,38 @@ from app.classroom.repository import (
     ClassroomRepositoryError,
 )
 from app.classroom.runtime import ClassroomRuntimeService
+from app.classroom.session_repository import (
+    LearningSessionConflictError,
+    LearningSessionNotFoundError,
+    LearningSessionRepository,
+    LearningSessionRepositoryError,
+)
+from app.classroom.sessions import (
+    LearningSessionAccessError,
+    LearningSessionService,
+)
 
 
 RuntimeFactory = Callable[[], ClassroomRuntimeService]
+SessionServiceFactory = Callable[[], LearningSessionService]
+
+
+class RuntimeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class CreateLearningSessionRequest(RuntimeRequest):
+    package_id: str = Field(min_length=1, max_length=120)
+    module_id: str = Field(min_length=1, max_length=120)
+
+
+class LearningSessionMutationRequest(RuntimeRequest):
+    access_token: str = Field(min_length=20, max_length=200)
+    expected_revision: int = Field(ge=1)
+
+
+class LearningSessionInteractionRequest(LearningSessionMutationRequest):
+    active_content_id: str = Field(min_length=1, max_length=120)
 
 
 def default_runtime() -> ClassroomRuntimeService:
@@ -32,8 +64,18 @@ def default_runtime() -> ClassroomRuntimeService:
     )
 
 
+def default_session_service() -> LearningSessionService:
+    root = Path(os.getenv("CLASSROOM_DATA_ROOT", Path.cwd() / "classroom_data"))
+    return LearningSessionService(
+        LearningSessionRepository(root / "learning-sessions.sqlite3"),
+        default_runtime(),
+    )
+
+
 def create_classroom_router(
     runtime_factory: RuntimeFactory = default_runtime,
+    *,
+    session_service_factory: SessionServiceFactory = default_session_service,
 ) -> APIRouter:
     router = APIRouter(
         prefix="/api/classroom/v1",
@@ -87,6 +129,107 @@ def create_classroom_router(
             lambda: runtime_factory().module(package_id, module_id)
         )
 
+    @router.post(
+        "/learning-sessions",
+        status_code=201,
+        operation_id="createLearningSession",
+    )
+    def create_learning_session(request: CreateLearningSessionRequest) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().create(
+                package_id=request.package_id,
+                module_id=request.module_id,
+            ).model_dump(mode="json", exclude_none=True)
+        )
+
+    @router.get(
+        "/learning-sessions/{session_id}",
+        operation_id="getLearningSession",
+    )
+    def get_learning_session(
+        session_id: str,
+        access_token: str = Query(min_length=20, max_length=200),
+    ) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().get_for_learner(
+                session_id,
+                access_token=access_token,
+            ).model_dump(mode="json", exclude_none=True)
+        )
+
+    @router.post(
+        "/learning-sessions/{session_id}/reveal",
+        operation_id="revealLearningStep",
+    )
+    def reveal_learning_step(
+        session_id: str,
+        request: LearningSessionMutationRequest,
+    ) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().reveal(
+                session_id,
+                access_token=request.access_token,
+                expected_revision=request.expected_revision,
+            ).model_dump(mode="json", exclude_none=True)
+        )
+
+    @router.post(
+        "/learning-sessions/{session_id}/interactions",
+        operation_id="setLearningSessionFocus",
+    )
+    def set_learning_session_focus(
+        session_id: str,
+        request: LearningSessionInteractionRequest,
+    ) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().set_active_content(
+                session_id,
+                access_token=request.access_token,
+                expected_revision=request.expected_revision,
+                content_id=request.active_content_id,
+            ).model_dump(mode="json", exclude_none=True)
+        )
+
+    @router.get(
+        "/learning-sessions/{session_id}/events",
+        operation_id="streamLearningSessionEvents",
+        response_class=StreamingResponse,
+    )
+    def stream_learning_session_events(
+        session_id: str,
+        access_token: str = Query(min_length=20, max_length=200),
+        after_revision: int = Query(default=0, ge=0),
+    ) -> StreamingResponse:
+        events = _map_errors(
+            lambda: {
+                "events": session_service_factory().events(
+                    session_id,
+                    access_token=access_token,
+                    after_revision=after_revision,
+                )
+            }
+        )["events"]
+
+        def stream():
+            for event in events:
+                payload = json.dumps(
+                    event.model_dump(mode="json", exclude_none=True),
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                )
+                yield (
+                    f"id: {event.revision}\n"
+                    f"event: {event.kind}\n"
+                    f"data: {payload}\n\n"
+                )
+            yield "retry: 1000\n\n"
+
+        return StreamingResponse(
+            stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache"},
+        )
+
     return router
 
 
@@ -101,6 +244,14 @@ def _map_errors(operation: Callable[[], dict]) -> dict:
         raise api_error(404, "teaching_model_not_found", str(exc))
     except ModelRepositoryError as exc:
         raise api_error(400, "teaching_model_repository_error", str(exc))
+    except LearningSessionAccessError as exc:
+        raise api_error(403, "learning_session_access_denied", str(exc))
+    except LearningSessionConflictError as exc:
+        raise api_error(409, "learning_session_revision_conflict", str(exc))
+    except LearningSessionNotFoundError as exc:
+        raise api_error(404, "learning_session_not_found", str(exc))
+    except LearningSessionRepositoryError as exc:
+        raise api_error(400, "learning_session_error", str(exc))
 
 
 router = create_classroom_router()

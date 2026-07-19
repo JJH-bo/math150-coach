@@ -20,8 +20,10 @@ from app.api.studio.v1.schemas import (
     CreateDraftRequest,
     CreateModelDraftRequest,
     PublishDraftRequest,
+    PatchLearningSessionRequest,
     RegisterModelRequest,
     RequestModelPreviewRequest,
+    ReturnLearningSessionRequest,
     RollbackPackageRequest,
     StudioWorkspaceResponse,
     UpdateDraftRequest,
@@ -46,6 +48,15 @@ from app.classroom.model_repository import (
 )
 from app.classroom.preview import TeachingModelPreviewService
 from app.classroom.models import ContentBlockKind
+from app.classroom.runtime import ClassroomRuntimeService
+from app.classroom.session_models import ScenePatch
+from app.classroom.session_repository import (
+    LearningSessionConflictError,
+    LearningSessionNotFoundError,
+    LearningSessionRepository,
+    LearningSessionRepositoryError,
+)
+from app.classroom.sessions import LearningSessionService
 from app.classroom.repository import (
     ClassroomConflictError,
     ClassroomNotFoundError,
@@ -58,6 +69,7 @@ from app.classroom.validation import ClassroomPackageValidator
 ServiceFactory = Callable[[], ClassroomAuthoringService]
 ModelServiceFactory = Callable[[], TeachingModelAuthoringService]
 PreviewServiceFactory = Callable[[], TeachingModelPreviewService]
+SessionServiceFactory = Callable[[], LearningSessionService]
 
 
 def _data_roots() -> tuple[Path, Path]:
@@ -94,11 +106,24 @@ def default_preview_service() -> TeachingModelPreviewService:
     return TeachingModelPreviewService(default_model_repository())
 
 
+def default_session_service() -> LearningSessionService:
+    root, _ = _data_roots()
+    runtime = ClassroomRuntimeService(
+        ClassroomRepository(root),
+        model_repository=default_model_repository(),
+    )
+    return LearningSessionService(
+        LearningSessionRepository(root / "learning-sessions.sqlite3"),
+        runtime,
+    )
+
+
 def create_studio_router(
     service_factory: ServiceFactory = default_service,
     *,
     model_service_factory: ModelServiceFactory = default_model_service,
     preview_service_factory: PreviewServiceFactory = default_preview_service,
+    session_service_factory: SessionServiceFactory = default_session_service,
 ) -> APIRouter:
     router = APIRouter(
         prefix="/api/studio/v1",
@@ -115,6 +140,12 @@ def create_studio_router(
             "content_block_kinds": [kind.value for kind in ContentBlockKind],
             "mutable_operations_require_idempotency_key": True,
             "learner_analysis_capabilities": [],
+            "live_learning_sessions": {
+                "baseline_reveal_is_published_content": True,
+                "supports_exact_target_expansion": True,
+                "supports_nested_expansion": True,
+                "requires_internal_identifiers_from_learner": False,
+            },
             "teaching_model_workshop": {
                 "contract_version": "teaching_model_v1",
                 "supports_source_authoring": True,
@@ -143,6 +174,62 @@ def create_studio_router(
                 offset=offset,
                 limit=limit,
             )
+        )
+
+    @router.get(
+        "/learning-sessions",
+        operation_id="listLearningSessions",
+    )
+    def list_learning_sessions(
+        limit: int = Query(default=20, ge=1, le=100),
+    ) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().list_for_studio(limit=limit)
+        )
+
+    @router.get(
+        "/learning-sessions/{session_id}",
+        operation_id="getStudioLearningSession",
+    )
+    def get_learning_session(session_id: str) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().get_for_studio(
+                session_id
+            ).model_dump(mode="json", exclude_none=True)
+        )
+
+    @router.patch(
+        "/learning-sessions/{session_id}/scene",
+        operation_id="patchLearningSessionScene",
+    )
+    def patch_learning_session(
+        session_id: str,
+        request: PatchLearningSessionRequest,
+        idempotency_key: str = Header(alias="Idempotency-Key", min_length=1),
+    ) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().patch(
+                session_id,
+                ScenePatch.model_validate(request.model_dump(mode="json")),
+                idempotency_key=idempotency_key,
+            ).model_dump(mode="json", exclude_none=True)
+        )
+
+    @router.post(
+        "/learning-sessions/{session_id}/return",
+        operation_id="returnLearningSessionExpansion",
+    )
+    def return_learning_session_expansion(
+        session_id: str,
+        request: ReturnLearningSessionRequest,
+        idempotency_key: str = Header(alias="Idempotency-Key", min_length=1),
+    ) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().return_to_parent(
+                session_id,
+                expected_revision=request.expected_revision,
+                idempotency_key=idempotency_key,
+            ).model_dump(mode="json", exclude_none=True)
         )
 
     @router.get("/models", operation_id="listTeachingModels")
@@ -385,6 +472,21 @@ def _map_errors(operation: Callable[[], dict]) -> dict:
         raise api_error(404, "classroom_not_found", str(exc))
     except ClassroomRepositoryError as exc:
         raise api_error(400, "classroom_repository_error", str(exc))
+    except LearningSessionConflictError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error_code": "learning_session_revision_conflict",
+                "message": str(exc),
+                "current_revision": exc.current_revision,
+                "retryable": True,
+                "next_action": "getStudioLearningSession",
+            },
+        )
+    except LearningSessionNotFoundError as exc:
+        raise api_error(404, "learning_session_not_found", str(exc))
+    except LearningSessionRepositoryError as exc:
+        raise api_error(400, "learning_session_error", str(exc))
     except ValueError as exc:
         raise api_error(422, "studio_request_invalid", str(exc))
 

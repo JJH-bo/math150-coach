@@ -28,7 +28,9 @@ class LearningSessionNotFoundError(LearningSessionRepositoryError):
 
 
 class LearningSessionConflictError(LearningSessionRepositoryError):
-    pass
+    def __init__(self, message: str, *, current_revision: int | None = None) -> None:
+        super().__init__(message)
+        self.current_revision = current_revision
 
 
 class LearningSessionRepository:
@@ -534,7 +536,8 @@ class LearningSessionRepository:
         if session.revision != expected_revision:
             raise LearningSessionConflictError(
                 f"learning session {session.session_id} is revision "
-                f"{session.revision}; expected revision {expected_revision}"
+                f"{session.revision}; expected revision {expected_revision}",
+                current_revision=session.revision,
             )
 
     @classmethod

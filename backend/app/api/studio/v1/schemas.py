@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.classroom.model_contracts import PreviewViewport, TeachingModelManifest
 from app.classroom.models import ClassroomPackage
+from app.classroom.session_models import DetailedExpansion
 
 
 class StudioRequest(BaseModel):
@@ -48,6 +49,16 @@ class RequestModelPreviewRequest(StudioRequest):
 
 
 class RegisterModelRequest(StudioRequest):
+    expected_revision: int = Field(ge=1)
+
+
+class PatchLearningSessionRequest(StudioRequest):
+    expected_revision: int = Field(ge=1)
+    pedagogical_intent: str = Field(min_length=1, max_length=2000)
+    expansion: DetailedExpansion
+
+
+class ReturnLearningSessionRequest(StudioRequest):
     expected_revision: int = Field(ge=1)
 
 
