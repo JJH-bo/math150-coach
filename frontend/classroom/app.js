@@ -36,7 +36,15 @@ async function start() {
     showOnly(dom.emptyView);
     return;
   }
-  await loadPackage(catalog.packages[0].package_id);
+  const requestedPackageId = new URLSearchParams(window.location.search)
+    .get("package_id");
+  const selectedPackage = requestedPackageId
+    ? catalog.packages.find((item) => item.package_id === requestedPackageId)
+    : catalog.packages[0];
+  if (!selectedPackage) {
+    throw new Error(`课堂不存在：${requestedPackageId}`);
+  }
+  await loadPackage(selectedPackage.package_id);
 }
 
 function wireShell() {
