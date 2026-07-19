@@ -109,6 +109,10 @@ def test_action_schema_contains_only_authenticated_studio_operations(
         "createTeachingModelDraft",
         "requestTeachingModelPreview",
         "registerTeachingModel",
+        "listLearningSessions",
+        "getStudioLearningSession",
+        "patchLearningSessionScene",
+        "returnLearningSessionExpansion",
     } <= set(operation_ids)
     assert all(
         operation.get("security") == [{"HTTPBearer": []}]

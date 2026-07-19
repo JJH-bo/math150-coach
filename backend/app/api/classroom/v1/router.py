@@ -55,6 +55,10 @@ class LearningSessionInteractionRequest(LearningSessionMutationRequest):
     active_content_id: str = Field(min_length=1, max_length=120)
 
 
+class LearningSessionReturnRequest(LearningSessionMutationRequest):
+    idempotency_key: str = Field(min_length=1, max_length=200)
+
+
 def default_runtime() -> ClassroomRuntimeService:
     root = Path(os.getenv("CLASSROOM_DATA_ROOT", Path.cwd() / "classroom_data"))
     seed = Path(__file__).resolve().parents[4] / "classroom_data" / "model_seed"
@@ -187,6 +191,23 @@ def create_classroom_router(
                 access_token=request.access_token,
                 expected_revision=request.expected_revision,
                 content_id=request.active_content_id,
+            ).model_dump(mode="json", exclude_none=True)
+        )
+
+    @router.post(
+        "/learning-sessions/{session_id}/return",
+        operation_id="returnFromLearningExpansion",
+    )
+    def return_from_learning_expansion(
+        session_id: str,
+        request: LearningSessionReturnRequest,
+    ) -> dict:
+        return _map_errors(
+            lambda: session_service_factory().return_for_learner(
+                session_id,
+                access_token=request.access_token,
+                expected_revision=request.expected_revision,
+                idempotency_key=request.idempotency_key,
             ).model_dump(mode="json", exclude_none=True)
         )
 

@@ -14,6 +14,7 @@ from app.classroom.models import (
     BindingTriggerKind,
     ClassroomPackage,
     ContentBlock,
+    ContentBlockKind,
 )
 
 
@@ -279,6 +280,7 @@ class ClassroomPackageValidator:
         issues: list[ValidationIssue],
     ) -> None:
         record_id(block.id, f"{path}.id")
+        self._validate_renderable_data(block, path, issues)
         self._find_forbidden_keys(block.data, f"{path}.data", issues)
         for branch_index, branch in enumerate(block.detail_branches):
             branch_path = f"{path}.detail_branches[{branch_index}]"
@@ -289,6 +291,73 @@ class ClassroomPackageValidator:
                     f"{branch_path}.blocks[{block_index}]",
                     record_id,
                     issues,
+                )
+
+    @staticmethod
+    def _validate_renderable_data(
+        block: ContentBlock,
+        path: str,
+        issues: list[ValidationIssue],
+    ) -> None:
+        data = block.data
+        if block.kind == ContentBlockKind.COMPARISON:
+            items = data.get("items")
+            has_items = (
+                isinstance(items, list)
+                and len(items) >= 2
+                and all(isinstance(item, dict) for item in items)
+            )
+            has_pair = isinstance(data.get("left"), dict) and isinstance(
+                data.get("right"), dict
+            )
+            if not has_items and not has_pair:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="comparison_content_required",
+                        path=f"{path}.data",
+                        message=(
+                            "Comparison requires either two or more items or "
+                            "both left and right entries."
+                        ),
+                    )
+                )
+        if block.kind == ContentBlockKind.FORMULA_EXPLANATION:
+            latex = data.get("latex") or data.get("formula")
+            formulae = data.get("formulae")
+            has_single = isinstance(latex, str) and bool(latex.strip())
+            has_many = (
+                isinstance(formulae, list)
+                and bool(formulae)
+                and all(
+                    (
+                        isinstance(item, str)
+                        and bool(item.strip())
+                    )
+                    or (
+                        isinstance(item, dict)
+                        and isinstance(
+                            item.get("latex") or item.get("formula"),
+                            str,
+                        )
+                        and bool(
+                            (item.get("latex") or item.get("formula")).strip()
+                        )
+                    )
+                    for item in formulae
+                )
+            )
+            if not has_single and not has_many:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="formula_content_required",
+                        path=f"{path}.data",
+                        message=(
+                            "Formula explanation requires latex/formula or a "
+                            "non-empty formulae list."
+                        ),
+                    )
                 )
 
     def _find_forbidden_keys(

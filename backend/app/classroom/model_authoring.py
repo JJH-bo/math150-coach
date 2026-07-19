@@ -122,6 +122,14 @@ class TeachingModelAuthoringService:
             )
         if preview_report.get("uncaught_errors"):
             raise ModelRegistrationError("preview reported uncaught runtime errors")
+        painted_bounds = preview_report.get("painted_bounds") or {}
+        if (
+            preview_report.get("visible_element_count", 0) < 1
+            or painted_bounds.get("area", 0) < 256
+        ):
+            raise ModelRegistrationError(
+                "preview produced no visible teaching output"
+            )
 
         request = {
             "expected_revision": expected_revision,

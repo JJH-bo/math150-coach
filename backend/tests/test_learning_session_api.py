@@ -178,6 +178,19 @@ def test_studio_discovers_active_session_and_inserts_exact_expansion(
         "punctured-function-counterexample"
     )
 
+    returned = client.post(
+        f"/api/classroom/v1/learning-sessions/{session_id}/return",
+        json={
+            "access_token": access_token,
+            "expected_revision": 3,
+            "idempotency_key": "learner-return-limit",
+        },
+    )
+
+    assert returned.status_code == 200
+    assert returned.json()["expansion_stack"] == []
+    assert returned.json()["active_content_id"] == "limit-formula"
+
 
 def test_studio_patch_requires_auth_revision_and_idempotency(
     tmp_path, monkeypatch

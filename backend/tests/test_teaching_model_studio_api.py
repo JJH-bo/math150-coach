@@ -39,6 +39,14 @@ def client(tmp_path, monkeypatch) -> TestClient:
             "resources_after_dispose": 0,
             "snapshot": {"state": "approach"},
             "viewport": request["viewport"],
+            "visible_element_count": 3,
+            "painted_bounds": {
+                "x": 20,
+                "y": 40,
+                "width": 600,
+                "height": 300,
+                "area": 180_000,
+            },
         }
 
     previews = TeachingModelPreviewService(repository, runner=runner)

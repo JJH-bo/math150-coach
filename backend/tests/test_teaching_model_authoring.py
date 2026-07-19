@@ -36,6 +36,8 @@ def successful_preview(
     *,
     resources_after_dispose: int = 0,
     uncaught_errors: list[str] | None = None,
+    visible_element_count: int = 3,
+    painted_area: int = 120_000,
 ) -> PreviewJobRecord:
     return PreviewJobRecord(
         job_id="preview-1",
@@ -50,6 +52,14 @@ def successful_preview(
             "uncaught_errors": uncaught_errors or [],
             "resources_after_dispose": resources_after_dispose,
             "snapshot": {"state": "approach"},
+            "visible_element_count": visible_element_count,
+            "painted_bounds": {
+                "x": 40,
+                "y": 80,
+                "width": 600,
+                "height": 200,
+                "area": painted_area,
+            },
         },
     )
 
@@ -165,6 +175,42 @@ def test_registration_rejects_preview_runtime_failures(
     )
 
     with pytest.raises(ModelRegistrationError, match=message):
+        authoring.register(
+            "limit-draft",
+            expected_revision=1,
+            idempotency_key="register-1",
+        )
+
+
+@pytest.mark.parametrize(
+    ("visible_element_count", "painted_area"),
+    [
+        (0, 120_000),
+        (3, 0),
+    ],
+)
+def test_registration_rejects_visually_empty_preview(
+    tmp_path,
+    visible_element_count: int,
+    painted_area: int,
+) -> None:
+    authoring = service(tmp_path)
+    authoring.create_draft(
+        "limit-draft",
+        manifest(),
+        source(),
+        idempotency_key="create-1",
+    )
+    draft = authoring.repository.get_draft("limit-draft")
+    authoring.repository.put_preview_job(
+        successful_preview(
+            draft,
+            visible_element_count=visible_element_count,
+            painted_area=painted_area,
+        )
+    )
+
+    with pytest.raises(ModelRegistrationError, match="no visible teaching output"):
         authoring.register(
             "limit-draft",
             expected_revision=1,

@@ -115,6 +115,21 @@ user request or an objectively failed release that the GPT has just published.
 The workspace and Studio intentionally expose no diagnosis, scoring, review,
 mastery, Boss, or learner-training system.
 
+The ready-to-paste GPT operating instructions live in
+[`docs/custom-gpt-instructions.md`](docs/custom-gpt-instructions.md). They
+separate two behaviors:
+
+- the published classroom owns the fixed baseline route and reveals one
+  already-authored step at a time;
+- when the learner says “这里没懂”, the GPT discovers the most recent active
+  learning session, reads the exact active content target, and calls
+  `patchLearningSessionScene` to insert a newly designed explanation in place.
+
+The session patch may be nested when the first redesign is still too abstract.
+`returnLearningSessionExpansion` and the learner-side return control reconnect
+the learner to the parent explanation without mutating or republishing the
+baseline classroom.
+
 The GPT-ready, Studio-only OpenAPI document is available at
 `/api/studio/v1/action-schema.json` in `internal` and `mixed` profiles. It
 declares the current deployment origin and Bearer authentication without

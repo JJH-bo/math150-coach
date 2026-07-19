@@ -26,25 +26,32 @@ function applyEffect(controller, effect) {
 
 export function createBindingRuntime(bindings, controller, instanceId) {
   const relevant = bindings.filter((binding) => binding.instance_id === instanceId);
-  const snapshots = new Map();
+  const active = [];
+  let baseSnapshot = null;
   return {
     dispatch(kind, context) {
       const openingKind = RESTORE_TRIGGER[kind];
       if (openingKind) {
-        for (const binding of relevant) {
-          if (!matches(binding, openingKind, context)) continue;
-          const previous = snapshots.get(binding.id);
-          if (previous) {
-            controller.update(previous);
-            snapshots.delete(binding.id);
+        const removed = active.filter((binding) =>
+          matches(binding, openingKind, context)
+        );
+        if (removed.length) {
+          for (const binding of removed) {
+            active.splice(active.indexOf(binding), 1);
           }
-          if (binding.return_effect) applyEffect(controller, binding.return_effect);
+          controller.update(baseSnapshot);
+          for (const binding of active) applyEffect(controller, binding.effect);
+          for (const binding of removed) {
+            if (binding.return_effect) applyEffect(controller, binding.return_effect);
+          }
+          if (!active.length) baseSnapshot = null;
         }
       }
       for (const binding of relevant) {
         if (!matches(binding, kind, context)) continue;
-        if (binding.restore_previous && !snapshots.has(binding.id)) {
-          snapshots.set(binding.id, controller.snapshot());
+        if (binding.restore_previous && !active.includes(binding)) {
+          if (!active.length) baseSnapshot = controller.snapshot();
+          active.push(binding);
         }
         applyEffect(controller, binding.effect);
       }
@@ -53,7 +60,8 @@ export function createBindingRuntime(bindings, controller, instanceId) {
       return controller.snapshot();
     },
     dispose() {
-      snapshots.clear();
+      active.length = 0;
+      baseSnapshot = null;
       controller.dispose();
     },
   };

@@ -31,10 +31,59 @@ test("renderer connects formulas, explanations, examples, and details", () => {
 
   assert.match(html, /data-content-id="formula"/);
   assert.match(html, /class="formula-pair"/);
-  assert.match(html, /class="limit-operator"/);
-  assert.doesNotMatch(html, /\\lim_|\\to/);
+  assert.match(html, /class="math-typeset"/);
+  assert.match(html, /data-latex="\\lim_\{x\\to a\}f\(x\)=L"/);
+  assert.doesNotMatch(html, /class="limit-operator"|class="math-fraction"/);
   assert.match(html, /<details[^>]+data-detail-id="detail-1"/);
   assert.match(html, /<ol class="solution-steps">/);
+});
+
+test("renderer accepts GPT-shaped comparison items and multi-formula explanations", () => {
+  const html = renderModule({
+    id: "gpt-shaped",
+    title: "GPT 实际数据",
+    blocks: [
+      {
+        id: "comparison-items",
+        kind: "comparison",
+        data: {
+          items: [
+            { title: "奇函数", body: "只保留正弦项" },
+            { title: "偶函数", body: "只保留余弦项" },
+          ],
+        },
+        detail_branches: [],
+      },
+      {
+        id: "formulae",
+        kind: "formula_explanation",
+        data: {
+          title: "半区间展开",
+          text: "选择奇延拓或偶延拓，会得到不同的系数公式。",
+          formulae: [
+            {
+              latex: String.raw`b_n=\frac{2}{l}\int_0^l f(x)\sin\frac{n\pi x}{l}\,dx`,
+              explanation: "奇延拓对应正弦级数。",
+            },
+            {
+              latex: String.raw`a_n=\frac{2}{l}\int_0^l f(x)\cos\frac{n\pi x}{l}\,dx`,
+              explanation: "偶延拓对应余弦级数。",
+            },
+          ],
+        },
+        detail_branches: [],
+      },
+    ],
+    segments: [],
+  });
+
+  assert.match(html, /奇函数/);
+  assert.match(html, /偶函数/);
+  assert.match(html, /只保留正弦项/);
+  assert.match(html, /半区间展开/);
+  assert.match(html, /奇延拓对应正弦级数/);
+  assert.match(html, /偶延拓对应余弦级数/);
+  assert.equal((html.match(/class="math-typeset"/g) || []).length, 2);
 });
 
 test("renderer supports the complete layout vocabulary", () => {

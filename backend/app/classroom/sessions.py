@@ -157,6 +157,21 @@ class LearningSessionService:
             idempotency_key=idempotency_key,
         )
 
+    def return_for_learner(
+        self,
+        session_id: str,
+        *,
+        access_token: str,
+        expected_revision: int,
+        idempotency_key: str,
+    ) -> LearningSession:
+        self.get_for_learner(session_id, access_token=access_token)
+        return self.return_to_parent(
+            session_id,
+            expected_revision=expected_revision,
+            idempotency_key=idempotency_key,
+        )
+
     @classmethod
     def _project_baseline_steps(
         cls,

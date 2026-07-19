@@ -16,28 +16,32 @@ function safeUri(value) {
   return /^(https?:\/\/|\/(?!\/)|data:image\/)/.test(uri) ? escapeHtml(uri) : "";
 }
 
-function mathSymbols(value) {
-  return value
-    .replaceAll("\\to", "→")
-    .replaceAll("\\infty", "∞")
-    .replaceAll("\\le", "≤")
-    .replaceAll("\\ge", "≥")
-    .replaceAll("\\ne", "≠")
-    .replaceAll("\\cdot", "·")
-    .replaceAll("\\times", "×");
+export function formatMath(latex, { display = true } = {}) {
+  const source = String(latex || "").trim();
+  return `<span class="math-typeset" data-latex="${escapeHtml(source)}" data-display="${display}">${escapeHtml(source)}</span>`;
 }
 
-export function formatMath(latex) {
-  let value = escapeHtml(latex);
-  value = value.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, (_, numerator, denominator) =>
-    `<span class="math-fraction"><span>${mathSymbols(numerator)}</span><span>${mathSymbols(denominator)}</span></span>`
-  );
-  value = value.replace(/\\lim_\{([^{}]+)\}/g, (_, condition) =>
-    `<span class="limit-operator"><span>lim</span><small>${mathSymbols(condition)}</small></span>`
-  );
-  value = value.replace(/_\{([^{}]+)\}/g, "<sub>$1</sub>");
-  value = value.replace(/\^\{([^{}]+)\}/g, "<sup>$1</sup>");
-  return mathSymbols(value);
+export async function typesetMath(root, mathJax = globalThis.MathJax) {
+  const targets = [...(root?.querySelectorAll?.(".math-typeset[data-latex]") || [])];
+  if (!targets.length || typeof mathJax?.tex2chtmlPromise !== "function") {
+    return { rendered: 0, fallback: targets.length };
+  }
+  let rendered = 0;
+  for (const target of targets) {
+    try {
+      const node = await mathJax.tex2chtmlPromise(target.dataset.latex, {
+        display: target.dataset.display !== "false",
+      });
+      target.replaceChildren(node);
+      target.classList.add("is-typeset");
+      rendered += 1;
+    } catch {
+      target.classList.add("math-render-fallback");
+    }
+  }
+  mathJax.startup?.document?.clear?.();
+  mathJax.startup?.document?.updateDocument?.();
+  return { rendered, fallback: targets.length - rendered };
 }
 
 function steps(values, className = "derivation-steps") {
@@ -64,6 +68,51 @@ function renderDetails(block) {
   `).join("");
 }
 
+function formulaEntries(data) {
+  if (Array.isArray(data.formulae)) {
+    return data.formulae.map((entry) => (
+      typeof entry === "string"
+        ? { latex: entry, explanation: "" }
+        : {
+            latex: entry.latex || entry.formula || "",
+            explanation: entry.explanation || entry.text || "",
+          }
+    ));
+  }
+  return [{
+    latex: data.latex || data.formula || "",
+    explanation: data.explanation || data.text || "",
+  }];
+}
+
+function renderFormulaExplanation(data) {
+  const entries = formulaEntries(data);
+  const title = data.title ? `<h3>${text(data.title)}</h3>` : "";
+  const introduction = data.text && data.explanation === undefined
+    ? `<p class="formula-introduction">${text(data.text)}</p>`
+    : "";
+  return `<section class="formula-explanation-set">${title}${introduction}${
+    entries.map((entry) => `
+      <div class="formula-pair">
+        <div class="formula" role="math">${formatMath(entry.latex)}</div>
+        <div class="formula-explanation">${text(entry.explanation)}</div>
+      </div>
+    `).join("")
+  }</section>`;
+}
+
+function renderComparison(data) {
+  const entries = Array.isArray(data.items)
+    ? data.items
+    : [data.left, data.right].filter(Boolean);
+  return `<div class="comparison-grid">${entries.map((entry) => `
+    <section>
+      <strong>${text(entry?.title)}</strong>
+      <p>${text(entry?.body || entry?.text || entry?.description)}</p>
+    </section>
+  `).join("")}</div>`;
+}
+
 function renderBody(block) {
   const data = block.data || {};
   if (block.kind === "prose") return `<div class="prose">${text(data.markdown || data.text)}</div>`;
@@ -72,10 +121,10 @@ function renderBody(block) {
     return `<h${level}>${text(data.text || data.title)}</h${level}>`;
   }
   if (block.kind === "callout") return `<aside class="callout"><strong>${text(data.title || "核心结论")}</strong><div>${text(data.markdown || data.text)}</div></aside>`;
-  if (block.kind === "math") return `<div class="display-math" role="math">${formatMath(data.latex)}</div>`;
-  if (block.kind === "formula_explanation") return `<div class="formula-pair"><div class="formula" role="math">${formatMath(data.latex)}</div><div class="formula-explanation">${text(data.explanation)}</div></div>`;
+  if (block.kind === "math") return `<div class="display-math" role="math">${formatMath(data.latex || data.formula)}</div>`;
+  if (block.kind === "formula_explanation") return renderFormulaExplanation(data);
   if (block.kind === "derivation") return `<section class="derivation"><h3>${text(data.title || "推导")}</h3>${steps(data.steps)}</section>`;
-  if (block.kind === "comparison") return `<div class="comparison-grid"><section><strong>${text(data.left?.title)}</strong><p>${text(data.left?.body)}</p></section><section><strong>${text(data.right?.title)}</strong><p>${text(data.right?.body)}</p></section></div>`;
+  if (block.kind === "comparison") return renderComparison(data);
   if (block.kind === "worked_example") return `<section class="worked-example"><p class="example-label">完整例子</p><h3>${text(data.prompt || data.title)}</h3>${steps(data.steps, "solution-steps")}</section>`;
   if (block.kind === "code_explanation") return `<div class="code-pair"><pre><code data-language="${escapeHtml(data.language || "")}">${escapeHtml(data.code)}</code></pre>${steps(data.lines || [], "code-lines")}</div>`;
   if (block.kind === "table") return table(data.headers || [], data.rows || []);

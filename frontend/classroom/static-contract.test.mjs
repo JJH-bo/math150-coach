@@ -37,3 +37,21 @@ test("visual system prioritizes reading, responsive model dock, and reduced moti
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /\.model-dock\.is-fullscreen/);
 });
+
+test("learning stage distinguishes stable baseline from GPT detailed expansion", () => {
+  assert.match(app, /createSessionClient/);
+  assert.match(app, /renderLearningSession/);
+  assert.match(app, /watchLearningSession/);
+  assert.match(css, /\.baseline-step/);
+  assert.match(css, /\.primary-learning-action/);
+  assert.match(css, /\.live-expansion/);
+  assert.match(css, /\.return-connection/);
+  assert.match(css, /\.gpt-learning-handoff/);
+});
+
+test("classroom uses a real mathematics engine with readable fallback", () => {
+  assert.match(html, /mathjax@3\/es5\/tex-chtml\.js/);
+  assert.match(app, /typesetMath/);
+  assert.match(css, /\.math-typeset/);
+  assert.match(css, /\.math-render-fallback/);
+});

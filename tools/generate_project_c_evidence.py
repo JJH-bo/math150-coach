@@ -43,6 +43,7 @@ def generate(output_root: Path) -> dict:
                 "APP_PROFILE": "mixed",
                 "CLASSROOM_DATA_ROOT": str(data_root),
                 "PYTHONPATH": str(root / "backend"),
+                "STUDIO_API_KEY": "browser-evidence-placeholder-secret",
             }
         )
         server = subprocess.Popen(

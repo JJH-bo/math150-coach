@@ -112,3 +112,44 @@ test("binding runtime applies and restores temporary model state", async () => {
   runtime.dispose();
   assert.deepEqual(events.at(-1), ["dispose"]);
 });
+
+test("leaving one temporary binding preserves another active explanation", async () => {
+  const { createBindingRuntime } = await load("./bindings.js");
+  let snapshot = { state: "overview", highlightedTarget: null };
+  const controller = {
+    snapshot: () => ({ ...snapshot }),
+    update: (next) => { snapshot = { ...next }; },
+    perform: (action) => {
+      if (action === "highlight-target") snapshot.highlightedTarget = "target-value";
+    },
+    dispose() {},
+  };
+  const runtime = createBindingRuntime([
+    {
+      id: "formula-state",
+      content_id: "formula",
+      instance_id: "view",
+      trigger: { kind: "block_enter" },
+      effect: { kind: "set_state", target: "approach" },
+      restore_previous: true,
+    },
+    {
+      id: "detail-highlight",
+      content_id: "intro",
+      instance_id: "view",
+      trigger: { kind: "detail_branch_open", detail_branch_id: "detail-1" },
+      effect: { kind: "perform_action", target: "highlight-target" },
+      restore_previous: true,
+    },
+  ], controller, "view");
+
+  runtime.dispatch("block_enter", { contentId: "formula" });
+  runtime.dispatch("detail_branch_open", {
+    contentId: "intro",
+    detailBranchId: "detail-1",
+  });
+  runtime.dispatch("block_leave", { contentId: "formula" });
+
+  assert.equal(snapshot.state, "overview");
+  assert.equal(snapshot.highlightedTarget, "target-value");
+});
