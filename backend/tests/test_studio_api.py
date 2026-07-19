@@ -93,6 +93,10 @@ def test_workspace_discovers_existing_authoring_targets(
     assert payload["public_origin"] == "https://classroom.example"
     assert payload["learner_entry_url"] == "https://classroom.example/classroom/"
     assert payload["active_packages"][0]["package_id"] == "calculus-foundations"
+    assert payload["active_packages"][0]["learner_entry_url"] == (
+        "https://classroom.example/classroom/"
+        "?package_id=calculus-foundations"
+    )
     assert payload["active_packages"][0]["courses"][0]["chapters"][0][
         "modules"
     ][0]["id"] == "limit-core"
