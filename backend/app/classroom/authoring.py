@@ -69,6 +69,10 @@ class ClassroomAuthoringService:
                 "title": release.package.title,
                 "active_version": release.version,
                 "content_hash": release.content_hash,
+                "learner_entry_url": (
+                    f"{origin}/classroom/"
+                    f"?package_id={release.package_id}"
+                ),
                 "courses": self._course_summaries(release.package.courses),
             }
             for release in active_releases
