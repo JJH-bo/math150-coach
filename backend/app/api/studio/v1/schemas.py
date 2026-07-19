@@ -74,6 +74,7 @@ class WorkspaceActivePackage(StudioRequest):
     title: str
     active_version: str
     content_hash: str
+    learner_entry_url: str
     courses: list[WorkspaceCourseSummary]
 
 
