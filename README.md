@@ -64,15 +64,24 @@ Checked-in reference models:
 
 ## Custom GPT Authoring Flow
 
-The GPT should begin with:
+The GPT should begin every authoring run by discovering the current workspace:
 
 ```text
-GET /api/studio/v1/capabilities
+GET /api/studio/v1/workspace
 Authorization: Bearer <STUDIO_API_KEY>
 ```
 
-The capabilities response declares the accepted block vocabulary and teaching
-model contract. The normal write flow is:
+The workspace response gives it the public learner URL, existing active
+packages, classroom drafts with current revisions, registered teaching
+models, and the autonomous authoring policy. This prevents the GPT from
+guessing identifiers or asking the user for project addresses, `draft_id`
+values, or `package_id` values.
+
+`GET /api/studio/v1/capabilities` separately declares the accepted block
+vocabulary and teaching model contract. After the user supplies lecture
+material and says to make, start, or import it, the GPT is expected to select
+or create the target, validate, repair, and publish without a routine
+confirmation checkpoint. The normal write flow is:
 
 ```text
 POST /api/studio/v1/model-drafts
@@ -91,6 +100,13 @@ POST /api/studio/v1/drafts/{draft_id}/publish
 Every mutable request requires an `Idempotency-Key`. Updates and publication
 also require the expected revision, so retries are safe and concurrent edits
 cannot silently overwrite one another.
+
+Validation and revision conflicts are self-recovery inputs for the GPT. It
+refreshes the workspace or current draft and retries safely rather than
+delegating internal recovery to the user. Rollback is limited to an explicit
+user request or an objectively failed release that the GPT has just published.
+The workspace and Studio intentionally expose no diagnosis, scoring, review,
+mastery, Boss, or learner-training system.
 
 The GPT-ready, Studio-only OpenAPI document is available at
 `/api/studio/v1/action-schema.json` in `internal` and `mixed` profiles. It
@@ -171,7 +187,7 @@ volume at `/var/data`. In Service Settings > Networking, choose
 4. Choose API Key authentication, select Bearer, and enter the generated
    `STUDIO_API_KEY` from Railway Variables.
 5. Use the deployed `/privacy` URL as the Action privacy policy.
-6. Test `getStudioCapabilities`, then the draft/validate/publish flow.
+6. Test `getStudioWorkspace`, then the draft/validate/publish flow.
 
 Do not copy the Studio secret into source files, GPT instructions, classroom
 content, screenshots, or learner-side JavaScript.

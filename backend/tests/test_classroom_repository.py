@@ -40,6 +40,20 @@ def test_stale_draft_revision_is_rejected(tmp_path) -> None:
         repository.update_draft("limits-draft", 2, package())
 
 
+def test_list_drafts_returns_deterministic_complete_records(tmp_path) -> None:
+    repository = ClassroomRepository(tmp_path)
+    repository.create_draft("zeta-draft", package())
+    repository.create_draft("alpha-draft", package())
+
+    drafts = repository.list_drafts()
+
+    assert [draft.draft_id for draft in drafts] == [
+        "alpha-draft",
+        "zeta-draft",
+    ]
+    assert all(draft.package.package_id == "calculus-foundations" for draft in drafts)
+
+
 def test_publish_creates_immutable_release_and_active_pointer(tmp_path) -> None:
     repository = ClassroomRepository(tmp_path)
     repository.create_draft("limits-draft", package())

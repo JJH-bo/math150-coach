@@ -56,6 +56,16 @@ class ClassroomRepository:
     def get_draft(self, draft_id: str) -> DraftRecord:
         return DraftRecord.model_validate(self._read_json(self._draft_path(draft_id)))
 
+    def list_drafts(self) -> list[DraftRecord]:
+        drafts_root = self.root / "drafts"
+        if not drafts_root.exists():
+            return []
+        drafts = [
+            DraftRecord.model_validate(self._read_json(path))
+            for path in drafts_root.glob("*.json")
+        ]
+        return sorted(drafts, key=lambda item: item.draft_id)
+
     def update_draft(
         self,
         draft_id: str,

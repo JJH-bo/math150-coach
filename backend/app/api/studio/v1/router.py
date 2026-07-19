@@ -4,7 +4,7 @@ import os
 from collections.abc import Callable
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from app.api.studio.v1.auth import require_studio_key
@@ -15,6 +15,7 @@ from app.api.studio.v1.schemas import (
     RegisterModelRequest,
     RequestModelPreviewRequest,
     RollbackPackageRequest,
+    StudioWorkspaceResponse,
     UpdateDraftRequest,
     UpdateModelDraftRequest,
 )
@@ -69,6 +70,7 @@ def default_service() -> ClassroomAuthoringService:
         ClassroomRepository(root),
         IdempotencyLedger(root / "operations"),
         ClassroomPackageValidator(model_resolver=models.get_registered),
+        model_repository=models,
     )
 
 
@@ -112,6 +114,20 @@ def create_studio_router(
                 "preview_jobs_are_durable": True,
             },
         }
+
+    @router.get(
+        "/workspace",
+        operation_id="getStudioWorkspace",
+        response_model=StudioWorkspaceResponse,
+    )
+    def workspace(request: Request) -> StudioWorkspaceResponse:
+        public_origin = os.getenv(
+            "AI_CLASSROOM_PUBLIC_ORIGIN",
+            str(request.base_url),
+        ).rstrip("/")
+        return _map_errors(
+            lambda: service_factory().workspace(public_origin=public_origin)
+        )
 
     @router.get("/models", operation_id="listTeachingModels")
     def list_models() -> dict:

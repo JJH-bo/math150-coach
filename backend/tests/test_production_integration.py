@@ -102,6 +102,7 @@ def test_action_schema_contains_only_authenticated_studio_operations(
     assert len(operation_ids) == len(set(operation_ids))
     assert {
         "getStudioCapabilities",
+        "getStudioWorkspace",
         "createClassroomDraft",
         "validateClassroomDraft",
         "publishClassroomDraft",
@@ -178,6 +179,32 @@ def test_action_schema_object_responses_have_property_skeletons(
 
     assert object_responses
     assert all("properties" in response for response in object_responses)
+
+
+def test_workspace_action_response_is_fully_described(monkeypatch) -> None:
+    monkeypatch.setenv("STUDIO_API_KEY", "do-not-expose-this-secret")
+    schema = (
+        TestClient(create_app("mixed"))
+        .get("/api/studio/v1/action-schema.json")
+        .json()
+    )
+
+    response_schema = schema["paths"]["/api/studio/v1/workspace"]["get"][
+        "responses"
+    ]["200"]["content"]["application/json"]["schema"]
+
+    assert response_schema == {
+        "$ref": "#/components/schemas/StudioWorkspaceResponse"
+    }
+    workspace = schema["components"]["schemas"]["StudioWorkspaceResponse"]
+    assert {
+        "public_origin",
+        "learner_entry_url",
+        "active_packages",
+        "drafts",
+        "registered_models",
+        "authoring_policy",
+    } <= workspace["properties"].keys()
 
 
 def test_privacy_page_is_public_in_every_profile() -> None:
