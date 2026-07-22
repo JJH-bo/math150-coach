@@ -5,9 +5,10 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.api.studio.v1.router import create_studio_router
+from app.api.studio.v1.router import create_studio_router, default_tool_service
 from app.classroom.idempotency import IdempotencyLedger
 from app.tools.adapters.symbolic_math import SymbolicMathAdapter
+from app.tools.contracts import ToolQualityTier
 from app.tools.execution import ToolExecutionService
 from app.tools.registry import ToolRegistry
 from app.tools.repository import ToolJobRepository
@@ -70,6 +71,24 @@ def test_tool_discovery_is_searchable_and_does_not_expose_secrets(
     serialized = response.text.lower()
     assert "studio-test-key" not in serialized
     assert "api_key" not in serialized
+
+
+def test_default_registry_exposes_complete_verified_math_plot_pack(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CLASSROOM_DATA_ROOT", str(tmp_path))
+
+    definitions = default_tool_service().registry.list(
+        quality_tier=ToolQualityTier.VERIFIED
+    )
+
+    assert {definition.tool_id for definition in definitions} == {
+        "math.symbolic",
+        "math.numeric",
+        "math.verify",
+        "math.graph",
+        "visualization.plot",
+    }
 
 
 def test_get_tool_returns_requested_verified_definition(tmp_path, monkeypatch) -> None:

@@ -69,6 +69,10 @@ from app.classroom.repository import (
 )
 from app.classroom.validation import ClassroomPackageValidator
 from app.tools.adapters.symbolic_math import SymbolicMathAdapter
+from app.tools.adapters.numeric_math import NumericMathAdapter
+from app.tools.adapters.math_verify import MathVerifyAdapter
+from app.tools.adapters.graph_math import GraphMathAdapter
+from app.tools.adapters.plot_visualization import PlotAdapter
 from app.tools.contracts import (
     ToolDefinition,
     ToolJob,
@@ -144,7 +148,15 @@ def default_session_service() -> LearningSessionService:
 def default_tool_service() -> ToolExecutionService:
     root, _ = _data_roots()
     return ToolExecutionService(
-        ToolRegistry([SymbolicMathAdapter()]),
+        ToolRegistry(
+            [
+                SymbolicMathAdapter(),
+                NumericMathAdapter(),
+                MathVerifyAdapter(),
+                GraphMathAdapter(),
+                PlotAdapter(),
+            ]
+        ),
         ToolJobRepository(root),
         IdempotencyLedger(root / "tool-idempotency"),
     )
