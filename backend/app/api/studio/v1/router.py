@@ -74,6 +74,7 @@ from app.tools.adapters.math_verify import MathVerifyAdapter
 from app.tools.adapters.graph_math import GraphMathAdapter
 from app.tools.adapters.plot_visualization import PlotAdapter
 from app.tools.adapters.diagram_visualization import DiagramAdapter
+from app.tools.adapters.geometry2d_visualization import Geometry2dAdapter
 from app.tools.adapters.reveal_export import RevealExportAdapter
 from app.tools.adapters.pptx_export import PptxExportAdapter
 from app.tools.adapters.pdf_export import PdfExportAdapter
@@ -162,6 +163,7 @@ def default_tool_service() -> ToolExecutionService:
                 GraphMathAdapter(),
                 PlotAdapter(),
                 DiagramAdapter(),
+                Geometry2dAdapter(),
                 RevealExportAdapter(),
                 PptxExportAdapter(),
                 PdfExportAdapter(),

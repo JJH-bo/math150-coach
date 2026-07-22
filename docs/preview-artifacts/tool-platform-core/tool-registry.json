@@ -2261,6 +2261,168 @@
     {
       "cacheable": true,
       "category": "visualization",
+      "description": "Create accessible coordinate scenes from bounded points, segments, vectors, circles, polylines, polygons, and slider parameters. Numeric properties may use safe affine parameter bindings; arbitrary code is not accepted. Real Chromium exercises every declared control and records before/after evidence.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "maxLength": 2000,
+            "minLength": 40,
+            "type": "string"
+          },
+          "height": {
+            "maximum": 1600,
+            "minimum": 500,
+            "type": "integer"
+          },
+          "objects": {
+            "items": {
+              "type": "object"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          },
+          "parameters": {
+            "items": {
+              "type": "object"
+            },
+            "maxItems": 8,
+            "type": "array"
+          },
+          "theme": {
+            "enum": [
+              "light",
+              "dark"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "viewport": {
+            "additionalProperties": false,
+            "properties": {
+              "x_max": {
+                "maximum": 1000000,
+                "minimum": -1000000,
+                "type": "number"
+              },
+              "x_min": {
+                "maximum": 1000000,
+                "minimum": -1000000,
+                "type": "number"
+              },
+              "y_max": {
+                "maximum": 1000000,
+                "minimum": -1000000,
+                "type": "number"
+              },
+              "y_min": {
+                "maximum": 1000000,
+                "minimum": -1000000,
+                "type": "number"
+              }
+            },
+            "required": [
+              "x_min",
+              "x_max",
+              "y_min",
+              "y_max"
+            ],
+            "type": "object"
+          },
+          "width": {
+            "maximum": 2400,
+            "minimum": 700,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "viewport",
+          "objects"
+        ],
+        "type": "object"
+      },
+      "license": "Project-owned runtime; web standards",
+      "max_artifact_bytes": 100663296,
+      "max_artifacts": 20,
+      "output_media_types": [
+        "application/json",
+        "image/svg+xml",
+        "text/html",
+        "image/png",
+        "text/plain"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "type": "string"
+          },
+          "geometry_sha256": {
+            "type": "string"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "object_count": {
+            "type": "integer"
+          },
+          "parameter_count": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "validation": {
+            "type": "object"
+          },
+          "width": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "object_count",
+          "parameter_count",
+          "width",
+          "height",
+          "geometry_sha256",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "required_descriptive_alt_text",
+        "structured_non_executable_scene",
+        "finite_bounded_geometry",
+        "self_contained_browser_runtime",
+        "real_browser_render",
+        "declared_interaction_exercised",
+        "interaction_changes_scene_state",
+        "zero_console_or_request_errors",
+        "no_clipping",
+        "pixel_variance_nonblank"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.render",
+      "timeout_seconds": 90,
+      "title": "Verified interactive two-dimensional mathematical geometry",
+      "tool_id": "visualization.geometry2d",
+      "upstream_project": "https://developer.mozilla.org/en-US/docs/Web/SVG",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "visualization",
       "description": "Create validated line, scatter, bar, area, histogram, heatmap, contour, and surface visuals with accessible alt text, canonical Plotly JSON, self-contained HTML, PNG, SVG, and pixel-level QA.",
       "deterministic": true,
       "execution_mode": "async",
@@ -2443,5 +2605,5 @@
       "version": "1.0.0"
     }
   ],
-  "total": 11
+  "total": 12
 }

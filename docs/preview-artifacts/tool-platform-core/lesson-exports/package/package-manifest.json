@@ -26,28 +26,28 @@
       "sha256": "b554938fee5869d05bbb59a1744ec6dea0c662bbf0ed11e6ceabe311addc060f"
     },
     {
-      "bytes": 46460,
+      "bytes": 46565,
       "media_type": "image/png",
       "path": "slide-001.png",
-      "sha256": "81d4cd884765480797a865a92291ad55cb416cb6adf55cce9ba52f2896303623"
+      "sha256": "2d477951e4a0e77043189c0afd477a159592c520525384b15f13d657627f67ae"
     },
     {
-      "bytes": 56841,
+      "bytes": 56783,
       "media_type": "image/png",
       "path": "slide-002.png",
-      "sha256": "845b1257d06f9056a34fb05db9e724cbdd4967640e5b7c7bd9af737f35964e37"
+      "sha256": "c662ddf3f05f8ad6c4b21a7879bad12e253f94a075a25b0df3d450942f85907d"
     },
     {
-      "bytes": 48196,
+      "bytes": 48274,
       "media_type": "image/png",
       "path": "slide-003.png",
-      "sha256": "b65fec4aebe7d61dda7462433fdd0325b83ef99f1fcfb35edc8d835a50a54af8"
+      "sha256": "1a8e9f0f430f9ab2b46fa0bee8e7385d0c37ed27cdd12df4d94c321cc41636a9"
     },
     {
-      "bytes": 48857,
+      "bytes": 48820,
       "media_type": "image/png",
       "path": "slide-004.png",
-      "sha256": "d9fb8f238b3f381892fd1843917da1f19e70276ef51cba066305cbd29f8d1c30"
+      "sha256": "feaabff938bed18aef350382f67ac98cdd1f1bd21f5564aa923b3fa5031b1662"
     }
   ],
   "lesson_schema_version": "semantic_lesson_v1",

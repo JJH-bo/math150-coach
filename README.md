@@ -42,6 +42,9 @@ download hash-verified artifacts. The current verified pack includes:
 - `visualization.diagram@1.0.0` for structured Mermaid concept/process diagrams
   with self-contained SVG/HTML, Chromium PNG, minimum readable type, clipping,
   browser-error, and pixel-level validation;
+- `visualization.geometry2d@1.0.0` for bounded SVG coordinate scenes with safe
+  affine parameter bindings, accessible controls, automatic real-browser
+  interaction exercise, state-change evidence, and before/after screenshots;
 - `export.pptx@1.0.0` for editable native PowerPoint text and shapes, SVG
   mathematics, speaker notes, and OOXML/render validation;
 - `export.reveal@1.0.0` for self-contained browser presentations, print PDF,

@@ -17,14 +17,14 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-b8069e0db84244c09231496a/artifacts/verification-result.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-c5eb8cf908514798be88bf22/artifacts/verification-result.json",
       "media_type": "application/json",
       "name": "verification-result.json",
       "sha256": "sha256:7df12d5aa2ff865ab4fb0d396d377ef7123b3fb39996fdbabd6747b2b786327e",
       "size_bytes": 6435
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-b8069e0db84244c09231496a/artifacts/verification-samples.csv",
+      "download_path": "/api/studio/v1/tool-jobs/tj-c5eb8cf908514798be88bf22/artifacts/verification-samples.csv",
       "media_type": "text/csv",
       "name": "verification-samples.csv",
       "sha256": "sha256:e58f85013e0ac8d8fffa82bdc7ee0639da11ebe64af33927cf1d4758859493b6",
@@ -32,10 +32,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T08:32:56.322499Z",
+  "created_at": "2026-07-22T08:47:10.238227Z",
   "error": null,
-  "finished_at": "2026-07-22T08:32:56.440931Z",
-  "job_id": "tj-b8069e0db84244c09231496a",
+  "finished_at": "2026-07-22T08:47:10.405702Z",
+  "job_id": "tj-c5eb8cf908514798be88bf22",
   "metrics": {
     "excluded_sample_count": 0,
     "tested_sample_count": 31
@@ -348,7 +348,7 @@
     ],
     "verdict": "equivalent"
   },
-  "started_at": "2026-07-22T08:32:56.333844Z",
+  "started_at": "2026-07-22T08:47:10.250965Z",
   "state": "succeeded",
   "tool_id": "math.verify",
   "tool_version": "1.0.0",

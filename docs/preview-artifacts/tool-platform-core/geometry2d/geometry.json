@@ -1,0 +1,95 @@
+{
+  "alt_text": "An interactive coordinate plane showing a reference ray with slope three halves and a vector whose endpoint is controlled by scale factor t, so its length changes while every endpoint remains on the same ray.",
+  "height": 650,
+  "objects": [
+    {
+      "color": "#33C3FF",
+      "id": "reference-ray",
+      "label": "y = 1.5x",
+      "points": [
+        {
+          "x": 0.0,
+          "y": 0.0
+        },
+        {
+          "x": 1.0,
+          "y": 1.5
+        },
+        {
+          "x": 2.0,
+          "y": 3.0
+        },
+        {
+          "x": 3.0,
+          "y": 4.5
+        },
+        {
+          "x": 4.0,
+          "y": 6.0
+        }
+      ],
+      "type": "polyline"
+    },
+    {
+      "color": "#F6C85F",
+      "id": "origin",
+      "label": "O",
+      "type": "point",
+      "x": 0.0,
+      "y": 0.0
+    },
+    {
+      "color": "#FF6B8A",
+      "id": "moving",
+      "label": "Q(t)",
+      "type": "point",
+      "x": {
+        "offset": 0.0,
+        "parameter": "t",
+        "scale": 2.0
+      },
+      "y": {
+        "offset": 0.0,
+        "parameter": "t",
+        "scale": 3.0
+      }
+    },
+    {
+      "color": "#FF6B8A",
+      "dx": {
+        "offset": 0.0,
+        "parameter": "t",
+        "scale": 2.0
+      },
+      "dy": {
+        "offset": 0.0,
+        "parameter": "t",
+        "scale": 3.0
+      },
+      "id": "scaled",
+      "label": "scaled vector",
+      "type": "vector",
+      "x": 0.0,
+      "y": 0.0
+    }
+  ],
+  "parameters": [
+    {
+      "id": "t",
+      "label": "Scale factor t",
+      "maximum": 2.0,
+      "minimum": 0.5,
+      "step": 0.1,
+      "value": 1.0
+    }
+  ],
+  "theme": "dark",
+  "title": "Scaling a vector preserves its direction",
+  "viewport": {
+    "x_max": 5.0,
+    "x_min": -1.0,
+    "y_max": 7.0,
+    "y_min": -1.0
+  },
+  "width": 1000
+}

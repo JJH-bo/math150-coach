@@ -226,6 +226,74 @@ def lesson_payload() -> dict[str, Any]:
     }
 
 
+def geometry_payload() -> dict[str, Any]:
+    binding_x = {"parameter": "t", "scale": 2, "offset": 0}
+    binding_y = {"parameter": "t", "scale": 3, "offset": 0}
+    return {
+        "title": "Scaling a vector preserves its direction",
+        "alt_text": (
+            "An interactive coordinate plane showing a reference ray with slope three "
+            "halves and a vector whose endpoint is controlled by scale factor t, so its "
+            "length changes while every endpoint remains on the same ray."
+        ),
+        "viewport": {"x_min": -1, "x_max": 5, "y_min": -1, "y_max": 7},
+        "width": 1000,
+        "height": 650,
+        "theme": "dark",
+        "parameters": [
+            {
+                "id": "t",
+                "label": "Scale factor t",
+                "minimum": 0.5,
+                "maximum": 2.0,
+                "step": 0.1,
+                "value": 1.0,
+            }
+        ],
+        "objects": [
+            {
+                "id": "reference-ray",
+                "type": "polyline",
+                "label": "y = 1.5x",
+                "color": "#33C3FF",
+                "points": [
+                    {"x": 0, "y": 0},
+                    {"x": 1, "y": 1.5},
+                    {"x": 2, "y": 3},
+                    {"x": 3, "y": 4.5},
+                    {"x": 4, "y": 6},
+                ],
+            },
+            {
+                "id": "origin",
+                "type": "point",
+                "label": "O",
+                "color": "#F6C85F",
+                "x": 0,
+                "y": 0,
+            },
+            {
+                "id": "moving",
+                "type": "point",
+                "label": "Q(t)",
+                "color": "#FF6B8A",
+                "x": binding_x,
+                "y": binding_y,
+            },
+            {
+                "id": "scaled",
+                "type": "vector",
+                "label": "scaled vector",
+                "color": "#FF6B8A",
+                "x": 0,
+                "y": 0,
+                "dx": binding_x,
+                "dy": binding_y,
+            },
+        ],
+    }
+
+
 def generate(output_root: Path) -> None:
     studio_key = "temporary-evidence-key-never-serialized"
     port = free_port()
@@ -390,6 +458,14 @@ def generate(output_root: Path) -> None:
                     ],
                 },
             )
+            jobs["geometry2d"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-vector-scaling-geometry-v1",
+                tool_id="visualization.geometry2d",
+                timeout_seconds=60,
+                arguments=geometry_payload(),
+            )
             for format_name, tool_id in (
                 ("reveal", "export.reveal"),
                 ("pptx", "export.pptx"),
@@ -466,6 +542,8 @@ def generate(output_root: Path) -> None:
             )
             for artifact_name, content in artifacts["diagram"].items():
                 write_bytes(output_root / "diagram" / artifact_name, content)
+            for artifact_name, content in artifacts["geometry2d"].items():
+                write_bytes(output_root / "geometry2d" / artifact_name, content)
             for format_name in export_names:
                 for artifact_name, content in artifacts[format_name].items():
                     write_bytes(

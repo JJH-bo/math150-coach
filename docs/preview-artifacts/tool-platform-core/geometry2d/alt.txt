@@ -1,0 +1,1 @@
+An interactive coordinate plane showing a reference ray with slope three halves and a vector whose endpoint is controlled by scale factor t, so its length changes while every endpoint remains on the same ray.

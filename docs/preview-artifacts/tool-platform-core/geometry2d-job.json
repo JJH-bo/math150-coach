@@ -1,0 +1,219 @@
+{
+  "argument_hash": "sha256:769d0f66cbd4e35c78f61d73f67bae3fe36582cc7a14d7559d4319a2f13396f2",
+  "arguments": {
+    "alt_text": "An interactive coordinate plane showing a reference ray with slope three halves and a vector whose endpoint is controlled by scale factor t, so its length changes while every endpoint remains on the same ray.",
+    "height": 650,
+    "objects": [
+      {
+        "color": "#33C3FF",
+        "id": "reference-ray",
+        "label": "y = 1.5x",
+        "points": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1.5
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 4.5
+          },
+          {
+            "x": 4,
+            "y": 6
+          }
+        ],
+        "type": "polyline"
+      },
+      {
+        "color": "#F6C85F",
+        "id": "origin",
+        "label": "O",
+        "type": "point",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "color": "#FF6B8A",
+        "id": "moving",
+        "label": "Q(t)",
+        "type": "point",
+        "x": {
+          "offset": 0,
+          "parameter": "t",
+          "scale": 2
+        },
+        "y": {
+          "offset": 0,
+          "parameter": "t",
+          "scale": 3
+        }
+      },
+      {
+        "color": "#FF6B8A",
+        "dx": {
+          "offset": 0,
+          "parameter": "t",
+          "scale": 2
+        },
+        "dy": {
+          "offset": 0,
+          "parameter": "t",
+          "scale": 3
+        },
+        "id": "scaled",
+        "label": "scaled vector",
+        "type": "vector",
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "parameters": [
+      {
+        "id": "t",
+        "label": "Scale factor t",
+        "maximum": 2.0,
+        "minimum": 0.5,
+        "step": 0.1,
+        "value": 1.0
+      }
+    ],
+    "theme": "dark",
+    "title": "Scaling a vector preserves its direction",
+    "viewport": {
+      "x_max": 5,
+      "x_min": -1,
+      "y_max": 7,
+      "y_min": -1
+    },
+    "width": 1000
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d3a231f9bdb64337b581aaf9/artifacts/geometry.json",
+      "media_type": "application/json",
+      "name": "geometry.json",
+      "sha256": "sha256:32b413adc682006a394df6810e4724faf5857238989a66a9d3cde8881e674ff0",
+      "size_bytes": 1917
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d3a231f9bdb64337b581aaf9/artifacts/geometry.svg",
+      "media_type": "image/svg+xml",
+      "name": "geometry.svg",
+      "sha256": "sha256:675a44f02c43508bbcce78163d5f53ff4c75bc6594fa538a27eb4cd460fcc767",
+      "size_bytes": 4402
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d3a231f9bdb64337b581aaf9/artifacts/geometry.html",
+      "media_type": "text/html",
+      "name": "geometry.html",
+      "sha256": "sha256:0fd781316beb1407442ed6cb52e733d5779afd93554d51a56c2bbc1099560bde",
+      "size_bytes": 12568
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d3a231f9bdb64337b581aaf9/artifacts/geometry.png",
+      "media_type": "image/png",
+      "name": "geometry.png",
+      "sha256": "sha256:f753de7a641d509b6874358356f7b0e424c43ade86d08b3585b71665f84a580f",
+      "size_bytes": 26569
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d3a231f9bdb64337b581aaf9/artifacts/interaction-001.png",
+      "media_type": "image/png",
+      "name": "interaction-001.png",
+      "sha256": "sha256:5c64e048883bdc736eed95d498897df493712cd4c614bacf3ba0f46613f42aac",
+      "size_bytes": 27005
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d3a231f9bdb64337b581aaf9/artifacts/alt.txt",
+      "media_type": "text/plain",
+      "name": "alt.txt",
+      "sha256": "sha256:6a2496b267961ee40def3a13de5c87b82baa04c8fad5d2e167f44cf87da89c50",
+      "size_bytes": 210
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d3a231f9bdb64337b581aaf9/artifacts/validation.json",
+      "media_type": "application/json",
+      "name": "validation.json",
+      "sha256": "sha256:cde806940cd8ee9fb673bbd60afd6210e68cddd0c87c67ac901c7e9841851c39",
+      "size_bytes": 1002
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T08:47:30.175141Z",
+  "error": null,
+  "finished_at": "2026-07-22T08:47:31.280370Z",
+  "job_id": "tj-d3a231f9bdb64337b581aaf9",
+  "metrics": {
+    "object_count": 4,
+    "parameter_count": 1,
+    "png_bytes": 26569,
+    "svg_bytes": 4402
+  },
+  "required_scope": "studio.render",
+  "result": {
+    "alt_text": "An interactive coordinate plane showing a reference ray with slope three halves and a vector whose endpoint is controlled by scale factor t, so its length changes while every endpoint remains on the same ray.",
+    "geometry_sha256": "sha256:298ae52f84d6ca34e3245f4c134d5c5a3fdf50359e510aed13b35b0843386021",
+    "height": 650,
+    "object_count": 4,
+    "parameter_count": 1,
+    "title": "Scaling a vector preserves its direction",
+    "validation": {
+      "clipped": false,
+      "clipped_findings": [],
+      "console_errors": [],
+      "failed_requests": [],
+      "html_bytes": 12568,
+      "images": [
+        {
+          "bytes": 26569,
+          "channel_variance": 770.3650047821652,
+          "name": "geometry.png",
+          "unique_colors": 724
+        },
+        {
+          "bytes": 27005,
+          "channel_variance": 819.5338442555047,
+          "name": "interaction-001.png",
+          "unique_colors": 711
+        }
+      ],
+      "interaction_changed": true,
+      "interaction_exercised": true,
+      "interactions": [
+        {
+          "changed": true,
+          "parameter_id": "t",
+          "target_value": 2
+        }
+      ],
+      "page_errors": [],
+      "parameter_count": 1,
+      "passed": true,
+      "png_channel_variance": 770.3650047821652,
+      "png_unique_colors": 724,
+      "renderer": "browser-native SVG geometry runtime v1",
+      "restored_to_baseline": true,
+      "specification_bytes": 1917,
+      "svg_bytes": 4402,
+      "viewport": {
+        "height": 650,
+        "width": 1000
+      },
+      "visible_object_count": 4
+    },
+    "width": 1000
+  },
+  "started_at": "2026-07-22T08:47:30.197308Z",
+  "state": "succeeded",
+  "tool_id": "visualization.geometry2d",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

@@ -1,0 +1,44 @@
+{
+  "clipped": false,
+  "clipped_findings": [],
+  "console_errors": [],
+  "failed_requests": [],
+  "html_bytes": 12568,
+  "images": [
+    {
+      "bytes": 26569,
+      "channel_variance": 770.3650047821652,
+      "name": "geometry.png",
+      "unique_colors": 724
+    },
+    {
+      "bytes": 27005,
+      "channel_variance": 819.5338442555047,
+      "name": "interaction-001.png",
+      "unique_colors": 711
+    }
+  ],
+  "interaction_changed": true,
+  "interaction_exercised": true,
+  "interactions": [
+    {
+      "changed": true,
+      "parameter_id": "t",
+      "target_value": 2
+    }
+  ],
+  "page_errors": [],
+  "parameter_count": 1,
+  "passed": true,
+  "png_channel_variance": 770.3650047821652,
+  "png_unique_colors": 724,
+  "renderer": "browser-native SVG geometry runtime v1",
+  "restored_to_baseline": true,
+  "specification_bytes": 1917,
+  "svg_bytes": 4402,
+  "viewport": {
+    "height": 650,
+    "width": 1000
+  },
+  "visible_object_count": 4
+}
