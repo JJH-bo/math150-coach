@@ -4,12 +4,15 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require("playwright");
-const { mathjax } = require("mathjax-full/js/mathjax.js");
-const { TeX } = require("mathjax-full/js/input/tex.js");
-const { SVG } = require("mathjax-full/js/output/svg.js");
-const { liteAdaptor } = require("mathjax-full/js/adaptors/liteAdaptor.js");
-const { RegisterHTMLHandler } = require("mathjax-full/js/handlers/html.js");
-const { AllPackages } = require("mathjax-full/js/input/tex/AllPackages.js");
+const { mathjax } = require("@mathjax/src/js/mathjax.js");
+const { TeX } = require("@mathjax/src/js/input/tex.js");
+const { SVG } = require("@mathjax/src/js/output/svg.js");
+const { MathJaxTexFont } = require("@mathjax/mathjax-tex-font/js/svg.js");
+const { liteAdaptor } = require("@mathjax/src/js/adaptors/liteAdaptor.js");
+const { RegisterHTMLHandler } = require("@mathjax/src/js/handlers/html.js");
+require("@mathjax/src/js/input/tex/base/BaseConfiguration.js");
+require("@mathjax/src/js/input/tex/ams/AmsConfiguration.js");
+require("@mathjax/src/js/input/tex/newcommand/NewcommandConfiguration.js");
 
 function parseArgs(argv) {
   const result = {};
@@ -34,15 +37,20 @@ function escapeHtml(value) {
 }
 
 function mathRenderer() {
-  const adaptor = liteAdaptor();
+  const adaptor = liteAdaptor({ fontSize: 16 });
   RegisterHTMLHandler(adaptor);
   const document = mathjax.document("", {
-    InputJax: new TeX({ packages: AllPackages }),
-    OutputJax: new SVG({ fontCache: "local" }),
+    InputJax: new TeX({
+      packages: ["base", "ams", "newcommand"],
+      formatError(_jax, error) { throw error; },
+    }),
+    OutputJax: new SVG({ fontCache: "local", fontData: MathJaxTexFont }),
   });
   return (latex) => {
-    const node = document.convert(latex, { display: true });
-    return adaptor.outerHTML(node);
+    const node = document.convert(latex, { display: true, em: 16, ex: 8, containerWidth: 1280 });
+    return adaptor
+      .outerHTML(node)
+      .replace(/\sdata-latex(?:-[\w-]+)?="[^"]*"/g, "");
   };
 }
 
