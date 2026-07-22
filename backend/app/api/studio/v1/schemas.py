@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.classroom.model_contracts import PreviewViewport, TeachingModelManifest
 from app.classroom.models import ClassroomPackage
 from app.classroom.session_models import DetailedExpansion
+from app.tools.contracts import ToolDefinition
 
 
 class StudioRequest(BaseModel):
@@ -60,6 +61,20 @@ class PatchLearningSessionRequest(StudioRequest):
 
 class ReturnLearningSessionRequest(StudioRequest):
     expected_revision: int = Field(ge=1)
+
+
+class CreateToolJobRequest(StudioRequest):
+    tool_id: str = Field(pattern=r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$")
+    tool_version: str | None = Field(
+        default=None,
+        pattern=r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$",
+    )
+    arguments: dict[str, Any]
+
+
+class StudioToolListResponse(StudioRequest):
+    tools: list[ToolDefinition]
+    total: int = Field(ge=0)
 
 
 class ChapterAuthoringCapabilities(StudioRequest):

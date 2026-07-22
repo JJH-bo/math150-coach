@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from fastapi import (
     APIRouter,
@@ -19,6 +20,7 @@ from app.api.studio.v1.auth import require_studio_key
 from app.api.studio.v1.schemas import (
     CreateDraftRequest,
     CreateModelDraftRequest,
+    CreateToolJobRequest,
     PublishDraftRequest,
     PatchLearningSessionRequest,
     RegisterModelRequest,
@@ -26,6 +28,7 @@ from app.api.studio.v1.schemas import (
     ReturnLearningSessionRequest,
     RollbackPackageRequest,
     StudioCapabilitiesResponse,
+    StudioToolListResponse,
     StudioWorkspaceResponse,
     UpdateDraftRequest,
     UpdateModelDraftRequest,
@@ -65,12 +68,31 @@ from app.classroom.repository import (
     ClassroomRepositoryError,
 )
 from app.classroom.validation import ClassroomPackageValidator
+from app.tools.adapters.symbolic_math import SymbolicMathAdapter
+from app.tools.contracts import (
+    ToolDefinition,
+    ToolJob,
+    ToolQualityTier,
+    ToolScope,
+)
+from app.tools.execution import (
+    ToolArgumentValidationError,
+    ToolExecutionService,
+    ToolScopeDeniedError,
+)
+from app.tools.registry import ToolNotFoundError, ToolRegistry
+from app.tools.repository import (
+    ToolJobNotFoundError,
+    ToolJobRepository,
+    ToolJobRepositoryError,
+)
 
 
 ServiceFactory = Callable[[], ClassroomAuthoringService]
 ModelServiceFactory = Callable[[], TeachingModelAuthoringService]
 PreviewServiceFactory = Callable[[], TeachingModelPreviewService]
 SessionServiceFactory = Callable[[], LearningSessionService]
+ToolServiceFactory = Callable[[], ToolExecutionService]
 
 
 def _data_roots() -> tuple[Path, Path]:
@@ -119,18 +141,127 @@ def default_session_service() -> LearningSessionService:
     )
 
 
+def default_tool_service() -> ToolExecutionService:
+    root, _ = _data_roots()
+    return ToolExecutionService(
+        ToolRegistry([SymbolicMathAdapter()]),
+        ToolJobRepository(root),
+        IdempotencyLedger(root / "tool-idempotency"),
+    )
+
+
 def create_studio_router(
     service_factory: ServiceFactory = default_service,
     *,
     model_service_factory: ModelServiceFactory = default_model_service,
     preview_service_factory: PreviewServiceFactory = default_preview_service,
     session_service_factory: SessionServiceFactory = default_session_service,
+    tool_service_factory: ToolServiceFactory = default_tool_service,
 ) -> APIRouter:
     router = APIRouter(
         prefix="/api/studio/v1",
         tags=["classroom-studio"],
         dependencies=[Depends(require_studio_key)],
     )
+
+    @router.get(
+        "/tools",
+        operation_id="listStudioTools",
+        response_model=StudioToolListResponse,
+    )
+    def list_tools(
+        query: str | None = Query(default=None, min_length=1, max_length=160),
+        category: str | None = Query(default=None, min_length=2, max_length=80),
+        quality_tier: ToolQualityTier | None = Query(default=None),
+    ) -> StudioToolListResponse:
+        tools = tool_service_factory().registry.list(
+            query=query,
+            category=category,
+            quality_tier=quality_tier,
+        )
+        return StudioToolListResponse(tools=tools, total=len(tools))
+
+    @router.get(
+        "/tools/{tool_id}",
+        operation_id="getStudioTool",
+        response_model=ToolDefinition,
+    )
+    def get_tool(
+        tool_id: str,
+        version: str | None = Query(default=None),
+    ) -> ToolDefinition:
+        return _map_errors(
+            lambda: tool_service_factory().registry.get(
+                tool_id,
+                version,
+            ).definition
+        )
+
+    @router.post(
+        "/tool-jobs",
+        status_code=202,
+        operation_id="submitStudioToolJob",
+        response_model=ToolJob,
+    )
+    def submit_tool_job(
+        request: CreateToolJobRequest,
+        background_tasks: BackgroundTasks,
+        idempotency_key: str = Header(alias="Idempotency-Key", min_length=1),
+    ) -> ToolJob:
+        service = tool_service_factory()
+        job = _map_errors(
+            lambda: service.submit(
+                tool_id=request.tool_id,
+                tool_version=request.tool_version,
+                arguments=request.arguments,
+                idempotency_key=idempotency_key,
+                granted_scopes=set(ToolScope),
+            )
+        )
+        if job.state.value == "queued":
+            background_tasks.add_task(service.run, job.job_id)
+        return job
+
+    @router.get(
+        "/tool-jobs/{job_id}",
+        operation_id="getStudioToolJob",
+        response_model=ToolJob,
+    )
+    def get_tool_job(job_id: str) -> ToolJob:
+        return _map_errors(lambda: tool_service_factory().get(job_id))
+
+    @router.post(
+        "/tool-jobs/{job_id}/cancel",
+        operation_id="cancelStudioToolJob",
+        response_model=ToolJob,
+    )
+    def cancel_tool_job(job_id: str) -> ToolJob:
+        return _map_errors(lambda: tool_service_factory().cancel(job_id))
+
+    @router.get(
+        "/tool-jobs/{job_id}/artifacts/{artifact_name}",
+        operation_id="getStudioToolArtifact",
+        response_class=FileResponse,
+    )
+    def get_tool_artifact(job_id: str, artifact_name: str) -> FileResponse:
+        service = tool_service_factory()
+        job = _map_errors(lambda: service.get(job_id))
+        metadata = next(
+            (item for item in job.artifacts if item.name == artifact_name),
+            None,
+        )
+        if metadata is None:
+            raise api_error(
+                404,
+                "tool_job_not_found",
+                f"artifact {artifact_name} for tool job {job_id} was not found",
+            )
+        path = _map_errors(lambda: service.artifact(job_id, artifact_name))
+        return FileResponse(
+            path,
+            media_type=metadata.media_type,
+            filename=metadata.name,
+        )
 
     @router.get(
         "/capabilities",
@@ -461,7 +592,7 @@ def create_studio_router(
     return router
 
 
-def _map_errors(operation: Callable[[], dict]) -> dict:
+def _map_errors(operation: Callable[[], Any]) -> Any:
     try:
         return operation()
     except ClassroomValidationError as exc:
@@ -475,6 +606,16 @@ def _map_errors(operation: Callable[[], dict]) -> dict:
         )
     except IdempotencyConflictError as exc:
         raise api_error(409, "idempotency_key_conflict", str(exc))
+    except ToolNotFoundError as exc:
+        raise api_error(404, "studio_tool_not_found", str(exc))
+    except ToolScopeDeniedError as exc:
+        raise api_error(403, "studio_tool_scope_denied", str(exc))
+    except ToolArgumentValidationError as exc:
+        raise api_error(422, "studio_tool_arguments_invalid", str(exc))
+    except ToolJobNotFoundError as exc:
+        raise api_error(404, "tool_job_not_found", str(exc))
+    except ToolJobRepositoryError as exc:
+        raise api_error(400, "tool_job_repository_error", str(exc))
     except ModelValidationError as exc:
         raise HTTPException(
             status_code=422,
