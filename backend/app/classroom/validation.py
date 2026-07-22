@@ -78,6 +78,20 @@ class ClassroomPackageValidator:
             for chapter_index, chapter in enumerate(course.chapters):
                 chapter_path = f"{course_path}.chapters[{chapter_index}]"
                 record_id(chapter.id, f"{chapter_path}.id")
+                self._validate_coverage_contract(
+                    chapter,
+                    chapter_path,
+                    record_id,
+                    issues,
+                )
+                self._validate_teaching_contract(
+                    chapter,
+                    chapter_path,
+                    issues,
+                )
+                knowledge_point_ids = {
+                    point.id for point in chapter.knowledge_points
+                }
                 module_ids = {module.id for module in chapter.modules}
                 for module_index, module in enumerate(chapter.modules):
                     module_path = f"{chapter_path}.modules[{module_index}]"
@@ -88,6 +102,7 @@ class ClassroomPackageValidator:
                             f"{module_path}.blocks[{block_index}]",
                             record_id,
                             issues,
+                            knowledge_point_ids,
                         )
                     for segment_index, segment in enumerate(module.segments):
                         segment_path = f"{module_path}.segments[{segment_index}]"
@@ -98,6 +113,7 @@ class ClassroomPackageValidator:
                                 f"{segment_path}.blocks[{block_index}]",
                                 record_id,
                                 issues,
+                                knowledge_point_ids,
                             )
                 for relation_index, relation in enumerate(chapter.relations):
                     relation_path = f"{chapter_path}.relations[{relation_index}]"
@@ -278,8 +294,28 @@ class ClassroomPackageValidator:
         path: str,
         record_id: RecordId,
         issues: list[ValidationIssue],
+        knowledge_point_ids: set[str],
     ) -> None:
         record_id(block.id, f"{path}.id")
+        if not block.knowledge_point_ids:
+            issues.append(
+                ValidationIssue(
+                    severity="error",
+                    code="content_knowledge_points_required",
+                    path=f"{path}.knowledge_point_ids",
+                    message="Every teaching block must declare the knowledge points it teaches.",
+                )
+            )
+        for point_id in block.knowledge_point_ids:
+            if point_id not in knowledge_point_ids:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="unknown_content_knowledge_point",
+                        path=f"{path}.knowledge_point_ids",
+                        message=f"Knowledge point {point_id!r} is not declared by this chapter.",
+                    )
+                )
         self._validate_renderable_data(block, path, issues)
         self._find_forbidden_keys(block.data, f"{path}.data", issues)
         for branch_index, branch in enumerate(block.detail_branches):
@@ -291,7 +327,470 @@ class ClassroomPackageValidator:
                     f"{branch_path}.blocks[{block_index}]",
                     record_id,
                     issues,
+                    knowledge_point_ids,
                 )
+
+    def _validate_coverage_contract(
+        self,
+        chapter: Any,
+        path: str,
+        record_id: RecordId,
+        issues: list[ValidationIssue],
+    ) -> None:
+        required_collections = (
+            (
+                chapter.source_sections,
+                "chapter_source_sections_required",
+                "source_sections",
+                "A chapter must retain its complete ordered source sections.",
+            ),
+            (
+                chapter.knowledge_points,
+                "chapter_knowledge_points_required",
+                "knowledge_points",
+                "A chapter must enumerate every source knowledge point.",
+            ),
+            (
+                chapter.coverage_map,
+                "chapter_coverage_map_required",
+                "coverage_map",
+                "A chapter must map every knowledge point into baseline teaching content.",
+            ),
+        )
+        for values, code, field, message in required_collections:
+            if not values:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code=code,
+                        path=f"{path}.{field}",
+                        message=message,
+                    )
+                )
+        if chapter.coverage_audit is None:
+            issues.append(
+                ValidationIssue(
+                    severity="error",
+                    code="chapter_coverage_audit_required",
+                    path=f"{path}.coverage_audit",
+                    message="A second-pass coverage audit is required before publishing.",
+                )
+            )
+
+        source_by_id = {}
+        for index, section in enumerate(chapter.source_sections):
+            section_path = f"{path}.source_sections[{index}]"
+            record_id(section.id, f"{section_path}.id")
+            source_by_id[section.id] = section
+
+        knowledge_by_id = {}
+        referenced_source_ids: set[str] = set()
+        for point_index, point in enumerate(chapter.knowledge_points):
+            point_path = f"{path}.knowledge_points[{point_index}]"
+            record_id(point.id, f"{point_path}.id")
+            knowledge_by_id[point.id] = point
+            for source_id in point.source_section_ids:
+                referenced_source_ids.add(source_id)
+                if source_id not in source_by_id:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="unknown_knowledge_source",
+                            path=f"{point_path}.source_section_ids",
+                            message=f"Source section {source_id!r} does not exist.",
+                        )
+                    )
+            for quote_index, quote in enumerate(point.source_quotes):
+                quote_path = f"{point_path}.source_quotes[{quote_index}]"
+                referenced_source_ids.add(quote.source_section_id)
+                section = source_by_id.get(quote.source_section_id)
+                if section is None:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="unknown_knowledge_source",
+                            path=f"{quote_path}.source_section_id",
+                            message="Quoted source section does not exist.",
+                        )
+                    )
+                elif quote.quote not in section.content:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="source_quote_not_found",
+                            path=f"{quote_path}.quote",
+                            message="The quoted evidence is not present in the retained source section.",
+                        )
+                    )
+        for source_index, section in enumerate(chapter.source_sections):
+            if section.id not in referenced_source_ids:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="source_section_unmapped",
+                        path=f"{path}.source_sections[{source_index}].id",
+                        message="Every retained source section must contribute at least one knowledge point.",
+                    )
+                )
+
+        module_ids = {module.id for module in chapter.modules}
+        baseline_ids: set[str] = set()
+        detail_ids: set[str] = set()
+        baseline_knowledge_by_content: dict[str, set[str]] = {}
+        detail_knowledge_by_content: dict[str, set[str]] = {}
+
+        def collect_block(block: ContentBlock, *, detail: bool = False) -> None:
+            (detail_ids if detail else baseline_ids).add(block.id)
+            (
+                detail_knowledge_by_content
+                if detail
+                else baseline_knowledge_by_content
+            )[block.id] = set(block.knowledge_point_ids)
+            for branch in block.detail_branches:
+                for child in branch.blocks:
+                    collect_block(child, detail=True)
+
+        for module in chapter.modules:
+            for block in module.blocks:
+                collect_block(block)
+            for segment in module.segments:
+                for block in segment.blocks:
+                    collect_block(block)
+
+        covered_knowledge_ids: set[str] = set()
+        covered_baseline_by_point: dict[str, set[str]] = {}
+        covered_detail_by_point: dict[str, set[str]] = {}
+        for coverage_index, coverage in enumerate(chapter.coverage_map):
+            coverage_path = f"{path}.coverage_map[{coverage_index}]"
+            point = knowledge_by_id.get(coverage.knowledge_point_id)
+            if point is None:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="unknown_coverage_knowledge_point",
+                        path=f"{coverage_path}.knowledge_point_id",
+                        message="Coverage references an undeclared knowledge point.",
+                    )
+                )
+            else:
+                covered_knowledge_ids.add(point.id)
+            covered_baseline_by_point.setdefault(
+                coverage.knowledge_point_id, set()
+            ).update(coverage.baseline_content_ids)
+            covered_detail_by_point.setdefault(
+                coverage.knowledge_point_id, set()
+            ).update(coverage.detail_content_ids)
+            if coverage.module_id not in module_ids:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="unknown_coverage_module",
+                        path=f"{coverage_path}.module_id",
+                        message="Coverage references an undeclared module.",
+                    )
+                )
+            for content_id in coverage.baseline_content_ids:
+                if content_id not in baseline_ids:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="unknown_coverage_content",
+                            path=f"{coverage_path}.baseline_content_ids",
+                            message=f"Baseline content {content_id!r} does not exist.",
+                        )
+                    )
+            for content_id in coverage.detail_content_ids:
+                if content_id not in detail_ids:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="unknown_coverage_detail",
+                            path=f"{coverage_path}.detail_content_ids",
+                            message=f"Detailed content {content_id!r} does not exist.",
+                        )
+                    )
+        for point_index, point in enumerate(chapter.knowledge_points):
+            if point.id not in covered_knowledge_ids:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="knowledge_point_uncovered",
+                        path=f"{path}.knowledge_points[{point_index}].id",
+                        message="Every knowledge point must be mapped to baseline teaching content.",
+                    )
+                )
+        for content_id, point_ids in baseline_knowledge_by_content.items():
+            for point_id in point_ids:
+                if content_id not in covered_baseline_by_point.get(
+                    point_id, set()
+                ):
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="content_missing_from_coverage",
+                            path=f"{path}.coverage_map",
+                            message=(
+                                f"Baseline content {content_id!r} declares "
+                                f"knowledge point {point_id!r} but its coverage entry omits it."
+                            ),
+                        )
+                    )
+        for content_id, point_ids in detail_knowledge_by_content.items():
+            for point_id in point_ids:
+                if content_id not in covered_detail_by_point.get(
+                    point_id, set()
+                ):
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="content_missing_from_coverage",
+                            path=f"{path}.coverage_map",
+                            message=(
+                                f"Detailed content {content_id!r} declares "
+                                f"knowledge point {point_id!r} but its coverage entry omits it."
+                            ),
+                        )
+                    )
+
+        audit = chapter.coverage_audit
+        if audit is None:
+            return
+        if (
+            set(audit.source_section_ids) != set(source_by_id)
+            or set(audit.knowledge_point_ids) != set(knowledge_by_id)
+        ):
+            issues.append(
+                ValidationIssue(
+                    severity="error",
+                    code="coverage_audit_incomplete",
+                    path=f"{path}.coverage_audit",
+                    message="Coverage audit must enumerate every retained source section and knowledge point.",
+                )
+            )
+        if audit.unresolved_items:
+            issues.append(
+                ValidationIssue(
+                    severity="error",
+                    code="coverage_audit_unresolved",
+                    path=f"{path}.coverage_audit.unresolved_items",
+                    message="Coverage audit contains unresolved omissions or ambiguities.",
+                )
+            )
+
+    @staticmethod
+    def _validate_teaching_contract(
+        chapter: Any,
+        path: str,
+        issues: list[ValidationIssue],
+    ) -> None:
+        module_ids = {module.id for module in chapter.modules}
+        if chapter.overview is None:
+            issues.append(
+                ValidationIssue(
+                    severity="error",
+                    code="chapter_overview_required",
+                    path=f"{path}.overview",
+                    message="Chapter overview must state the essential question and core-module route.",
+                )
+            )
+        elif (
+            len(chapter.overview.module_order)
+            != len(set(chapter.overview.module_order))
+            or set(chapter.overview.module_order) != module_ids
+        ):
+            issues.append(
+                ValidationIssue(
+                    severity="error",
+                    code="chapter_overview_module_order_incomplete",
+                    path=f"{path}.overview.module_order",
+                    message="Chapter overview must order every core module exactly once.",
+                )
+            )
+
+        knowledge_by_id = {
+            point.id: point for point in chapter.knowledge_points
+        }
+        coverage_by_module: dict[str, set[str]] = {
+            module_id: set() for module_id in module_ids
+        }
+        coverage_count: dict[str, int] = {}
+        for coverage in chapter.coverage_map:
+            coverage_by_module.setdefault(coverage.module_id, set()).add(
+                coverage.knowledge_point_id
+            )
+            coverage_count[coverage.knowledge_point_id] = (
+                coverage_count.get(coverage.knowledge_point_id, 0) + 1
+            )
+        for point_id, count in coverage_count.items():
+            if count > 1:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="duplicate_knowledge_coverage",
+                        path=f"{path}.coverage_map",
+                        message=f"Knowledge point {point_id!r} must have one responsible core module.",
+                    )
+                )
+
+        overview_markers = (
+            "全章地图",
+            "章节地图",
+            "学习地图",
+            "全章总览",
+            "章节总览",
+            "chapter map",
+            "chapter overview",
+        )
+        dependency_graph: dict[str, set[str]] = {}
+        substantive_kinds = {
+            ContentBlockKind.PROSE,
+            ContentBlockKind.FORMULA_EXPLANATION,
+            ContentBlockKind.DERIVATION,
+            ContentBlockKind.COMPARISON,
+            ContentBlockKind.WORKED_EXAMPLE,
+            ContentBlockKind.CODE_EXPLANATION,
+            ContentBlockKind.TABLE,
+            ContentBlockKind.MATRIX,
+            ContentBlockKind.IMAGE,
+            ContentBlockKind.GROUP,
+        }
+        core_system_kinds = {
+            "concept",
+            "definition",
+            "theorem",
+            "mechanism",
+            "method",
+            "condition",
+            "application",
+        }
+        for module_index, module in enumerate(chapter.modules):
+            module_path = f"{path}.modules[{module_index}]"
+            normalized_identity = (
+                f"{module.title} {module.core_question}".casefold()
+            )
+            if any(marker in normalized_identity for marker in overview_markers):
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="overview_module_forbidden",
+                        path=module_path,
+                        message="A chapter map belongs in chapter.overview, not in the core-module list.",
+                    )
+                )
+            dependency_graph[module.id] = set()
+            for dependency in module.depends_on_module_ids:
+                if dependency not in module_ids:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="unknown_module_dependency",
+                            path=f"{module_path}.depends_on_module_ids",
+                            message=f"Dependency module {dependency!r} does not exist.",
+                        )
+                    )
+                else:
+                    dependency_graph[module.id].add(dependency)
+
+            points = [
+                knowledge_by_id[point_id]
+                for point_id in module.knowledge_point_ids
+                if point_id in knowledge_by_id
+            ]
+            if not any(
+                point.importance.value == "core"
+                and point.kind.value in core_system_kinds
+                for point in points
+            ):
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="core_module_without_core_knowledge",
+                        path=f"{module_path}.knowledge_point_ids",
+                        message="A core module must own a core conceptual system, not only examples, formulas, tips, or boundaries.",
+                    )
+                )
+            if set(module.knowledge_point_ids) != coverage_by_module.get(
+                module.id, set()
+            ):
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="module_knowledge_responsibility_mismatch",
+                        path=f"{module_path}.knowledge_point_ids",
+                        message="Module knowledge responsibility must exactly match the chapter coverage map.",
+                    )
+                )
+            detail_branch_count = sum(
+                len(block.detail_branches)
+                for block in module.blocks
+            ) + sum(
+                len(block.detail_branches)
+                for segment in module.segments
+                for block in segment.blocks
+            )
+            if detail_branch_count < 1:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="core_module_detail_expansion_required",
+                        path=module_path,
+                        message="Every core module must publish at least one substantive detailed expansion at a real learning bottleneck.",
+                    )
+                )
+            for segment_index, segment in enumerate(module.segments):
+                segment_path = (
+                    f"{module_path}.segments[{segment_index}]"
+                )
+                if not any(
+                    block.kind in substantive_kinds
+                    for block in segment.blocks
+                ):
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="learning_segment_not_substantive",
+                            path=f"{segment_path}.blocks",
+                            message="A learning segment cannot be only a heading, formula, callout, or model reference.",
+                        )
+                    )
+                if not set(segment.knowledge_point_ids) <= set(
+                    module.knowledge_point_ids
+                ):
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            code="segment_knowledge_outside_module",
+                            path=f"{segment_path}.knowledge_point_ids",
+                            message="A segment may only teach knowledge owned by its core module.",
+                        )
+                    )
+
+        visiting: set[str] = set()
+        visited: set[str] = set()
+
+        def visit(module_id: str) -> bool:
+            if module_id in visiting:
+                return True
+            if module_id in visited:
+                return False
+            visiting.add(module_id)
+            has_cycle = any(
+                visit(dependency)
+                for dependency in dependency_graph.get(module_id, set())
+            )
+            visiting.remove(module_id)
+            visited.add(module_id)
+            return has_cycle
+
+        if any(visit(module_id) for module_id in module_ids):
+            issues.append(
+                ValidationIssue(
+                    severity="error",
+                    code="module_dependency_cycle",
+                    path=f"{path}.modules",
+                    message="Core-module dependencies must form an acyclic learning route.",
+                )
+            )
 
     @staticmethod
     def _validate_renderable_data(
@@ -322,6 +821,34 @@ class ClassroomPackageValidator:
                         ),
                     )
                 )
+            if has_items:
+                for item_index, item in enumerate(items):
+                    title = (
+                        item.get("title")
+                        or item.get("name")
+                        or item.get("label")
+                    )
+                    body = (
+                        item.get("body")
+                        or item.get("text")
+                        or item.get("description")
+                        or item.get("focus")
+                        or item.get("value")
+                    )
+                    if not (
+                        isinstance(title, str)
+                        and title.strip()
+                        and isinstance(body, str)
+                        and body.strip()
+                    ):
+                        issues.append(
+                            ValidationIssue(
+                                severity="error",
+                                code="comparison_item_content_required",
+                                path=f"{path}.data.items[{item_index}]",
+                                message="Every comparison card requires a visible label and explanation.",
+                            )
+                        )
         if block.kind == ContentBlockKind.FORMULA_EXPLANATION:
             latex = data.get("latex") or data.get("formula")
             formulae = data.get("formulae")
@@ -357,6 +884,29 @@ class ClassroomPackageValidator:
                             "Formula explanation requires latex/formula or a "
                             "non-empty formulae list."
                         ),
+                    )
+                )
+            explanations = (
+                [
+                    item.get("explanation") or item.get("text")
+                    if isinstance(item, dict)
+                    else ""
+                    for item in formulae
+                ]
+                if isinstance(formulae, list) and formulae
+                else [data.get("explanation") or data.get("text")]
+            )
+            if not explanations or any(
+                not isinstance(explanation, str)
+                or not explanation.strip()
+                for explanation in explanations
+            ):
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="formula_explanation_required",
+                        path=f"{path}.data",
+                        message="Every displayed formula requires adjacent explanatory teaching copy.",
                     )
                 )
 

@@ -191,6 +191,12 @@ class LearningSessionService:
                 BaselineStepSnapshot(
                     id=segment["id"],
                     title=segment.get("title") or "继续建立完整模型",
+                    question_answered=segment.get("question_answered"),
+                    bridge_from_previous=segment.get("bridge_from_previous"),
+                    mechanism=segment.get("mechanism"),
+                    entry_assumptions=segment.get("entry_assumptions") or [],
+                    exit_understanding=segment.get("exit_understanding"),
+                    knowledge_point_ids=segment.get("knowledge_point_ids") or [],
                     blocks=segment["blocks"],
                 )
             )

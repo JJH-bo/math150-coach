@@ -18,6 +18,7 @@ def test_reference_models_install_with_deterministic_versions(tmp_path) -> None:
 
     assert [(item["model_id"], item["version"]) for item in receipts] == [
         ("binary-search-array", "m-f68d8ad029754c37"),
+        ("fourier-series-explorer", "m-4f5ab092ca68895e"),
         ("limit-neighborhood-2d", "m-9d599c49d7916566"),
     ]
 

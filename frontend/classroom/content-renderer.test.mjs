@@ -86,6 +86,115 @@ test("renderer accepts GPT-shaped comparison items and multi-formula explanation
   assert.equal((html.match(/class="math-typeset"/g) || []).length, 2);
 });
 
+test("long formulas use a stacked readable layout", () => {
+  const html = renderModule({
+    id: "long-formula",
+    title: "长公式",
+    blocks: [{
+      id: "series",
+      kind: "formula_explanation",
+      data: {
+        latex: String.raw`f(x)\sim\frac{a_0}{2}+\sum_{n=1}^{\infty}\left(a_n\cos\frac{n\pi x}{l}+b_n\sin\frac{n\pi x}{l}\right)`,
+        explanation: "长公式不能被两栏布局裁掉。",
+      },
+      detail_branches: [],
+    }],
+    segments: [],
+  });
+
+  assert.match(html, /class="formula-pair is-long"/);
+});
+
+test("legacy string comparison items remain visible instead of empty cards", () => {
+  const html = renderModule({
+    id: "legacy-comparison",
+    title: "旧课堂也必须可读",
+    blocks: [{
+      id: "comparison",
+      kind: "comparison",
+      data: {
+        title: "三个路径",
+        items: ["先判断周期", "再判断奇偶性", "最后计算系数"],
+      },
+      detail_branches: [],
+    }],
+    segments: [],
+  });
+
+  assert.match(html, /先判断周期/);
+  assert.match(html, /再判断奇偶性/);
+  assert.match(html, /最后计算系数/);
+  assert.doesNotMatch(html, /<strong><\/strong>\s*<p><\/p>/);
+});
+
+test("legacy named comparison cards keep both their label and explanation", () => {
+  const html = renderModule({
+    id: "legacy-named-comparison",
+    title: "旧命名结构",
+    blocks: [{
+      id: "comparison",
+      kind: "comparison",
+      data: {
+        items: [
+          {name: "奇函数", focus: "只保留正弦项"},
+          {name: "偶函数", focus: "只保留常数项与余弦项"},
+        ],
+      },
+      detail_branches: [],
+    }],
+    segments: [],
+  });
+
+  assert.match(html, /奇函数/);
+  assert.match(html, /只保留正弦项/);
+  assert.match(html, /偶函数/);
+  assert.match(html, /只保留常数项与余弦项/);
+});
+
+test("module and detailed expansion render their learning relationships", () => {
+  const html = renderModule({
+    id: "limit-core",
+    title: "极限机制",
+    core_question: "点值不存在时为什么仍然可以有极限？",
+    chapter_role: "建立后续连续与导数需要的邻域观点。",
+    why_indispensable: "删除它以后，极限会退化成代入技巧。",
+    novice_bridge: {
+      known_before: ["会读取函数值"],
+      missing_bridge: "从单点转向邻域",
+      concrete_anchor: "沿图像走向 x=1",
+      bridge_strategy: "先看图，再写记号",
+    },
+    blocks: [{
+      id: "intro",
+      kind: "prose",
+      data: { text: "观察邻域。" },
+      detail_branches: [{
+        id: "detail",
+        title: "换一种方式",
+        trigger_question: "为什么不是直接代入？",
+        learning_obstacle: "混淆点值和邻域趋势。",
+        representation: "counterexample",
+        focus_relation: "单点改变不改变周围趋势。",
+        bridge_steps: ["遮住单点", "改变单点后重新比较"],
+        return_connection: "回到 x→a，它不要求 x=a。",
+        blocks: [
+          { id: "d1", kind: "prose", data: { text: "先看周围。" }, detail_branches: [] },
+          { id: "d2", kind: "prose", data: { text: "再改单点。" }, detail_branches: [] },
+        ],
+      }],
+    }],
+    segments: [],
+  });
+
+  assert.match(html, /核心问题/);
+  assert.match(html, /点值不存在时为什么仍然可以有极限/);
+  assert.match(html, /本章作用/);
+  assert.match(html, /进入这一步前的桥梁/);
+  assert.match(html, /当前障碍/);
+  assert.match(html, /遮住单点/);
+  assert.match(html, /接回主线/);
+});
+
 test("renderer supports the complete layout vocabulary", () => {
   const kinds = [
     ["heading", { text: "标题", level: 3 }],

@@ -1,6 +1,7 @@
 import { projectAtlas } from "./atlas.js";
 import { createBindingRuntime } from "./bindings.js";
 import { typesetMath } from "./content-renderer.js";
+import { mountModelControls } from "./model-controls.js";
 import { createSceneStore } from "./scene-store.js";
 import { createSessionClient } from "./session-client.js";
 import { renderLearningSession } from "./scene-renderer.js";
@@ -11,10 +12,10 @@ const sceneStore = createSceneStore();
 const sessionClient = createSessionClient({ apiBase });
 const dom = Object.fromEntries([
   "loadingView", "atlasView", "atlasTitle", "courseSelect", "chapterSelect",
-  "motionToggle", "chapterRegion", "chapterTitle", "decorativeStars",
+  "motionToggle", "chapterRegion", "chapterTitle", "chapterQuestion", "chapterRoute", "decorativeStars",
   "moduleDestinations", "classroomStage", "backToAtlas", "breadcrumbs",
   "fullscreenModel", "closeFullscreenModel", "lessonContent", "modelDock",
-  "modelTitle", "modelRoot", "modelFallback", "emptyView", "toast",
+  "modelTitle", "modelControls", "modelRoot", "modelFallback", "emptyView", "toast",
 ].map((id) => [id, document.querySelector(`#${id}`)]));
 
 const state = {
@@ -25,6 +26,7 @@ const state = {
   chapterId: null,
   moduleId: null,
   modelRuntime: null,
+  modelControls: null,
   observer: null,
   activeContentId: null,
   scrollTimer: null,
@@ -84,6 +86,7 @@ function wireShell() {
   window.addEventListener("beforeunload", () => {
     saveScene();
     state.sessionEvents?.close();
+    state.modelControls?.dispose();
     state.modelRuntime?.dispose();
   });
 }
@@ -125,6 +128,10 @@ function renderChapter() {
   const chapter = currentChapter();
   if (!chapter) return;
   dom.chapterTitle.textContent = chapter.title;
+  dom.chapterQuestion.textContent = chapter.overview?.essentialQuestion
+    || "这一章要解决什么？";
+  dom.chapterRoute.textContent = chapter.overview?.learningRouteSummary
+    || "每个发光目的地代表一个完整核心模块。进入后在连续课堂中展开知识。";
   dom.decorativeStars.innerHTML = state.atlas.decorations.map((star) =>
     `<span style="left:${star.x}%;top:${star.y}%;opacity:${star.opacity}"></span>`
   ).join("");
@@ -312,6 +319,14 @@ async function mountModel(payload, saved) {
     const sourceResponse = await fetch(metadata.source_url);
     if (!sourceResponse.ok) throw new Error(`模型源代码读取失败：${sourceResponse.status}`);
     const source = await sourceResponse.text();
+    const savedSnapshot = saved?.model_snapshot || {};
+    const initialParameters = {
+      ...Object.fromEntries(
+        (metadata.manifest.parameters || []).map((spec) => [spec.id, spec.default]),
+      ),
+      ...instance.parameters,
+      ...(savedSnapshot.parameters || {}),
+    };
     dom.modelTitle.textContent = metadata.manifest.title;
     dom.modelFallback.classList.add("is-hidden");
     dom.modelRoot.classList.remove("is-hidden");
@@ -319,8 +334,8 @@ async function mountModel(payload, saved) {
       source,
       manifest: metadata.manifest,
       scenario: {
-        initial_state: saved?.model_snapshot?.state || instance.initial_state,
-        parameters: { ...instance.parameters, ...(saved?.model_snapshot || {}) },
+        initial_state: savedSnapshot.state || instance.initial_state,
+        parameters: initialParameters,
         commands: [],
       },
       root: dom.modelRoot,
@@ -348,6 +363,19 @@ async function mountModel(payload, saved) {
       controller,
       instance.instance_id,
     );
+    state.modelControls = mountModelControls({
+      root: dom.modelControls,
+      manifest: metadata.manifest,
+      instance: { ...instance, parameters: initialParameters },
+      onParameter(_parameterId, _value, parameters) {
+        mounted.model.update({ parameters });
+        saveScene();
+      },
+      onAction(actionId, actionPayload) {
+        mounted.model.perform(actionId, actionPayload);
+        saveScene();
+      },
+    });
     toggleFullscreen(saved?.viewport_mode === "fullscreen");
   } catch (error) {
     showModelFallback(`${instance.fallback_description}\n\n模型运行信息：${error.message}`);
@@ -454,6 +482,8 @@ function disposeActiveModule() {
   state.observer = null;
   state.modelRuntime?.dispose();
   state.modelRuntime = null;
+  state.modelControls?.dispose();
+  state.modelControls = null;
   state.sessionEvents?.close();
   state.sessionEvents = null;
   state.learningSession = null;
@@ -462,6 +492,8 @@ function disposeActiveModule() {
   state.activeContentId = null;
   state.openDetailIds = [];
   dom.modelRoot.replaceChildren();
+  dom.modelControls.replaceChildren();
+  dom.modelControls.classList.add("is-hidden");
 }
 
 function toggleFullscreen(active) {
@@ -471,6 +503,10 @@ function toggleFullscreen(active) {
 }
 
 function showModelFallback(message) {
+  state.modelControls?.dispose();
+  state.modelControls = null;
+  dom.modelControls.replaceChildren();
+  dom.modelControls.classList.add("is-hidden");
   dom.modelRoot.classList.add("is-hidden");
   dom.modelFallback.classList.remove("is-hidden");
   dom.modelFallback.textContent = message;

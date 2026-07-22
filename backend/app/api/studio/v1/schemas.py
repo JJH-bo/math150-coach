@@ -62,6 +62,56 @@ class ReturnLearningSessionRequest(StudioRequest):
     expected_revision: int = Field(ge=1)
 
 
+class ChapterAuthoringCapabilities(StudioRequest):
+    requires_source_sections: Literal[True]
+    requires_knowledge_ledger: Literal[True]
+    requires_exact_coverage: Literal[True]
+    requires_chapter_overview: Literal[True]
+    core_modules_are_indispensable_questions: Literal[True]
+    requires_problem_progression: Literal[True]
+    requires_beginner_bridges: Literal[True]
+    requires_detailed_expansion_per_module: Literal[True]
+    rejects_shallow_expansions: Literal[True]
+
+
+class AutonomousAuthoringCapabilities(StudioRequest):
+    starts_from_uploaded_material: Literal[True]
+    asks_for_routine_confirmation: Literal[False]
+    asks_learner_for_internal_identifiers: Literal[False]
+    repairs_validation_and_preview_failures: Literal[True]
+
+
+class LiveLearningSessionCapabilities(StudioRequest):
+    baseline_reveal_is_published_content: Literal[True]
+    supports_exact_target_expansion: Literal[True]
+    supports_nested_expansion: Literal[True]
+    requires_internal_identifiers_from_learner: Literal[False]
+
+
+class TeachingModelWorkshopCapabilities(StudioRequest):
+    contract_version: Literal["teaching_model_v1"]
+    supports_source_authoring: Literal[True]
+    requires_matching_preview_before_registration: Literal[True]
+    preview_jobs_are_durable: Literal[True]
+    requires_semantic_visual_evidence: Literal[True]
+    requires_interaction_change_evidence: Literal[True]
+    rejects_blank_or_noop_models: Literal[True]
+
+
+class StudioCapabilitiesResponse(StudioRequest):
+    studio_version: Literal["studio_v1"]
+    schema_version: Literal["classroom_package_v1"]
+    quality_contract_version: Literal["learning_quality_v1"]
+    module_structure: Literal["free_composition"]
+    content_block_kinds: list[str]
+    mutable_operations_require_idempotency_key: Literal[True]
+    learner_analysis_capabilities: list[str] = Field(max_length=0)
+    chapter_authoring: ChapterAuthoringCapabilities
+    autonomous_authoring: AutonomousAuthoringCapabilities
+    live_learning_sessions: LiveLearningSessionCapabilities
+    teaching_model_workshop: TeachingModelWorkshopCapabilities
+
+
 class WorkspaceModuleSummary(StudioRequest):
     id: str
     title: str
@@ -123,6 +173,9 @@ class WorkspaceAuthoringPolicy(StudioRequest):
     publish_after_validation: Literal[True]
     discover_identifiers_before_writes: Literal[True]
     ask_user_for_internal_identifiers: Literal[False]
+    autonomous_from_uploaded_material: Literal[True]
+    complete_chapter_coverage_required: Literal[True]
+    interactive_models_require_semantic_preview: Literal[True]
     learner_analysis_capabilities: list[str] = Field(max_length=0)
     rollback_scope: Literal[
         "explicit_request_or_failed_just_published_release"

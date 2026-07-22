@@ -32,3 +32,22 @@ test("binary search model advances deterministically", async () => {
   assert.equal(state.mid, 5);
   assert.equal(state.steps, 2);
 });
+
+test("Fourier model snapshot exposes every learner-controlled dimension", async () => {
+  const model = await loadSource("../../backend/classroom_data/model_seed/fourier-series-explorer/source.js");
+
+  assert.deepEqual(
+    model.computeFourierSnapshot(
+      "partial-sum",
+      {"harmonic-count": 9, view: "even-extension", amplitude: 1.5},
+      "jump-average",
+    ),
+    {
+      state: "partial-sum",
+      harmonicCount: 9,
+      view: "even-extension",
+      amplitude: 1.5,
+      highlightedTarget: "jump-average",
+    },
+  );
+});

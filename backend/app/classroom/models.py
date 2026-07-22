@@ -41,16 +41,92 @@ class SourceAnchor(StrictModel):
     note: str | None = None
 
 
+class SourceSection(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    asset_id: str = Field(min_length=1, max_length=120)
+    filename: str | None = Field(default=None, max_length=240)
+    order: int = Field(ge=1)
+    page: str | None = Field(default=None, max_length=120)
+    heading: str = Field(min_length=1, max_length=500)
+    content: str = Field(min_length=1, max_length=100_000)
+    content_hash: str = Field(min_length=1, max_length=200)
+
+
+class SourceQuote(StrictModel):
+    source_section_id: str = Field(min_length=1, max_length=120)
+    quote: str = Field(min_length=1, max_length=4000)
+
+
+class KnowledgePointKind(str, Enum):
+    CONCEPT = "concept"
+    DEFINITION = "definition"
+    THEOREM = "theorem"
+    MECHANISM = "mechanism"
+    METHOD = "method"
+    FORMULA = "formula"
+    CONDITION = "condition"
+    EXAMPLE = "example"
+    BOUNDARY = "boundary"
+    WARNING = "warning"
+    APPLICATION = "application"
+
+
+class KnowledgePointImportance(str, Enum):
+    CORE = "core"
+    SUPPORTING = "supporting"
+
+
+class KnowledgePoint(StrictModel):
+    id: str = Field(min_length=1, max_length=120)
+    statement: str = Field(min_length=1, max_length=4000)
+    kind: KnowledgePointKind
+    importance: KnowledgePointImportance
+    source_section_ids: list[str] = Field(min_length=1)
+    source_quotes: list[SourceQuote] = Field(min_length=1)
+
+
+class KnowledgeCoverage(StrictModel):
+    knowledge_point_id: str = Field(min_length=1, max_length=120)
+    module_id: str = Field(min_length=1, max_length=120)
+    baseline_content_ids: list[str] = Field(min_length=1)
+    detail_content_ids: list[str] = Field(default_factory=list)
+    model_instance_ids: list[str] = Field(default_factory=list)
+
+
+class CoverageAudit(StrictModel):
+    source_section_ids: list[str] = Field(min_length=1)
+    knowledge_point_ids: list[str] = Field(min_length=1)
+    unresolved_items: list[str] = Field(default_factory=list)
+    auditor_summary: str = Field(min_length=1, max_length=4000)
+
+
+class ExpansionRepresentation(str, Enum):
+    ANIMATED_VISUAL = "animated_visual"
+    ANNOTATED_DIAGRAM = "annotated_diagram"
+    SMALLER_EXAMPLE = "smaller_example"
+    COUNTEREXAMPLE = "counterexample"
+    STEP_BY_STEP_DERIVATION = "step_by_step_derivation"
+    CONCRETE_ANALOGY = "concrete_analogy"
+    LOWER_ABSTRACTION = "lower_abstraction"
+
+
 class DetailBranch(StrictModel):
     id: str = Field(min_length=1, max_length=120)
     title: str = Field(min_length=1, max_length=240)
-    blocks: list["ContentBlock"] = Field(min_length=1)
+    trigger_question: str = Field(min_length=8, max_length=2000)
+    learning_obstacle: str = Field(min_length=12, max_length=3000)
+    representation: ExpansionRepresentation
+    focus_relation: str = Field(min_length=12, max_length=3000)
+    bridge_steps: list[str] = Field(min_length=2, max_length=12)
+    blocks: list["ContentBlock"] = Field(min_length=2)
+    return_connection: str = Field(min_length=12, max_length=3000)
 
 
 class ContentBlock(StrictModel):
     id: str = Field(min_length=1, max_length=120)
     kind: ContentBlockKind
     data: dict[str, Any]
+    knowledge_point_ids: list[str] = Field(default_factory=list)
     source_anchor: SourceAnchor | None = None
     detail_branches: list[DetailBranch] = Field(default_factory=list)
 
@@ -58,20 +134,39 @@ class ContentBlock(StrictModel):
 class LearningSegment(StrictModel):
     id: str = Field(min_length=1, max_length=120)
     title: str | None = Field(default=None, max_length=240)
+    question_answered: str = Field(min_length=8, max_length=1000)
+    bridge_from_previous: str = Field(min_length=12, max_length=3000)
+    mechanism: str = Field(min_length=12, max_length=5000)
+    entry_assumptions: list[str] = Field(min_length=1, max_length=20)
+    exit_understanding: str = Field(min_length=8, max_length=2000)
+    knowledge_point_ids: list[str] = Field(min_length=1)
     blocks: list[ContentBlock] = Field(min_length=1)
+
+
+class NoviceBridge(StrictModel):
+    known_before: list[str] = Field(min_length=1, max_length=20)
+    missing_bridge: str = Field(min_length=12, max_length=3000)
+    concrete_anchor: str = Field(min_length=8, max_length=3000)
+    bridge_strategy: str = Field(min_length=12, max_length=3000)
 
 
 class CoreModule(StrictModel):
     id: str = Field(min_length=1, max_length=120)
     title: str = Field(min_length=1, max_length=240)
     summary: str | None = None
+    core_question: str = Field(min_length=8, max_length=1000)
+    chapter_role: str = Field(min_length=12, max_length=3000)
+    why_indispensable: str = Field(min_length=12, max_length=3000)
+    depends_on_module_ids: list[str] = Field(default_factory=list)
+    novice_bridge: NoviceBridge
+    knowledge_point_ids: list[str] = Field(min_length=1)
     blocks: list[ContentBlock] = Field(default_factory=list)
-    segments: list[LearningSegment] = Field(default_factory=list)
+    segments: list[LearningSegment] = Field(min_length=1)
 
     @model_validator(mode="after")
     def require_content(self) -> "CoreModule":
-        if not self.blocks and not self.segments:
-            raise ValueError("core module requires at least one block or segment")
+        if not self.segments:
+            raise ValueError("core module requires at least one learning segment")
         return self
 
 
@@ -99,6 +194,17 @@ class Chapter(StrictModel):
     title: str
     modules: list[CoreModule] = Field(min_length=1)
     relations: list[ModuleRelation] = Field(default_factory=list)
+    source_sections: list[SourceSection] = Field(default_factory=list)
+    knowledge_points: list[KnowledgePoint] = Field(default_factory=list)
+    coverage_map: list[KnowledgeCoverage] = Field(default_factory=list)
+    coverage_audit: CoverageAudit | None = None
+    overview: "ChapterOverview | None" = None
+
+
+class ChapterOverview(StrictModel):
+    essential_question: str = Field(min_length=8, max_length=1000)
+    learning_route_summary: str = Field(min_length=12, max_length=4000)
+    module_order: list[str] = Field(min_length=1)
 
 
 class Course(StrictModel):

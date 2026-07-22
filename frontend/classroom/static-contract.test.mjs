@@ -10,6 +10,7 @@ test("classroom shell has atlas, reading stage, and model observatory landmarks"
   for (const id of [
     "atlasView", "chapterRegion", "moduleDestinations", "classroomStage",
     "lessonContent", "modelDock", "modelRoot", "backToAtlas", "fullscreenModel",
+    "modelControls",
   ]) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
@@ -21,6 +22,7 @@ test("application uses only Classroom Runtime and wires continuity interactions"
   assert.match(app, /detail_branch_open/);
   assert.match(app, /classroom_scene_v1/);
   assert.match(app, /dispose/);
+  assert.match(app, /mountModelControls/);
   assert.doesNotMatch(app.toLowerCase(), /api\/challenge|submitanswer|mastery|diagnosis|score|boss/);
 });
 
@@ -47,6 +49,10 @@ test("learning stage distinguishes stable baseline from GPT detailed expansion",
   assert.match(css, /\.live-expansion/);
   assert.match(css, /\.return-connection/);
   assert.match(css, /\.gpt-learning-handoff/);
+  assert.match(css, /\.module-contract/);
+  assert.match(css, /\.segment-mechanism/);
+  assert.match(css, /\.detail-obstacle/);
+  assert.match(css, /\.expansion-bridge/);
 });
 
 test("classroom uses a real mathematics engine with readable fallback", () => {

@@ -58,13 +58,25 @@ def expansion(
         parent_expansion_id=parent_expansion_id,
         learner_question="为什么不同频率一定抵消？",
         preserved_context=["不同频率代表不同方向"],
+        learning_obstacle="只记住积分为零，却没有看见完整周期上的配对结构。",
+        previous_explanation_limit="原解释直接使用正交结论，没有展示正负面积如何逐段抵消。",
         focus_relation="异频乘积在完整周期上的正负面积配对",
         representation=ExpansionRepresentation.ANIMATED_VISUAL,
+        bridge_steps=[
+            "把完整周期切成可以一一对应的小区间。",
+            "比较每对区间上的函数乘积符号和绝对面积。",
+        ],
+        understanding_target="能够把正交积分为零解释为完整周期上的成对面积抵消。",
         blocks=[
             {
                 "id": f"{expansion_id}-bridge",
                 "kind": "prose",
                 "data": {"markdown": "先把一个完整周期分成成对的小区间。"},
+            },
+            {
+                "id": f"{expansion_id}-pair",
+                "kind": "prose",
+                "data": {"markdown": "每一段正面积都能找到大小相同的负面积与它配对。"},
             }
         ],
         return_connection="面积抵消就是正交积分等于零的几何含义。",

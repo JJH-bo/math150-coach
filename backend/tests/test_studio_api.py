@@ -62,6 +62,30 @@ def test_capabilities_describe_free_modules_and_no_analysis_systems(
     assert payload["module_structure"] == "free_composition"
     assert "formula_explanation" in payload["content_block_kinds"]
     assert payload["learner_analysis_capabilities"] == []
+    assert payload["quality_contract_version"] == "learning_quality_v1"
+    assert payload["chapter_authoring"] == {
+        "requires_source_sections": True,
+        "requires_knowledge_ledger": True,
+        "requires_exact_coverage": True,
+        "requires_chapter_overview": True,
+        "core_modules_are_indispensable_questions": True,
+        "requires_problem_progression": True,
+        "requires_beginner_bridges": True,
+        "requires_detailed_expansion_per_module": True,
+        "rejects_shallow_expansions": True,
+    }
+    assert payload["teaching_model_workshop"][
+        "requires_semantic_visual_evidence"
+    ] is True
+    assert payload["teaching_model_workshop"][
+        "requires_interaction_change_evidence"
+    ] is True
+    assert payload["autonomous_authoring"] == {
+        "starts_from_uploaded_material": True,
+        "asks_for_routine_confirmation": False,
+        "asks_learner_for_internal_identifiers": False,
+        "repairs_validation_and_preview_failures": True,
+    }
 
 
 def test_workspace_discovers_existing_authoring_targets(
@@ -120,6 +144,9 @@ def test_workspace_discovers_existing_authoring_targets(
         "publish_after_validation": True,
         "discover_identifiers_before_writes": True,
         "ask_user_for_internal_identifiers": False,
+        "autonomous_from_uploaded_material": True,
+        "complete_chapter_coverage_required": True,
+        "interactive_models_require_semantic_preview": True,
         "learner_analysis_capabilities": [],
         "rollback_scope": "explicit_request_or_failed_just_published_release",
     }

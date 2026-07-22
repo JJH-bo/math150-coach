@@ -38,6 +38,9 @@ def successful_preview(
     uncaught_errors: list[str] | None = None,
     visible_element_count: int = 3,
     painted_area: int = 120_000,
+    has_meaningful_content: bool = True,
+    interaction_exercised: bool = True,
+    interaction_changed: bool = True,
 ) -> PreviewJobRecord:
     return PreviewJobRecord(
         job_id="preview-1",
@@ -60,6 +63,14 @@ def successful_preview(
                 "height": 200,
                 "area": painted_area,
             },
+            "semantic_visual_signal": {
+                "has_meaningful_content": has_meaningful_content,
+                "visible_text_characters": 24 if has_meaningful_content else 0,
+                "svg_graphic_count": 0,
+                "canvas_distinct_colors": 4 if has_meaningful_content else 1,
+            },
+            "interaction_exercised": interaction_exercised,
+            "interaction_changed": interaction_changed,
         },
     )
 
@@ -211,6 +222,46 @@ def test_registration_rejects_visually_empty_preview(
     )
 
     with pytest.raises(ModelRegistrationError, match="no visible teaching output"):
+        authoring.register(
+            "limit-draft",
+            expected_revision=1,
+            idempotency_key="register-1",
+        )
+
+
+@pytest.mark.parametrize(
+    ("meaningful", "exercised", "changed", "message"),
+    [
+        (False, True, True, "no meaningful mathematical visual"),
+        (True, False, False, "did not exercise a learner interaction"),
+        (True, True, False, "learner interaction produced no visible or state change"),
+    ],
+)
+def test_registration_rejects_fake_or_noninteractive_teaching_models(
+    tmp_path,
+    meaningful: bool,
+    exercised: bool,
+    changed: bool,
+    message: str,
+) -> None:
+    authoring = service(tmp_path)
+    authoring.create_draft(
+        "limit-draft",
+        manifest(),
+        source(),
+        idempotency_key="create-1",
+    )
+    draft = authoring.repository.get_draft("limit-draft")
+    authoring.repository.put_preview_job(
+        successful_preview(
+            draft,
+            has_meaningful_content=meaningful,
+            interaction_exercised=exercised,
+            interaction_changed=changed,
+        )
+    )
+
+    with pytest.raises(ModelRegistrationError, match=message):
         authoring.register(
             "limit-draft",
             expected_revision=1,

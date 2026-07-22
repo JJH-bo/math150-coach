@@ -23,13 +23,31 @@ function renderExpansion(expansion, session, depth) {
         <small>${text(expansion.learner_question)}</small>
       </summary>
       <div class="live-expansion-body">
+        ${expansion.learning_obstacle ? `
+          <div class="expansion-obstacle">
+            <span>当前障碍</span>
+            <p>${text(expansion.learning_obstacle)}</p>
+          </div>
+        ` : ""}
         <div class="expansion-focus">
           <span>${text(representation)}</span>
           <p>${text(expansion.focus_relation)}</p>
         </div>
+        ${(expansion.bridge_steps || []).length ? `
+          <div class="expansion-bridge">
+            <span>重新搭桥</span>
+            <ol>${expansion.bridge_steps.map((step) => `<li>${text(step)}</li>`).join("")}</ol>
+          </div>
+        ` : ""}
         ${(expansion.blocks || []).map((block) =>
           renderBlockWithExpansions(block, session, depth + 1)
         ).join("")}
+        ${expansion.understanding_target ? `
+          <div class="expansion-target">
+            <span>这次要真正看懂</span>
+            <p>${text(expansion.understanding_target)}</p>
+          </div>
+        ` : ""}
         <div class="return-connection">
           <span>重新接回完整模型</span>
           <p>${text(expansion.return_connection)}</p>
@@ -56,11 +74,15 @@ export function renderLearningSession(session, module) {
   const total = session.baseline_steps?.length || 0;
   const hasNext = steps.length < total;
   const activeExpansionId = session.expansion_stack?.at(-1);
+  const noviceBridge = module.novice_bridge;
   return `
     <header class="module-introduction" data-content-id="${escapeHtml(module.id || session.module_id)}">
       <p class="eyebrow">Core module / stable baseline</p>
       <h1>${text(module.title)}</h1>
       ${module.summary ? `<p>${text(module.summary)}</p>` : ""}
+      ${module.core_question ? `<section class="module-contract module-core-question"><span>核心问题</span><strong>${text(module.core_question)}</strong></section>` : ""}
+      ${module.chapter_role ? `<section class="module-contract"><span>本章作用</span><p>${text(module.chapter_role)}</p></section>` : ""}
+      ${noviceBridge ? `<section class="module-contract module-novice-bridge"><span>进入模块前的桥梁</span><p>${text(noviceBridge.missing_bridge)}</p><p><strong>从这里开始：</strong>${text(noviceBridge.concrete_anchor)}</p></section>` : ""}
       <div class="session-progress" aria-label="基础学习路线进度">
         <span>当前只展开到这里</span>
         <strong>${steps.length} / ${total}</strong>
@@ -76,9 +98,13 @@ export function renderLearningSession(session, module) {
               <h2>${text(step.title)}</h2>
             </div>
           </header>
+          ${step.question_answered ? `<section class="segment-question"><span>这一步解决</span><p>${text(step.question_answered)}</p></section>` : ""}
+          ${step.bridge_from_previous ? `<section class="segment-bridge"><span>从上一理解走到这里</span><p>${text(step.bridge_from_previous)}</p></section>` : ""}
+          ${step.mechanism ? `<section class="segment-mechanism"><span>核心机制</span><p>${text(step.mechanism)}</p></section>` : ""}
           ${(step.blocks || []).map((block) =>
             renderBlockWithExpansions(block, session)
           ).join("")}
+          ${step.exit_understanding ? `<section class="segment-exit"><span>学完应当看见</span><p>${text(step.exit_understanding)}</p></section>` : ""}
         </section>
       `).join("")}
     </div>

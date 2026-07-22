@@ -17,6 +17,14 @@ function packagePayload() {
       chapters: [{
         id: "limits",
         title: "极限",
+        overview: {
+          essential_question: "函数怎样稳定接近一个目标？",
+          learning_route_summary: "从邻域机制走向严格定义与应用。",
+          module_order: [
+            "limit-core", "continuity", "applications",
+            "epsilon-delta", "infinity", "sequences",
+          ],
+        },
         modules: [
           { id: "limit-core", title: "极限核心", summary: "趋近机制" },
           { id: "continuity", title: "连续性", summary: "连续的语言" },
@@ -43,6 +51,10 @@ test("atlas keeps arbitrary complete modules as destinations", async () => {
   assert.equal(atlas.courses[0].chapters[0].destinations.length, 6);
   assert.equal(atlas.courses[0].chapters[0].destinations[0].kind, "core_module");
   assert.equal(atlas.courses[0].chapters[0].routes[0].kind, "conceptual_dependency");
+  assert.equal(
+    atlas.courses[0].chapters[0].overview.essentialQuestion,
+    "函数怎样稳定接近一个目标？",
+  );
   assert.ok(atlas.decorations.every((item) => item.interactive === false));
 });
 

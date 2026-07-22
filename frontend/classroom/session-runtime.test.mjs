@@ -91,11 +91,22 @@ test("scene renderer inserts a detailed branch directly under its parent", async
     kind: "prose",
     data: { markdown: "抵消机制" },
   };
+  current.baseline_steps[1] = {
+    ...current.baseline_steps[1],
+    question_answered: "不同频率为什么能彼此分离？",
+    bridge_from_previous: "已经看见频率不同，现在比较完整周期上的乘积面积。",
+    mechanism: "异频乘积的正负面积在完整周期上成对抵消。",
+    entry_assumptions: ["理解正负面积", "会读取周期"],
+    exit_understanding: "能把正交积分为零解释成面积抵消。",
+  };
   current.expansions[0] = {
     ...current.expansions[0],
     title: "为什么抵消",
     learner_question: "为什么？",
     focus_relation: "正负面积配对",
+    learning_obstacle: "只记住积分等于零，没有看见抵消过程。",
+    bridge_steps: ["切开完整周期", "把正负小区间配对"],
+    understanding_target: "看见每块正面积对应一块负面积。",
     representation: "animated_visual",
     return_connection: "重新接回正交性",
     blocks: [{
@@ -121,6 +132,12 @@ test("scene renderer inserts a detailed branch directly under its parent", async
   const html = renderLearningSession(current, {
     title: "傅里叶系数",
     summary: "从频率检测理解系数。",
+    core_question: "系数怎样从混合信号中只检出一个频率？",
+    chapter_role: "建立后续收敛与应用所需的系数机制。",
+    novice_bridge: {
+      missing_bridge: "从图像相似转向完整周期上的乘积面积。",
+      concrete_anchor: "先比较同频和异频波形。",
+    },
   });
 
   assert.doesNotMatch(html, /return-model/);
@@ -128,6 +145,12 @@ test("scene renderer inserts a detailed branch directly under its parent", async
   assert.ok(html.indexOf("为什么抵消") < html.indexOf("为什么成对"));
   assert.match(html, /继续展开基础路线/);
   assert.match(html, /2 \/ 3/);
+  assert.match(html, /系数怎样从混合信号中只检出一个频率/);
+  assert.match(html, /不同频率为什么能彼此分离/);
+  assert.match(html, /从上一理解走到这里/);
+  assert.match(html, /异频乘积的正负面积/);
+  assert.match(html, /当前障碍/);
+  assert.match(html, /切开完整周期/);
 });
 
 test("session client restores access and sends revision-safe reveal", async () => {

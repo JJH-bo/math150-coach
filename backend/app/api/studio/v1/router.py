@@ -25,6 +25,7 @@ from app.api.studio.v1.schemas import (
     RequestModelPreviewRequest,
     ReturnLearningSessionRequest,
     RollbackPackageRequest,
+    StudioCapabilitiesResponse,
     StudioWorkspaceResponse,
     UpdateDraftRequest,
     UpdateModelDraftRequest,
@@ -131,15 +132,37 @@ def create_studio_router(
         dependencies=[Depends(require_studio_key)],
     )
 
-    @router.get("/capabilities", operation_id="getStudioCapabilities")
-    def capabilities() -> dict:
+    @router.get(
+        "/capabilities",
+        operation_id="getStudioCapabilities",
+        response_model=StudioCapabilitiesResponse,
+    )
+    def capabilities() -> StudioCapabilitiesResponse:
         return {
             "studio_version": "studio_v1",
             "schema_version": "classroom_package_v1",
+            "quality_contract_version": "learning_quality_v1",
             "module_structure": "free_composition",
             "content_block_kinds": [kind.value for kind in ContentBlockKind],
             "mutable_operations_require_idempotency_key": True,
             "learner_analysis_capabilities": [],
+            "chapter_authoring": {
+                "requires_source_sections": True,
+                "requires_knowledge_ledger": True,
+                "requires_exact_coverage": True,
+                "requires_chapter_overview": True,
+                "core_modules_are_indispensable_questions": True,
+                "requires_problem_progression": True,
+                "requires_beginner_bridges": True,
+                "requires_detailed_expansion_per_module": True,
+                "rejects_shallow_expansions": True,
+            },
+            "autonomous_authoring": {
+                "starts_from_uploaded_material": True,
+                "asks_for_routine_confirmation": False,
+                "asks_learner_for_internal_identifiers": False,
+                "repairs_validation_and_preview_failures": True,
+            },
             "live_learning_sessions": {
                 "baseline_reveal_is_published_content": True,
                 "supports_exact_target_expansion": True,
@@ -151,6 +174,9 @@ def create_studio_router(
                 "supports_source_authoring": True,
                 "requires_matching_preview_before_registration": True,
                 "preview_jobs_are_durable": True,
+                "requires_semantic_visual_evidence": True,
+                "requires_interaction_change_evidence": True,
+                "rejects_blank_or_noop_models": True,
             },
         }
 

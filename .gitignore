@@ -9,6 +9,7 @@ htmlcov/
 .venv/
 venv/
 env/
+node_modules/
 
 # Local runtime state
 classroom_data/

@@ -29,6 +29,11 @@ export function projectAtlas(packageValue) {
     chapters: (course.chapters || []).map((chapter) => ({
       id: chapter.id,
       title: chapter.title,
+      overview: chapter.overview ? {
+        essentialQuestion: chapter.overview.essential_question,
+        learningRouteSummary: chapter.overview.learning_route_summary,
+        moduleOrder: chapter.overview.module_order || [],
+      } : null,
       destinations: (chapter.modules || []).map((module, index, modules) =>
         destination(module, index, modules.length)
       ),

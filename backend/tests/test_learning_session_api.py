@@ -63,8 +63,15 @@ def detailed_expansion_payload() -> dict:
             "parent_content_id": "limit-formula",
             "learner_question": "这里没懂，为什么不直接代入？",
             "preserved_context": ["极限描述趋近过程"],
+            "learning_obstacle": "把极限记号误读成把 x=a 直接代入函数。",
+            "previous_explanation_limit": "原解释只给出了结论，没有把点值和邻域趋势放在一起比较。",
             "focus_relation": "点值与邻域趋势是两个不同对象",
             "representation": "counterexample",
+            "bridge_steps": [
+                "先固定 x=1 周围的曲线，只改变 x=1 处的点。",
+                "再比较改变前后两侧趋近 2 的趋势是否受到影响。",
+            ],
+            "understanding_target": "能够解释为什么极限由邻域趋势决定而不是由单点赋值决定。",
             "blocks": [
                 {
                     "id": "punctured-function-counterexample",
@@ -114,11 +121,18 @@ def test_learner_creates_restores_and_reveals_fixed_baseline(
     )
 
     assert restored.status_code == 200
-    assert restored.json()["revealed_step_ids"] == ["limit-intro"]
+    first_step = restored.json()["baseline_steps"][0]
+    assert first_step["question_answered"].startswith("极限究竟观察")
+    assert first_step["bridge_from_previous"].startswith("过去读取函数")
+    assert first_step["mechanism"].startswith("极限忽略单个点")
+    assert first_step["exit_understanding"] == "能够区分点值与邻域趋势。"
+    assert restored.json()["revealed_step_ids"] == [
+        "limit-neighborhood-segment"
+    ]
     assert revealed.status_code == 200
     assert revealed.json()["revealed_step_ids"] == [
-        "limit-intro",
-        "limit-formula",
+        "limit-neighborhood-segment",
+        "limit-definition-segment",
     ]
     assert revealed.json()["expansions"] == []
 
@@ -221,6 +235,34 @@ def test_studio_patch_requires_auth_revision_and_idempotency(
         "learning_session_revision_conflict"
     )
     assert conflict.json()["detail"]["current_revision"] == 2
+
+
+def test_live_expansion_rejects_a_one_sentence_rephrasing(
+    tmp_path, monkeypatch
+) -> None:
+    client = app_client(tmp_path, monkeypatch)
+    session_id, access_token = create_session(client)
+    client.post(
+        f"/api/classroom/v1/learning-sessions/{session_id}/reveal",
+        json={"access_token": access_token, "expected_revision": 1},
+    )
+    payload = detailed_expansion_payload()
+    payload["expansion"]["blocks"] = [
+        {
+            "id": "same-words-longer",
+            "kind": "prose",
+            "data": {"text": "极限就是看邻域，不是看点值。"},
+        }
+    ]
+
+    response = client.patch(
+        f"/api/studio/v1/learning-sessions/{session_id}/scene",
+        headers=studio_headers(operation="reject-shallow-expansion"),
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    assert "substantive" in response.text
 
 
 def test_openapi_exposes_learning_session_action_operations(

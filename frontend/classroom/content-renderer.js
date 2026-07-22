@@ -63,7 +63,14 @@ function renderDetails(block) {
   return (block.detail_branches || []).map((branch) => `
     <details class="detail-branch" data-detail-id="${escapeHtml(branch.id)}" data-parent-content-id="${escapeHtml(block.id)}">
       <summary><span>详细展开</span><strong>${text(branch.title)}</strong></summary>
-      <div class="detail-content">${(branch.blocks || []).map(renderBlock).join("")}</div>
+      <div class="detail-content">
+        ${branch.trigger_question ? `<section class="detail-question"><span>触发问题</span><p>${text(branch.trigger_question)}</p></section>` : ""}
+        ${branch.learning_obstacle ? `<section class="detail-obstacle"><span>当前障碍</span><p>${text(branch.learning_obstacle)}</p></section>` : ""}
+        ${branch.focus_relation ? `<section class="detail-focus"><span>这次换一个表示方式</span><p>${text(branch.focus_relation)}</p></section>` : ""}
+        ${(branch.bridge_steps || []).length ? `<section class="detail-bridge"><span>重新搭桥</span>${steps(branch.bridge_steps)}</section>` : ""}
+        ${(branch.blocks || []).map(renderBlock).join("")}
+        ${branch.return_connection ? `<section class="detail-return"><span>接回主线</span><p>${text(branch.return_connection)}</p></section>` : ""}
+      </div>
     </details>
   `).join("");
 }
@@ -92,12 +99,15 @@ function renderFormulaExplanation(data) {
     ? `<p class="formula-introduction">${text(data.text)}</p>`
     : "";
   return `<section class="formula-explanation-set">${title}${introduction}${
-    entries.map((entry) => `
-      <div class="formula-pair">
+    entries.map((entry) => {
+      const layoutClass = entry.latex.length > 56 ? " is-long" : "";
+      return `
+      <div class="formula-pair${layoutClass}">
         <div class="formula" role="math">${formatMath(entry.latex)}</div>
         <div class="formula-explanation">${text(entry.explanation)}</div>
       </div>
-    `).join("")
+    `;
+    }).join("")
   }</section>`;
 }
 
@@ -105,12 +115,20 @@ function renderComparison(data) {
   const entries = Array.isArray(data.items)
     ? data.items
     : [data.left, data.right].filter(Boolean);
-  return `<div class="comparison-grid">${entries.map((entry) => `
+  return `<div class="comparison-grid">${entries.map((entry, index) => {
+    const normalized = typeof entry === "string"
+      ? { title: `要点 ${index + 1}`, body: entry }
+      : {
+          title: entry?.title || entry?.name || entry?.label || `要点 ${index + 1}`,
+          body: entry?.body || entry?.text || entry?.description || entry?.focus || entry?.value || "",
+        };
+    return `
     <section>
-      <strong>${text(entry?.title)}</strong>
-      <p>${text(entry?.body || entry?.text || entry?.description)}</p>
+      <strong>${text(normalized.title)}</strong>
+      <p>${text(normalized.body)}</p>
     </section>
-  `).join("")}</div>`;
+  `;
+  }).join("")}</div>`;
 }
 
 function renderBody(block) {
@@ -130,7 +148,10 @@ function renderBody(block) {
   if (block.kind === "table") return table(data.headers || [], data.rows || []);
   if (block.kind === "matrix") return table([], data.values || [], "matrix-table");
   if (block.kind === "image") return `<figure><img src="${safeUri(data.uri)}" alt="${escapeHtml(data.alt || "")}"><figcaption>${text(data.caption)}</figcaption></figure>`;
-  if (block.kind === "model_reference") return `<button class="model-reference" type="button" data-model-instance-id="${escapeHtml(data.instance_id)}">${text(data.label || "观察教学模型")}</button>`;
+  if (block.kind === "model_reference") {
+    const instanceId = data.instance_id || data.model_id || "";
+    return `<button class="model-reference" type="button" data-model-instance-id="${escapeHtml(instanceId)}">${text(data.label || data.description || "观察教学模型")}</button>`;
+  }
   if (block.kind === "group") return `<section class="content-group"><h3>${text(data.title)}</h3>${(data.blocks || []).map((child) => renderBlock({ detail_branches: [], ...child })).join("")}</section>`;
   return `<aside class="unknown-block"><strong>暂不支持的内容类型</strong><p>${text(block.kind)}</p></aside>`;
 }
@@ -150,14 +171,23 @@ export function renderModule(module) {
   const segments = (module.segments || []).map((segment, index) => `
     <section class="learning-segment" data-segment-id="${escapeHtml(segment.id)}">
       <header><span>${String(index + 1).padStart(2, "0")}</span><h2>${text(segment.title || "")}</h2></header>
+      ${segment.question_answered ? `<section class="segment-question"><span>这一步解决</span><p>${text(segment.question_answered)}</p></section>` : ""}
+      ${segment.bridge_from_previous ? `<section class="segment-bridge"><span>从上一理解走到这里</span><p>${text(segment.bridge_from_previous)}</p></section>` : ""}
+      ${segment.mechanism ? `<section class="segment-mechanism"><span>核心机制</span><p>${text(segment.mechanism)}</p></section>` : ""}
       ${(segment.blocks || []).map(renderBlock).join("")}
+      ${segment.exit_understanding ? `<section class="segment-exit"><span>学完应当看见</span><p>${text(segment.exit_understanding)}</p></section>` : ""}
     </section>
   `).join("");
+  const bridge = module.novice_bridge;
   return `
     <header class="module-introduction" data-content-id="${escapeHtml(module.id)}">
       <p class="eyebrow">Core module</p>
       <h1>${text(module.title)}</h1>
       ${module.summary ? `<p>${text(module.summary)}</p>` : ""}
+      ${module.core_question ? `<section class="module-contract module-core-question"><span>核心问题</span><strong>${text(module.core_question)}</strong></section>` : ""}
+      ${module.chapter_role ? `<section class="module-contract"><span>本章作用</span><p>${text(module.chapter_role)}</p></section>` : ""}
+      ${module.why_indispensable ? `<section class="module-contract"><span>为什么不可删除</span><p>${text(module.why_indispensable)}</p></section>` : ""}
+      ${bridge ? `<section class="module-contract module-novice-bridge"><span>进入这一步前的桥梁</span><p>${text(bridge.missing_bridge)}</p><p><strong>从这里开始：</strong>${text(bridge.concrete_anchor)}</p></section>` : ""}
     </header>
     ${continuous}
     ${segments}

@@ -130,6 +130,19 @@ class TeachingModelAuthoringService:
             raise ModelRegistrationError(
                 "preview produced no visible teaching output"
             )
+        semantic_signal = preview_report.get("semantic_visual_signal") or {}
+        if not semantic_signal.get("has_meaningful_content"):
+            raise ModelRegistrationError(
+                "preview produced no meaningful mathematical visual"
+            )
+        if not preview_report.get("interaction_exercised"):
+            raise ModelRegistrationError(
+                "preview did not exercise a learner interaction"
+            )
+        if not preview_report.get("interaction_changed"):
+            raise ModelRegistrationError(
+                "learner interaction produced no visible or state change"
+            )
 
         request = {
             "expected_revision": expected_revision,

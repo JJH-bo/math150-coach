@@ -212,6 +212,31 @@ def test_workspace_action_response_is_fully_described(monkeypatch) -> None:
     } <= workspace["properties"].keys()
 
 
+def test_capabilities_action_response_exposes_learning_quality_contract(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("STUDIO_API_KEY", "do-not-expose-this-secret")
+    schema = (
+        TestClient(create_app("mixed"))
+        .get("/api/studio/v1/action-schema.json")
+        .json()
+    )
+    response_schema = schema["paths"]["/api/studio/v1/capabilities"]["get"][
+        "responses"
+    ]["200"]["content"]["application/json"]["schema"]
+
+    assert response_schema == {
+        "$ref": "#/components/schemas/StudioCapabilitiesResponse"
+    }
+    capabilities = schema["components"]["schemas"]["StudioCapabilitiesResponse"]
+    assert {
+        "quality_contract_version",
+        "chapter_authoring",
+        "autonomous_authoring",
+        "teaching_model_workshop",
+    } <= capabilities["properties"].keys()
+
+
 def test_privacy_page_is_public_in_every_profile() -> None:
     for profile in ("learner", "internal", "mixed"):
         response = TestClient(create_app(profile)).get("/privacy")

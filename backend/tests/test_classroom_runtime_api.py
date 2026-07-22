@@ -47,8 +47,11 @@ def test_module_projection_keeps_complete_module_content(tmp_path) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["module"]["id"] == "limit-core"
-    assert len(payload["module"]["blocks"]) == 2
-    assert payload["module"]["segments"][0]["id"] == "limit-example-segment"
+    assert payload["module"]["blocks"] == []
+    assert len(payload["module"]["segments"]) == 3
+    assert payload["module"]["segments"][0]["id"] == (
+        "limit-neighborhood-segment"
+    )
 
 
 def test_runtime_payload_has_no_learner_analysis_fields(tmp_path) -> None:

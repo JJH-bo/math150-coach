@@ -47,6 +47,14 @@ def client(tmp_path, monkeypatch) -> TestClient:
                 "height": 300,
                 "area": 180_000,
             },
+            "semantic_visual_signal": {
+                "has_meaningful_content": True,
+                "visible_text_characters": 24,
+                "svg_graphic_count": 0,
+                "canvas_distinct_colors": 4,
+            },
+            "interaction_exercised": True,
+            "interaction_changed": True,
         }
 
     previews = TeachingModelPreviewService(repository, runner=runner)

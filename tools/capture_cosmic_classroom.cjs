@@ -92,9 +92,16 @@ async function main() {
         parent_content_id: parentBlock,
         parent_expansion_id: null,
         learner_question: "这里的趋近和直接代入到底有什么区别？",
+        learning_obstacle: "学习者把函数在某一点的点值与附近函数值的稳定趋势混成了同一个对象。",
+        previous_explanation_limit: "原主线给出了极限记号和结论，但没有把点值视角与邻域视角并排比较。",
         preserved_context: ["极限研究邻域行为", "当前基础路线保持不变"],
         focus_relation: "只拆开趋近过程，不改写原来的极限结论。",
         representation: "annotated_diagram",
+        bridge_steps: [
+          "先把镜头固定在 x=a 这一点，明确直接代入只读取一个点。",
+          "再逐步缩小 a 周围的邻域，比较附近函数值是否稳定靠近同一个数。",
+        ],
+        understanding_target: "能够区分点值与邻域趋势，并解释极限为什么允许 x 始终不等于 a。",
         blocks: [
           {
             id: "live-limit-lens",
@@ -139,9 +146,16 @@ async function main() {
         parent_content_id: "live-limit-formula",
         parent_expansion_id: "live-limit-visual",
         learner_question: "还是不懂，能不能给一个具体数字过程？",
+        learning_obstacle: "抽象的 x→1 仍然没有对应到可以逐个检查的具体输入与输出。",
+        previous_explanation_limit: "上一层已经区分两种视角，但镜头类比仍缺少可计算的数值过程。",
         preserved_context: ["上一层区分了点值与邻域", "目标仍是理解趋近"],
         focus_relation: "用 x=0.9、0.99、1.01、1.1 代替抽象的 x→1。",
         representation: "smaller_example",
+        bridge_steps: [
+          "先从 1 左边选择逐渐靠近的具体数，计算对应函数值。",
+          "再从 1 右边重复同样过程，检查两边是否靠近同一个结果。",
+        ],
+        understanding_target: "能用一组左右两侧的具体数值解释 x→1 时 f(x)→2。",
         blocks: [
           {
             id: "live-limit-numbers",
@@ -211,6 +225,7 @@ async function main() {
     await page.locator("#backToAtlas").click();
     await page.waitForSelector("#atlasView:not(.is-hidden)");
     await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#atlasView:not(.is-hidden)");
     report.checks.return_reload_stays_atlas =
       await page.locator("#atlasView").isVisible() &&
       !(await page.locator("#classroomStage").isVisible());

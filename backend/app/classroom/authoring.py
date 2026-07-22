@@ -201,6 +201,9 @@ class ClassroomAuthoringService:
                 "publish_after_validation": True,
                 "discover_identifiers_before_writes": True,
                 "ask_user_for_internal_identifiers": False,
+                "autonomous_from_uploaded_material": True,
+                "complete_chapter_coverage_required": True,
+                "interactive_models_require_semantic_preview": True,
                 "learner_analysis_capabilities": [],
                 "rollback_scope": (
                     "explicit_request_or_failed_just_published_release"

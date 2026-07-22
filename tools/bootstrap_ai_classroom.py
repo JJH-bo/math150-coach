@@ -7,6 +7,7 @@ from pathlib import Path
 from app.classroom.hashing import content_hash
 from app.classroom.model_repository import TeachingModelRepository
 from app.classroom.models import ClassroomPackage
+from app.classroom.quality_migration import migrate_persistent_classrooms
 from app.classroom.repository import (
     ClassroomNotFoundError,
     ClassroomRepository,
@@ -27,6 +28,10 @@ def bootstrap(
     data_root = Path(data_root)
     install_seed_models(data_root, model_seed_root)
     models = TeachingModelRepository(data_root)
+    migration = migrate_persistent_classrooms(
+        data_root,
+        model_repository=models,
+    )
     package = ClassroomPackage.model_validate(
         json.loads(Path(seed_package_path).read_text(encoding="utf-8"))
     )
@@ -47,6 +52,7 @@ def bootstrap(
                 "package_id": active.package_id,
                 "active_version": active.version,
                 "content_hash": active.content_hash,
+                "quality_migration": migration,
             }
     except ClassroomNotFoundError:
         pass
@@ -63,7 +69,10 @@ def bootstrap(
     except ClassroomNotFoundError:
         draft = repository.create_draft(draft_id, package)
     receipt = repository.publish(draft_id, draft.revision)
-    return receipt.model_dump(mode="json", exclude_none=True)
+    return {
+        **receipt.model_dump(mode="json", exclude_none=True),
+        "quality_migration": migration,
+    }
 
 
 def main() -> int:

@@ -1,0 +1,95 @@
+{
+  "contract_version": "teaching_model_v1",
+  "model_id": "fourier-series-explorer",
+  "title": "傅里叶级数交互观察器",
+  "purpose": "把周期延拓、奇偶延拓、有限部分和、谐波数量与间断点平均值放在同一坐标系中联动观察。",
+  "domains": ["calculus", "fourier-analysis"],
+  "parameters": [
+    {
+      "id": "harmonic-count",
+      "type": "integer",
+      "default": 7,
+      "minimum": 1,
+      "maximum": 25,
+      "description": "参与叠加的谐波数量"
+    },
+    {
+      "id": "view",
+      "type": "choice",
+      "default": "square-wave",
+      "choices": ["square-wave", "sawtooth", "even-extension", "odd-extension"],
+      "description": "要观察的函数或延拓方式"
+    },
+    {
+      "id": "amplitude",
+      "type": "number",
+      "default": 1,
+      "minimum": 0.5,
+      "maximum": 2,
+      "description": "原函数振幅"
+    }
+  ],
+  "states": [
+    {
+      "id": "base-interval",
+      "title": "先看基本区间",
+      "description": "突出一个周期内的原函数，并标出端点。"
+    },
+    {
+      "id": "extended-periodic",
+      "title": "观察周期延拓",
+      "description": "把基本区间向左右复制，观察周期性。"
+    },
+    {
+      "id": "discontinuity",
+      "title": "观察间断点",
+      "description": "标出左右极限与傅里叶级数的平均值。"
+    },
+    {
+      "id": "partial-sum",
+      "title": "观察有限部分和",
+      "description": "叠加有限个谐波并与目标函数比较。"
+    }
+  ],
+  "actions": [
+    {
+      "id": "highlight-jump",
+      "title": "突出间断点",
+      "payload_fields": [],
+      "description": "标出左右极限和它们的平均值。"
+    },
+    {
+      "id": "clear-highlight",
+      "title": "清除突出显示",
+      "payload_fields": []
+    }
+  ],
+  "targets": ["base-interval", "periodic-copies", "partial-sum", "jump-average"],
+  "interactions": ["parameter_change", "explicit_control"],
+  "viewport_modes": ["inline", "fullscreen"],
+  "quality_profiles": ["balanced", "reduced"],
+  "scenarios": [
+    {
+      "id": "build-square-wave",
+      "title": "增加谐波并观察方波逼近",
+      "initial_state": "partial-sum",
+      "parameters": {
+        "harmonic-count": 3,
+        "view": "square-wave",
+        "amplitude": 1
+      },
+      "commands": [
+        {
+          "kind": "update_parameters",
+          "payload": {"harmonic-count": 7}
+        },
+        {
+          "kind": "perform_action",
+          "target": "highlight-jump",
+          "payload": {}
+        }
+      ]
+    }
+  ],
+  "fallback_description": "蓝色曲线表示原周期函数，黄色曲线表示有限个正弦或余弦谐波叠加得到的傅里叶部分和；调节谐波数量可观察逼近变细，而跳跃点处仍趋向左右极限平均值。"
+}

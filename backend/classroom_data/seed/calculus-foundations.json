@@ -4,43 +4,221 @@
     {
       "chapters": [
         {
-          "id": "limits",
-          "modules": [
+          "coverage_audit": {
+            "auditor_summary": "来源、知识点与基础学习内容已经逐项核对。",
+            "knowledge_point_ids": [
+              "kp-limit-neighborhood",
+              "kp-limit-definition",
+              "kp-removable-example"
+            ],
+            "source_section_ids": [
+              "source-limit-chapter"
+            ],
+            "unresolved_items": []
+          },
+          "coverage_map": [
             {
-              "blocks": [
+              "baseline_content_ids": [
+                "limit-intro"
+              ],
+              "detail_content_ids": [
+                "limit-intro-detail-prose",
+                "limit-intro-detail-example"
+              ],
+              "knowledge_point_id": "kp-limit-neighborhood",
+              "model_instance_ids": [
+                "limit-neighborhood-view"
+              ],
+              "module_id": "limit-core"
+            },
+            {
+              "baseline_content_ids": [
+                "limit-formula"
+              ],
+              "detail_content_ids": [],
+              "knowledge_point_id": "kp-limit-definition",
+              "model_instance_ids": [
+                "limit-neighborhood-view"
+              ],
+              "module_id": "limit-core"
+            },
+            {
+              "baseline_content_ids": [
+                "limit-example"
+              ],
+              "detail_content_ids": [],
+              "knowledge_point_id": "kp-removable-example",
+              "model_instance_ids": [],
+              "module_id": "limit-core"
+            }
+          ],
+          "id": "limits",
+          "knowledge_points": [
+            {
+              "id": "kp-limit-neighborhood",
+              "importance": "core",
+              "kind": "concept",
+              "source_quotes": [
                 {
-                  "data": {
-                    "markdown": "极限描述的是变量趋近时，函数值稳定接近什么。"
-                  },
-                  "detail_branches": [
-                    {
-                      "blocks": [
-                        {
-                          "data": {
-                            "markdown": "趋近研究的是邻域行为，点值可以不存在或不同。"
-                          },
-                          "id": "limit-intro-detail-prose",
-                          "kind": "prose"
-                        }
-                      ],
-                      "id": "limit-intro-detail",
-                      "title": "为什么不是直接代入"
-                    }
-                  ],
-                  "id": "limit-intro",
-                  "kind": "prose"
-                },
-                {
-                  "data": {
-                    "explanation": "当 x 足够接近 a 时，f(x) 可以任意接近 L。",
-                    "latex": "\\lim_{x\\to a}f(x)=L"
-                  },
-                  "id": "limit-formula",
-                  "kind": "formula_explanation"
+                  "quote": "极限研究自变量趋近时函数值的邻域行为",
+                  "source_section_id": "source-limit-chapter"
                 }
               ],
+              "source_section_ids": [
+                "source-limit-chapter"
+              ],
+              "statement": "极限描述自变量趋近时函数值的邻域行为。"
+            },
+            {
+              "id": "kp-limit-definition",
+              "importance": "core",
+              "kind": "definition",
+              "source_quotes": [
+                {
+                  "quote": "当 x 趋近 a 时，如果 f(x) 任意接近 L",
+                  "source_section_id": "source-limit-chapter"
+                }
+              ],
+              "source_section_ids": [
+                "source-limit-chapter"
+              ],
+              "statement": "当 x 趋近 a 时，f(x) 任意接近 L。"
+            },
+            {
+              "id": "kp-removable-example",
+              "importance": "supporting",
+              "kind": "example",
+              "source_quotes": [
+                {
+                  "quote": "(x²-1)/(x-1) 在 x 趋近 1 时的极限为 2",
+                  "source_section_id": "source-limit-chapter"
+                }
+              ],
+              "source_section_ids": [
+                "source-limit-chapter"
+              ],
+              "statement": "可去间断点的点值不妨碍邻域极限存在。"
+            }
+          ],
+          "modules": [
+            {
+              "blocks": [],
+              "chapter_role": "建立极限的邻域观点，为连续、导数和积分提供共同语言。",
+              "core_question": "函数在点上未定义时，为什么仍然可以有极限？",
+              "depends_on_module_ids": [],
               "id": "limit-core",
+              "knowledge_point_ids": [
+                "kp-limit-neighborhood",
+                "kp-limit-definition",
+                "kp-removable-example"
+              ],
+              "novice_bridge": {
+                "bridge_strategy": "先观察具体图像，再把稳定接近的过程压缩成极限记号。",
+                "concrete_anchor": "沿着 y=x+1 的图像从左右两侧走向 x=1。",
+                "known_before": [
+                  "会读取函数值",
+                  "理解自变量可以不断接近某个数"
+                ],
+                "missing_bridge": "把关注点从 x=a 的单个点转向 a 周围的一整段邻域。"
+              },
               "segments": [
+                {
+                  "blocks": [
+                    {
+                      "data": {
+                        "markdown": "极限描述的是变量趋近时，函数值稳定接近什么，而不是只读取一个孤立点。"
+                      },
+                      "detail_branches": [
+                        {
+                          "bridge_steps": [
+                            "先遮住图像上 x=a 的单个点，只观察两侧曲线。",
+                            "再任意改变这个点的取值，比较两侧趋近趋势是否变化。"
+                          ],
+                          "blocks": [
+                            {
+                              "data": {
+                                "markdown": "趋近研究的是邻域行为：即使点值不存在或被单独改掉，周围的共同趋势仍然可能保持不变。"
+                              },
+                              "id": "limit-intro-detail-prose",
+                              "kind": "prose",
+                              "knowledge_point_ids": [
+                                "kp-limit-neighborhood"
+                              ]
+                            },
+                            {
+                              "data": {
+                                "prompt": "把 x=1 处的点值依次改成 2、100 和不存在，比较极限。",
+                                "steps": [
+                                  "先只观察 x≠1 时的曲线 y=x+1",
+                                  "三种改法都没有改变 1 附近的曲线",
+                                  "所以三种函数在 x→1 时都趋近 2"
+                                ]
+                              },
+                              "id": "limit-intro-detail-example",
+                              "kind": "worked_example",
+                              "knowledge_point_ids": [
+                                "kp-limit-neighborhood"
+                              ]
+                            }
+                          ],
+                          "focus_relation": "点值属于单个位置，极限属于去心邻域中的共同趋势。",
+                          "id": "limit-intro-detail",
+                          "learning_obstacle": "把极限误认为把 a 直接代入函数后得到的点值。",
+                          "representation": "counterexample",
+                          "return_connection": "回到极限记号时，x→a 表示接近但不要求 x=a。",
+                          "title": "为什么不是直接代入",
+                          "trigger_question": "为什么函数在 x=a 处没有值，极限却仍然存在？"
+                        }
+                      ],
+                      "id": "limit-intro",
+                      "kind": "prose",
+                      "knowledge_point_ids": [
+                        "kp-limit-neighborhood"
+                      ]
+                    }
+                  ],
+                  "bridge_from_previous": "过去读取函数时总是直接看 f(a)，现在需要观察 x 在 a 周围移动时发生什么。",
+                  "entry_assumptions": [
+                    "会读取函数图像",
+                    "理解接近与相等不同"
+                  ],
+                  "exit_understanding": "能够区分点值与邻域趋势。",
+                  "id": "limit-neighborhood-segment",
+                  "knowledge_point_ids": [
+                    "kp-limit-neighborhood"
+                  ],
+                  "mechanism": "极限忽略单个点的偶然取值，比较左右邻域中的函数值是否共同稳定接近同一目标。",
+                  "question_answered": "极限究竟观察一个点，还是观察点附近的过程？",
+                  "title": "先把视线从点值移到邻域"
+                },
+                {
+                  "blocks": [
+                    {
+                      "data": {
+                        "explanation": "当 x 足够接近 a 时，f(x) 可以任意接近 L；这里描述的是邻域中的对应关系。",
+                        "latex": "\\lim_{x\\to a}f(x)=L"
+                      },
+                      "id": "limit-formula",
+                      "kind": "formula_explanation",
+                      "knowledge_point_ids": [
+                        "kp-limit-definition"
+                      ]
+                    }
+                  ],
+                  "bridge_from_previous": "已经能口头描述邻域趋势，现在需要一个不会与点值混淆的数学记号。",
+                  "entry_assumptions": [
+                    "理解点值与邻域趋势不同",
+                    "认识函数记号 f(x)"
+                  ],
+                  "exit_understanding": "能够逐个解释极限式中的对象和关系。",
+                  "id": "limit-definition-segment",
+                  "knowledge_point_ids": [
+                    "kp-limit-definition"
+                  ],
+                  "mechanism": "x→a 指定自变量的运动方向，f(x)→L 指定函数值共同稳定接近的目标。",
+                  "question_answered": "极限记号怎样压缩刚才观察到的趋近过程？",
+                  "title": "把邻域中的稳定接近写成极限记号"
+                },
                 {
                   "blocks": [
                     {
@@ -53,18 +231,52 @@
                         ]
                       },
                       "id": "limit-example",
-                      "kind": "worked_example"
+                      "kind": "worked_example",
+                      "knowledge_point_ids": [
+                        "kp-removable-example"
+                      ]
                     }
                   ],
+                  "bridge_from_previous": "已经把极限看成邻域行为，现在用一个点上有洞的函数检验这个观点。",
+                  "entry_assumptions": [
+                    "理解趋近不等于取到",
+                    "会做因式分解"
+                  ],
+                  "exit_understanding": "能够解释点值与极限为什么可以不同。",
                   "id": "limit-example-segment",
+                  "knowledge_point_ids": [
+                    "kp-removable-example"
+                  ],
+                  "mechanism": "约去只在 x=1 处为零的公共因子后，去心邻域内的函数与 x+1 完全相同。",
+                  "question_answered": "可去间断点为什么不妨碍极限存在？",
                   "title": "用一个可消去间断点观察极限"
                 }
               ],
               "summary": "从趋近过程理解极限，而不是把它当成代入规则。",
-              "title": "极限的核心机制"
+              "title": "极限的核心机制",
+              "why_indispensable": "没有邻域观点，后续极限运算会退化成容易失效的代入技巧。"
             }
           ],
+          "overview": {
+            "essential_question": "函数不断接近某一点时，怎样描述稳定的目标值？",
+            "learning_route_summary": "先区分点值与邻域行为，再建立极限记号，最后用可去间断点落地。",
+            "module_order": [
+              "limit-core"
+            ]
+          },
           "relations": [],
+          "source_sections": [
+            {
+              "asset_id": "lecture-limit",
+              "content": "极限研究自变量趋近时函数值的邻域行为。当 x 趋近 a 时，如果 f(x) 任意接近 L，就称 L 为函数在 a 处的极限。例如 (x²-1)/(x-1) 在 x 趋近 1 时的极限为 2。",
+              "content_hash": "sha256:source-limit-chapter",
+              "filename": "极限讲义.pdf",
+              "heading": "极限的定义与可去间断点",
+              "id": "source-limit-chapter",
+              "order": 1,
+              "page": "1-2"
+            }
+          ],
           "title": "极限"
         }
       ],
