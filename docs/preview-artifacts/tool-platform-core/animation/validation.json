@@ -1,0 +1,60 @@
+{
+  "codec": "h264",
+  "distinct_frame_count": 5,
+  "duration_seconds": 2.866341145833333,
+  "expected_duration_seconds": 2.8,
+  "fps": 15.001703500124924,
+  "fps_tolerance": 0.1,
+  "frame_count": 43,
+  "frame_sheet_bytes": 26537,
+  "height": 360,
+  "images": [
+    {
+      "bytes": 25269,
+      "channel_variance": 435.5178823109568,
+      "name": "poster.png",
+      "unique_colors": 558
+    },
+    {
+      "bytes": 26537,
+      "channel_variance": 84.42373480902776,
+      "name": "frame-sheet.png",
+      "unique_colors": 134
+    }
+  ],
+  "manim_version": "0.20.1",
+  "nonblank": true,
+  "nonblank_sample_count": 4,
+  "passed": true,
+  "poster_bytes": 25269,
+  "requested_fps": 15,
+  "sample_metrics": [
+    {
+      "channel_variance": 0.0,
+      "sha256": "f73d4ff1c4c3a5e1d7b4909c664d2f21b673ad47445d8642c447557bd3fcab8c",
+      "unique_colors": 1
+    },
+    {
+      "channel_variance": 203.2339548177083,
+      "sha256": "405f306a004b7cc8e5b7ee227e4902f59973b4dfdea0f4204c47a377df3066e9",
+      "unique_colors": 445
+    },
+    {
+      "channel_variance": 435.5178823109568,
+      "sha256": "4b440fc04dd01486bebd475f94fef82ff1c117dfc54ec835bc4d5f4bcd6f609f",
+      "unique_colors": 558
+    },
+    {
+      "channel_variance": 435.0303165991512,
+      "sha256": "d0a237ad2267e83f7f7588c2fc136d59950982ecead3ab6562be974576453342",
+      "unique_colors": 565
+    },
+    {
+      "channel_variance": 434.44004142554013,
+      "sha256": "2ef20ab880f81f291cab95301aa15dc022330c320f1943cb43f479f06e35c5c9",
+      "unique_colors": 612
+    }
+  ],
+  "video_bytes": 37922,
+  "width": 640
+}

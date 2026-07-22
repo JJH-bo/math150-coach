@@ -66,67 +66,67 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1524eedc13aa45b7932b7473/artifacts/lesson-spec.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-e2d81390344e442ba4119797/artifacts/lesson-spec.json",
       "media_type": "application/json",
       "name": "lesson-spec.json",
       "sha256": "sha256:fb0550afa05362da2e5083b371214cd8b3a6582531564bc83943c01edd50f567",
       "size_bytes": 3627
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1524eedc13aa45b7932b7473/artifacts/lesson.html",
+      "download_path": "/api/studio/v1/tool-jobs/tj-e2d81390344e442ba4119797/artifacts/lesson.html",
       "media_type": "text/html",
       "name": "lesson.html",
       "sha256": "sha256:37250822cb48136195864d388aa1e2116510d1b718d2ea4a2fa19022d04bc0c5",
       "size_bytes": 769231
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1524eedc13aa45b7932b7473/artifacts/lesson.pdf",
+      "download_path": "/api/studio/v1/tool-jobs/tj-e2d81390344e442ba4119797/artifacts/lesson.pdf",
       "media_type": "application/pdf",
       "name": "lesson.pdf",
-      "sha256": "sha256:cd8fe7c13010bfe7bd98cad340d461d550f6b52de093b59155e4b131d87eed65",
+      "sha256": "sha256:13e7a690e73b07f44f2aacb74fa299c0e606bdbab4e487edeb486c8e7426045e",
       "size_bytes": 44938
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1524eedc13aa45b7932b7473/artifacts/render-report.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-e2d81390344e442ba4119797/artifacts/render-report.json",
       "media_type": "application/json",
       "name": "render-report.json",
       "sha256": "sha256:b554938fee5869d05bbb59a1744ec6dea0c662bbf0ed11e6ceabe311addc060f",
       "size_bytes": 1373
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1524eedc13aa45b7932b7473/artifacts/slide-001.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-e2d81390344e442ba4119797/artifacts/slide-001.png",
       "media_type": "image/png",
       "name": "slide-001.png",
-      "sha256": "sha256:859e381c874866af20dde95407c1243d5aabf3f2c95bf3ac853c8c13a472c08a",
-      "size_bytes": 46567
+      "sha256": "sha256:81d4cd884765480797a865a92291ad55cb416cb6adf55cce9ba52f2896303623",
+      "size_bytes": 46460
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1524eedc13aa45b7932b7473/artifacts/slide-002.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-e2d81390344e442ba4119797/artifacts/slide-002.png",
       "media_type": "image/png",
       "name": "slide-002.png",
-      "sha256": "sha256:251af5d9d02db170dd2b2fe88176fe1a7e1d0dee715e1f4dc7054adad55c7fba",
-      "size_bytes": 56783
+      "sha256": "sha256:ac7b30b3d3763c0547a6390eae23e5e8dc501eadeb813916ffbf4f7378d75622",
+      "size_bytes": 56811
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1524eedc13aa45b7932b7473/artifacts/slide-003.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-e2d81390344e442ba4119797/artifacts/slide-003.png",
       "media_type": "image/png",
       "name": "slide-003.png",
-      "sha256": "sha256:b858240c818a97b8dc3fdeaf476fd54057c511e55359d8f3ac3658ad77987138",
-      "size_bytes": 48296
+      "sha256": "sha256:51b209e5074c60541bc48520a4aa0d65539f53fc286d47e8c6220e4ee34fcfbb",
+      "size_bytes": 48209
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1524eedc13aa45b7932b7473/artifacts/slide-004.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-e2d81390344e442ba4119797/artifacts/slide-004.png",
       "media_type": "image/png",
       "name": "slide-004.png",
-      "sha256": "sha256:bf2104cea693475c8d5b4ed646d256f08d264640268f3c58f681a11d77889f78",
-      "size_bytes": 48861
+      "sha256": "sha256:8034232f592de2da935c618857633a3bce0deb072eb759498ec83e8357f82868",
+      "size_bytes": 48859
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:31:29.755955Z",
+  "created_at": "2026-07-22T10:48:16.881759Z",
   "error": null,
-  "finished_at": "2026-07-22T10:31:31.481386Z",
-  "job_id": "tj-1524eedc13aa45b7932b7473",
+  "finished_at": "2026-07-22T10:48:18.453624Z",
+  "job_id": "tj-e2d81390344e442ba4119797",
   "metrics": {
     "html_bytes": 769231,
     "pdf_bytes": 44938,
@@ -257,7 +257,7 @@
     "slide_count": 4,
     "template": "concept_journey"
   },
-  "started_at": "2026-07-22T10:31:29.771954Z",
+  "started_at": "2026-07-22T10:48:16.893558Z",
   "state": "succeeded",
   "tool_id": "export.reveal",
   "tool_version": "1.0.0",

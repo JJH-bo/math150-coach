@@ -354,6 +354,108 @@ def scene3d_payload() -> dict[str, Any]:
     }
 
 
+def animation_payload() -> dict[str, Any]:
+    return {
+        "title": "A point follows a sampled quadratic curve",
+        "alt_text": (
+            "An animated coordinate plane draws a blue quadratic curve, then moves a "
+            "yellow point from the left branch toward the minimum at the origin."
+        ),
+        "width": 640,
+        "height": 360,
+        "fps": 15,
+        "background": "#0B1119",
+        "output_format": "mp4",
+        "objects": [
+            {
+                "id": "axes",
+                "type": "axes",
+                "x_range": [-3, 3, 1],
+                "y_range": [0, 5, 1],
+                "x_length": 8,
+                "y_length": 4.5,
+                "position": [0, -0.3],
+                "color": "#9FB0C3",
+            },
+            {
+                "id": "curve",
+                "type": "polyline",
+                "axes_id": "axes",
+                "points": [
+                    [-2, 4],
+                    [-1.5, 2.25],
+                    [-1, 1],
+                    [0, 0],
+                    [1, 1],
+                    [1.5, 2.25],
+                    [2, 4],
+                ],
+                "color": "#33C3FF",
+                "stroke_width": 6,
+            },
+            {
+                "id": "moving-point",
+                "type": "dot",
+                "position": [-2.65, 1.5],
+                "radius": 0.12,
+                "color": "#F6C85F",
+            },
+            {
+                "id": "label",
+                "type": "text",
+                "text": "x² approaches its minimum",
+                "position": [0, 3.3],
+                "font_size": 30,
+                "color": "#F4F7FB",
+            },
+        ],
+        "timeline": [
+            {
+                "action": "create",
+                "object_id": "axes",
+                "duration": 0.3,
+                "caption": "A coordinate plane establishes the input and output scales.",
+            },
+            {
+                "action": "create",
+                "object_id": "curve",
+                "duration": 0.5,
+                "caption": "The sampled quadratic curve appears symmetrically around the origin.",
+            },
+            {
+                "action": "write",
+                "object_id": "label",
+                "duration": 0.3,
+                "caption": "The label states that the curve approaches its minimum.",
+            },
+            {
+                "action": "fade_in",
+                "object_id": "moving-point",
+                "duration": 0.2,
+                "caption": "A yellow point marks a location on the left branch.",
+            },
+            {
+                "action": "move_to",
+                "object_id": "moving-point",
+                "to": [0, -0.3],
+                "duration": 0.8,
+                "caption": "The point moves toward the origin and the minimum value.",
+            },
+            {
+                "action": "indicate",
+                "object_id": "moving-point",
+                "duration": 0.4,
+                "caption": "The origin is highlighted as the minimum of the quadratic.",
+            },
+            {
+                "action": "wait",
+                "duration": 0.3,
+                "caption": "The final frame holds the completed mathematical relationship.",
+            },
+        ],
+    }
+
+
 def generate(output_root: Path) -> None:
     studio_key = "temporary-evidence-key-never-serialized"
     port = free_port()
@@ -633,6 +735,14 @@ def generate(output_root: Path) -> None:
                 timeout_seconds=90,
                 arguments=scene3d_payload(),
             )
+            jobs["animation"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-quadratic-manim-animation-v1",
+                tool_id="visualization.animation",
+                timeout_seconds=180,
+                arguments=animation_payload(),
+            )
             jobs["template-list"] = submit_and_wait(
                 origin,
                 studio_key,
@@ -756,6 +866,8 @@ def generate(output_root: Path) -> None:
                 write_bytes(output_root / "geometry2d" / artifact_name, content)
             for artifact_name, content in artifacts["scene3d"].items():
                 write_bytes(output_root / "scene3d" / artifact_name, content)
+            for artifact_name, content in artifacts["animation"].items():
+                write_bytes(output_root / "animation" / artifact_name, content)
             for asset_job in ("asset-ingest", "asset-transform"):
                 for artifact_name, content in artifacts[asset_job].items():
                     write_bytes(

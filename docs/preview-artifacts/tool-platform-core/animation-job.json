@@ -1,0 +1,278 @@
+{
+  "argument_hash": "sha256:899e0b9df7a82aca97d21d9f5a13f217cadafa5267dee5acd26fbb757bb9369d",
+  "arguments": {
+    "alt_text": "An animated coordinate plane draws a blue quadratic curve, then moves a yellow point from the left branch toward the minimum at the origin.",
+    "background": "#0B1119",
+    "fps": 15,
+    "height": 360,
+    "objects": [
+      {
+        "color": "#9FB0C3",
+        "id": "axes",
+        "position": [
+          0,
+          -0.3
+        ],
+        "type": "axes",
+        "x_length": 8,
+        "x_range": [
+          -3,
+          3,
+          1
+        ],
+        "y_length": 4.5,
+        "y_range": [
+          0,
+          5,
+          1
+        ]
+      },
+      {
+        "axes_id": "axes",
+        "color": "#33C3FF",
+        "id": "curve",
+        "points": [
+          [
+            -2,
+            4
+          ],
+          [
+            -1.5,
+            2.25
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1.5,
+            2.25
+          ],
+          [
+            2,
+            4
+          ]
+        ],
+        "stroke_width": 6,
+        "type": "polyline"
+      },
+      {
+        "color": "#F6C85F",
+        "id": "moving-point",
+        "position": [
+          -2.65,
+          1.5
+        ],
+        "radius": 0.12,
+        "type": "dot"
+      },
+      {
+        "color": "#F4F7FB",
+        "font_size": 30,
+        "id": "label",
+        "position": [
+          0,
+          3.3
+        ],
+        "text": "x² approaches its minimum",
+        "type": "text"
+      }
+    ],
+    "output_format": "mp4",
+    "timeline": [
+      {
+        "action": "create",
+        "caption": "A coordinate plane establishes the input and output scales.",
+        "duration": 0.3,
+        "object_id": "axes"
+      },
+      {
+        "action": "create",
+        "caption": "The sampled quadratic curve appears symmetrically around the origin.",
+        "duration": 0.5,
+        "object_id": "curve"
+      },
+      {
+        "action": "write",
+        "caption": "The label states that the curve approaches its minimum.",
+        "duration": 0.3,
+        "object_id": "label"
+      },
+      {
+        "action": "fade_in",
+        "caption": "A yellow point marks a location on the left branch.",
+        "duration": 0.2,
+        "object_id": "moving-point"
+      },
+      {
+        "action": "move_to",
+        "caption": "The point moves toward the origin and the minimum value.",
+        "duration": 0.8,
+        "object_id": "moving-point",
+        "to": [
+          0,
+          -0.3
+        ]
+      },
+      {
+        "action": "indicate",
+        "caption": "The origin is highlighted as the minimum of the quadratic.",
+        "duration": 0.4,
+        "object_id": "moving-point"
+      },
+      {
+        "action": "wait",
+        "caption": "The final frame holds the completed mathematical relationship.",
+        "duration": 0.3
+      }
+    ],
+    "title": "A point follows a sampled quadratic curve",
+    "width": 640
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/animation.json",
+      "media_type": "application/json",
+      "name": "animation.json",
+      "sha256": "sha256:55c2de3444099e2e5efe6735b35aa1893660248b560d94aee43ace15e965479f",
+      "size_bytes": 3330
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/animation.mp4",
+      "media_type": "video/mp4",
+      "name": "animation.mp4",
+      "sha256": "sha256:bbfe3425fee348d555d9f246d3e218270579791d7d8b44d28c7470ab6b56783f",
+      "size_bytes": 37922
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/poster.png",
+      "media_type": "image/png",
+      "name": "poster.png",
+      "sha256": "sha256:bc15deead4d7c481d457702512f3cca5e66e78016d06ed608496c1a3d39b99df",
+      "size_bytes": 25269
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/frame-sheet.png",
+      "media_type": "image/png",
+      "name": "frame-sheet.png",
+      "sha256": "sha256:f29b158960156e686438ecdc70fe8a92a61641f48b7cc8dd075c524e7bff498f",
+      "size_bytes": 26537
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/captions.vtt",
+      "media_type": "text/vtt",
+      "name": "captions.vtt",
+      "sha256": "sha256:a614285b3ae22ffcc847108461461544965f95039007f66916cd92c01f667b20",
+      "size_bytes": 683
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/alt.txt",
+      "media_type": "text/plain",
+      "name": "alt.txt",
+      "sha256": "sha256:0a1f3acc06b7e0c25b61b76385e0a8824af7a8db0313d2980c88fe61188c6a7e",
+      "size_bytes": 141
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/validation.json",
+      "media_type": "application/json",
+      "name": "validation.json",
+      "sha256": "sha256:2b59533667aadfa4c4f5af931c198f008a0817fec1b1ca370beb1494a2d22e41",
+      "size_bytes": 1643
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T10:48:09.546700Z",
+  "error": null,
+  "finished_at": "2026-07-22T10:48:11.390368Z",
+  "job_id": "tj-c7eb49ae48bc410bb13dd06f",
+  "metrics": {
+    "action_count": 7,
+    "duration_seconds": 2.866341145833333,
+    "frame_count": 43,
+    "object_count": 4,
+    "video_bytes": 37922
+  },
+  "required_scope": "studio.render",
+  "result": {
+    "action_count": 7,
+    "alt_text": "An animated coordinate plane draws a blue quadratic curve, then moves a yellow point from the left branch toward the minimum at the origin.",
+    "duration_seconds": 2.8,
+    "object_count": 4,
+    "output_format": "mp4",
+    "scene_sha256": "sha256:0a1b45a6828667f20ae90d3be64c129611c0adaa9793c394fe6c4bec5191c008",
+    "title": "A point follows a sampled quadratic curve",
+    "validation": {
+      "codec": "h264",
+      "distinct_frame_count": 5,
+      "duration_seconds": 2.866341145833333,
+      "expected_duration_seconds": 2.8,
+      "fps": 15.001703500124924,
+      "fps_tolerance": 0.1,
+      "frame_count": 43,
+      "frame_sheet_bytes": 26537,
+      "height": 360,
+      "images": [
+        {
+          "bytes": 25269,
+          "channel_variance": 435.5178823109568,
+          "name": "poster.png",
+          "unique_colors": 558
+        },
+        {
+          "bytes": 26537,
+          "channel_variance": 84.42373480902776,
+          "name": "frame-sheet.png",
+          "unique_colors": 134
+        }
+      ],
+      "manim_version": "0.20.1",
+      "nonblank": true,
+      "nonblank_sample_count": 4,
+      "passed": true,
+      "poster_bytes": 25269,
+      "requested_fps": 15,
+      "sample_metrics": [
+        {
+          "channel_variance": 0.0,
+          "sha256": "f73d4ff1c4c3a5e1d7b4909c664d2f21b673ad47445d8642c447557bd3fcab8c",
+          "unique_colors": 1
+        },
+        {
+          "channel_variance": 203.2339548177083,
+          "sha256": "405f306a004b7cc8e5b7ee227e4902f59973b4dfdea0f4204c47a377df3066e9",
+          "unique_colors": 445
+        },
+        {
+          "channel_variance": 435.5178823109568,
+          "sha256": "4b440fc04dd01486bebd475f94fef82ff1c117dfc54ec835bc4d5f4bcd6f609f",
+          "unique_colors": 558
+        },
+        {
+          "channel_variance": 435.0303165991512,
+          "sha256": "d0a237ad2267e83f7f7588c2fc136d59950982ecead3ab6562be974576453342",
+          "unique_colors": 565
+        },
+        {
+          "channel_variance": 434.44004142554013,
+          "sha256": "2ef20ab880f81f291cab95301aa15dc022330c320f1943cb43f479f06e35c5c9",
+          "unique_colors": 612
+        }
+      ],
+      "video_bytes": 37922,
+      "width": 640
+    }
+  },
+  "started_at": "2026-07-22T10:48:09.557620Z",
+  "state": "succeeded",
+  "tool_id": "visualization.animation",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

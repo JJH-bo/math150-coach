@@ -1,0 +1,1 @@
+An animated coordinate plane draws a blue quadratic curve, then moves a yellow point from the left branch toward the minimum at the origin.

@@ -66,14 +66,14 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cca549e8eb9244e5b62ac897/artifacts/patched-package.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-b3fe855ad2a14c448827b3b1/artifacts/patched-package.json",
       "media_type": "application/json",
       "name": "patched-package.json",
       "sha256": "sha256:e368098c1b5b1f3e8e6128d3fe651bcac5b9072667d9dcfa10b961579cca308b",
       "size_bytes": 14730
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cca549e8eb9244e5b62ac897/artifacts/patch-report.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-b3fe855ad2a14c448827b3b1/artifacts/patch-report.json",
       "media_type": "application/json",
       "name": "patch-report.json",
       "sha256": "sha256:50d2561f5407dce5c7b98fe35176342d2c8a248217d50f198fe7fd2819d5c5c5",
@@ -81,10 +81,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:31:13.295480Z",
+  "created_at": "2026-07-22T10:47:58.924360Z",
   "error": null,
-  "finished_at": "2026-07-22T10:31:13.336002Z",
-  "job_id": "tj-cca549e8eb9244e5b62ac897",
+  "finished_at": "2026-07-22T10:47:58.976829Z",
+  "job_id": "tj-b3fe855ad2a14c448827b3b1",
   "metrics": {
     "changed_object_count": 1,
     "operation_count": 1,
@@ -108,7 +108,7 @@
       "passed": true
     }
   },
-  "started_at": "2026-07-22T10:31:13.306713Z",
+  "started_at": "2026-07-22T10:47:58.939479Z",
   "state": "succeeded",
   "tool_id": "classroom.patch",
   "tool_version": "1.0.0",

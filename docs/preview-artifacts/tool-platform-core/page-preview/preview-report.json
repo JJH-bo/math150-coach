@@ -7,10 +7,10 @@
       "unique_colors": 1588
     },
     {
-      "bytes": 89835,
-      "channel_variance": 1983.071455247852,
+      "bytes": 92829,
+      "channel_variance": 1938.6694629453305,
       "name": "mobile.png",
-      "unique_colors": 1750
+      "unique_colors": 1685
     }
   ],
   "module_id": "limit-core",

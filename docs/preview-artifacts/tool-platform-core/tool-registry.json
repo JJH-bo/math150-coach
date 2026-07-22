@@ -2910,6 +2910,150 @@
     {
       "cacheable": true,
       "category": "visualization",
+      "description": "Render a bounded declarative scene and pedagogical timeline with Manim Community. Supports axes, sampled curves, points, lines, vectors, shapes, and Unicode mathematical labels plus create, write, transform, movement, highlight, color, fade, and wait actions. Emits MP4/WebM/GIF, poster, frame sheet, timed captions, alt text, and decoded-video quality evidence. The input never accepts Python, Manim source, shell commands, or paths.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "maxLength": 2000,
+            "minLength": 40,
+            "type": "string"
+          },
+          "background": {
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "type": "string"
+          },
+          "fps": {
+            "maximum": 60,
+            "minimum": 12,
+            "type": "integer"
+          },
+          "height": {
+            "maximum": 1080,
+            "minimum": 270,
+            "type": "integer"
+          },
+          "objects": {
+            "items": {
+              "type": "object"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "type": "array"
+          },
+          "output_format": {
+            "enum": [
+              "mp4",
+              "webm",
+              "gif"
+            ],
+            "type": "string"
+          },
+          "timeline": {
+            "items": {
+              "type": "object"
+            },
+            "maxItems": 60,
+            "minItems": 2,
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "width": {
+            "maximum": 1920,
+            "minimum": 480,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "objects",
+          "timeline",
+          "output_format"
+        ],
+        "type": "object"
+      },
+      "license": "MIT",
+      "max_artifact_bytes": 536870912,
+      "max_artifacts": 7,
+      "output_media_types": [
+        "application/json",
+        "video/mp4",
+        "video/webm",
+        "image/gif",
+        "image/png",
+        "text/vtt",
+        "text/plain"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "action_count": {
+            "type": "integer"
+          },
+          "alt_text": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "type": "number"
+          },
+          "object_count": {
+            "type": "integer"
+          },
+          "output_format": {
+            "type": "string"
+          },
+          "scene_sha256": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "validation": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "output_format",
+          "object_count",
+          "action_count",
+          "duration_seconds",
+          "scene_sha256",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "structured_non_executable_scene",
+        "bounded_objects_and_timeline",
+        "required_descriptive_alt_text",
+        "timed_action_captions",
+        "manim_community_0_20_1",
+        "decoded_media_dimensions_and_fps",
+        "representative_frame_sheet",
+        "distinct_scene_states",
+        "pixel_variance_nonblank",
+        "artifact_signature_verified"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.render",
+      "timeout_seconds": 600,
+      "title": "Verified structured mathematical animation",
+      "tool_id": "visualization.animation",
+      "upstream_project": "Manim Community 0.20.1",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "visualization",
       "description": "Render bounded node-edge diagrams through Mermaid 11 and real Chromium. The GPT supplies structured nodes and edges rather than executable Mermaid source. Outputs include canonical JSON/source, accessible self-contained SVG/HTML, PNG, alt text, and clipping/pixel/browser QA.",
       "deterministic": true,
       "execution_mode": "async",
@@ -3564,5 +3708,5 @@
       "version": "1.0.0"
     }
   ],
-  "total": 19
+  "total": 20
 }

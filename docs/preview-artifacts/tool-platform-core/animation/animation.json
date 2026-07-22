@@ -1,0 +1,152 @@
+{
+  "alt_text": "An animated coordinate plane draws a blue quadratic curve, then moves a yellow point from the left branch toward the minimum at the origin.",
+  "background": "#0B1119",
+  "fps": 15,
+  "height": 360,
+  "objects": [
+    {
+      "color": "#9FB0C3",
+      "id": "axes",
+      "position": [
+        0.0,
+        -0.3
+      ],
+      "type": "axes",
+      "x_length": 8.0,
+      "x_range": [
+        -3.0,
+        3.0,
+        1.0
+      ],
+      "y_length": 4.5,
+      "y_range": [
+        0.0,
+        5.0,
+        1.0
+      ]
+    },
+    {
+      "axes_id": "axes",
+      "color": "#33C3FF",
+      "id": "curve",
+      "points": [
+        [
+          -2.0,
+          4.0
+        ],
+        [
+          -1.5,
+          2.25
+        ],
+        [
+          -1.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          1.0
+        ],
+        [
+          1.5,
+          2.25
+        ],
+        [
+          2.0,
+          4.0
+        ]
+      ],
+      "stroke_width": 6.0,
+      "type": "polyline"
+    },
+    {
+      "color": "#F6C85F",
+      "id": "moving-point",
+      "position": [
+        -2.65,
+        1.5
+      ],
+      "radius": 0.12,
+      "type": "dot"
+    },
+    {
+      "color": "#F4F7FB",
+      "font_size": 30,
+      "id": "label",
+      "position": [
+        0.0,
+        3.3
+      ],
+      "text": "x² approaches its minimum",
+      "type": "text"
+    }
+  ],
+  "output_format": "mp4",
+  "timeline": [
+    {
+      "action": "create",
+      "caption": "A coordinate plane establishes the input and output scales.",
+      "duration": 0.3,
+      "end_seconds": 0.3,
+      "object_id": "axes",
+      "start_seconds": 0.0
+    },
+    {
+      "action": "create",
+      "caption": "The sampled quadratic curve appears symmetrically around the origin.",
+      "duration": 0.5,
+      "end_seconds": 0.8,
+      "object_id": "curve",
+      "start_seconds": 0.3
+    },
+    {
+      "action": "write",
+      "caption": "The label states that the curve approaches its minimum.",
+      "duration": 0.3,
+      "end_seconds": 1.1,
+      "object_id": "label",
+      "start_seconds": 0.8
+    },
+    {
+      "action": "fade_in",
+      "caption": "A yellow point marks a location on the left branch.",
+      "duration": 0.2,
+      "end_seconds": 1.3,
+      "object_id": "moving-point",
+      "start_seconds": 1.1
+    },
+    {
+      "action": "move_to",
+      "caption": "The point moves toward the origin and the minimum value.",
+      "duration": 0.8,
+      "end_seconds": 2.1,
+      "object_id": "moving-point",
+      "start_seconds": 1.3,
+      "to": [
+        0.0,
+        -0.3
+      ]
+    },
+    {
+      "action": "indicate",
+      "caption": "The origin is highlighted as the minimum of the quadratic.",
+      "color": "#F6C85F",
+      "duration": 0.4,
+      "end_seconds": 2.5,
+      "object_id": "moving-point",
+      "start_seconds": 2.1
+    },
+    {
+      "action": "wait",
+      "caption": "The final frame holds the completed mathematical relationship.",
+      "duration": 0.3,
+      "end_seconds": 2.8,
+      "start_seconds": 2.5
+    }
+  ],
+  "title": "A point follows a sampled quadratic curve",
+  "width": 640
+}

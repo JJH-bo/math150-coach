@@ -179,42 +179,42 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1c9f9bf5c46f4c96b02d6e74/artifacts/scene.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-a629053eacfe46a88c2cb6ce/artifacts/scene.json",
       "media_type": "application/json",
       "name": "scene.json",
       "sha256": "sha256:304e3119dfb29976917d8d1b0f0f35713bdfde35ec7d99d42716509ec812bec6",
       "size_bytes": 3032
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1c9f9bf5c46f4c96b02d6e74/artifacts/scene.html",
+      "download_path": "/api/studio/v1/tool-jobs/tj-a629053eacfe46a88c2cb6ce/artifacts/scene.html",
       "media_type": "text/html",
       "name": "scene.html",
       "sha256": "sha256:3feed81b430b2ebbb9b2bfb079a42cf5924209babccc7a11e21ce479b3d0b1ee",
       "size_bytes": 775989
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1c9f9bf5c46f4c96b02d6e74/artifacts/poster.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-a629053eacfe46a88c2cb6ce/artifacts/poster.png",
       "media_type": "image/png",
       "name": "poster.png",
       "sha256": "sha256:750d9997b90aff8250764e3b012445893a68505b457ff10eee195e52be86dee2",
       "size_bytes": 187045
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1c9f9bf5c46f4c96b02d6e74/artifacts/interaction.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-a629053eacfe46a88c2cb6ce/artifacts/interaction.png",
       "media_type": "image/png",
       "name": "interaction.png",
       "sha256": "sha256:d944bdedac00c79b39c162c75c508af2ab305a3da145b2e52517d7bacc6b9300",
       "size_bytes": 162366
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1c9f9bf5c46f4c96b02d6e74/artifacts/alt.txt",
+      "download_path": "/api/studio/v1/tool-jobs/tj-a629053eacfe46a88c2cb6ce/artifacts/alt.txt",
       "media_type": "text/plain",
       "name": "alt.txt",
       "sha256": "sha256:b8989c8c8bf5e192e22d719ffd40be97eee6309cb134b5968b027a00187d712d",
       "size_bytes": 211
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-1c9f9bf5c46f4c96b02d6e74/artifacts/validation.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-a629053eacfe46a88c2cb6ce/artifacts/validation.json",
       "media_type": "application/json",
       "name": "validation.json",
       "sha256": "sha256:c1d6f5b01844e1b37caf5cc2576a418cf202ce9739fc79e31b5e3dda430a3b95",
@@ -222,10 +222,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:31:22.607278Z",
+  "created_at": "2026-07-22T10:48:08.194566Z",
   "error": null,
-  "finished_at": "2026-07-22T10:31:23.877793Z",
-  "job_id": "tj-1c9f9bf5c46f4c96b02d6e74",
+  "finished_at": "2026-07-22T10:48:09.453716Z",
+  "job_id": "tj-a629053eacfe46a88c2cb6ce",
   "metrics": {
     "object_count": 3,
     "poster_bytes": 187045,
@@ -286,7 +286,7 @@
     },
     "width": 1000
   },
-  "started_at": "2026-07-22T10:31:22.617135Z",
+  "started_at": "2026-07-22T10:48:08.207009Z",
   "state": "succeeded",
   "tool_id": "visualization.scene3d",
   "tool_version": "1.0.0",
