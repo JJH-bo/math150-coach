@@ -11,14 +11,14 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cd54e2f206b646a2acc5c44a/artifacts/symbolic-result.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-7b197b2b0604474f8e9551d4/artifacts/symbolic-result.json",
       "media_type": "application/json",
       "name": "symbolic-result.json",
       "sha256": "sha256:fd81b0bf679222eb1db5c8f3275c2acef6bd653828a963a0ebf3f7e284e51453",
       "size_bytes": 277
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cd54e2f206b646a2acc5c44a/artifacts/symbolic-result.tex",
+      "download_path": "/api/studio/v1/tool-jobs/tj-7b197b2b0604474f8e9551d4/artifacts/symbolic-result.tex",
       "media_type": "text/x-tex",
       "name": "symbolic-result.tex",
       "sha256": "sha256:786e2cb0d6f5dc24f97cacc0186198876441cb740d8fbe7eee8bfaac0f9b5d94",
@@ -26,10 +26,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T06:37:57.261405Z",
+  "created_at": "2026-07-22T08:12:43.549929Z",
   "error": null,
-  "finished_at": "2026-07-22T06:37:57.307899Z",
-  "job_id": "tj-cd54e2f206b646a2acc5c44a",
+  "finished_at": "2026-07-22T08:12:43.609434Z",
+  "job_id": "tj-7b197b2b0604474f8e9551d4",
   "metrics": {
     "operation_count": 3
   },
@@ -51,7 +51,7 @@
     ],
     "warnings": []
   },
-  "started_at": "2026-07-22T06:37:57.272125Z",
+  "started_at": "2026-07-22T08:12:43.565412Z",
   "state": "succeeded",
   "tool_id": "math.symbolic",
   "tool_version": "1.0.0",

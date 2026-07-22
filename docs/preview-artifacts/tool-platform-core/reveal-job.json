@@ -1,0 +1,265 @@
+{
+  "argument_hash": "sha256:2c56cb40579e7ab100686d38cf2bf86d5c871d484f906f3b1a20b782788450e4",
+  "arguments": {
+    "audience": "First-year calculus learners meeting limits for the first time",
+    "central_takeaway": "A limit is a claim about values arbitrarily near a target, supported by a controllable input-output neighborhood relationship.",
+    "closing_resolution": "The neighborhood relationship makes approach precise while leaving the value at the target logically separate.",
+    "learning_objective": "Explain a finite limit using neighborhoods and distinguish approach behavior from the function value at the target.",
+    "narrative_arc": "learning_progression",
+    "opening_question": "How can a function approach one value without reaching it?",
+    "schema_version": "semantic_lesson_v1",
+    "slides": [
+      {
+        "body": [
+          "Watch the inputs move toward the target while the outputs settle near one value."
+        ],
+        "kind": "opening",
+        "narrative_job": "Create the need for a language of controlled approach.",
+        "primary_claim": "Nearness, not arrival, is the phenomenon we need to describe.",
+        "slide_id": "opening",
+        "speaker_notes": "Invite learners to describe what remains stable during approach.",
+        "title": "A function can approach a value it never reaches"
+      },
+      {
+        "bullets": [
+          "The output band is centered on the proposed limit.",
+          "The input band is centered on the target.",
+          "Every permitted input must land inside the output band."
+        ],
+        "formula": "0 < |x-a| < \\delta \\Rightarrow |f(x)-L| < \\varepsilon",
+        "kind": "concept",
+        "narrative_job": "Replace informal motion language with a controllable relationship.",
+        "primary_claim": "A chosen output tolerance determines how close inputs must be.",
+        "slide_id": "neighborhoods",
+        "speaker_notes": "Name every symbol before reading the implication aloud.",
+        "title": "Two linked neighborhoods make approach measurable"
+      },
+      {
+        "bullets": [
+          "Start from the output error |(2x+1)-7|.",
+          "Factor it as 2|x-3|.",
+          "Require |x-3| < epsilon/2."
+        ],
+        "formula": "|f(x)-7| = 2|x-3| < \\varepsilon",
+        "kind": "example",
+        "narrative_job": "Demonstrate the control relationship without skipping algebra.",
+        "primary_claim": "For f(x)=2x+1 near x=3, choosing delta=epsilon/2 is sufficient.",
+        "slide_id": "worked-check",
+        "speaker_notes": "Keep the implication direction explicit at each step.",
+        "title": "For a line, the needed input band follows directly"
+      },
+      {
+        "body": [
+          "You can now test a proposed limit by connecting any requested output tolerance to a sufficient input tolerance."
+        ],
+        "kind": "synthesis",
+        "narrative_job": "Resolve the opening question and state the reusable understanding.",
+        "primary_claim": "Controlled neighborhoods explain approach even when f(a) differs or is absent.",
+        "slide_id": "synthesis",
+        "speaker_notes": "Return to the opening example and separate the hole from the nearby trend.",
+        "title": "The limit records stable local behavior, not a point value"
+      }
+    ],
+    "subtitle": "A visual introduction to local behavior",
+    "template": "concept_journey",
+    "title": "Limits describe controlled approach"
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-05b0d082245642ceada91e7c/artifacts/lesson-spec.json",
+      "media_type": "application/json",
+      "name": "lesson-spec.json",
+      "sha256": "sha256:fb0550afa05362da2e5083b371214cd8b3a6582531564bc83943c01edd50f567",
+      "size_bytes": 3627
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-05b0d082245642ceada91e7c/artifacts/lesson.html",
+      "media_type": "text/html",
+      "name": "lesson.html",
+      "sha256": "sha256:37250822cb48136195864d388aa1e2116510d1b718d2ea4a2fa19022d04bc0c5",
+      "size_bytes": 769231
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-05b0d082245642ceada91e7c/artifacts/lesson.pdf",
+      "media_type": "application/pdf",
+      "name": "lesson.pdf",
+      "sha256": "sha256:f14f7b71ba783bc59999d1dc81e353a48971ed54e3146cb6fc97a85f9b379b42",
+      "size_bytes": 44938
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-05b0d082245642ceada91e7c/artifacts/render-report.json",
+      "media_type": "application/json",
+      "name": "render-report.json",
+      "sha256": "sha256:b554938fee5869d05bbb59a1744ec6dea0c662bbf0ed11e6ceabe311addc060f",
+      "size_bytes": 1373
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-05b0d082245642ceada91e7c/artifacts/slide-001.png",
+      "media_type": "image/png",
+      "name": "slide-001.png",
+      "sha256": "sha256:c36a5ebe317a2ef7113b94e1e622ade3af3f2cae710361eac63ffcfe541af23a",
+      "size_bytes": 46564
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-05b0d082245642ceada91e7c/artifacts/slide-002.png",
+      "media_type": "image/png",
+      "name": "slide-002.png",
+      "sha256": "sha256:10c1b83ade284705eb1add06f2307002f05b3b87509a4437cd22c945c64d120c",
+      "size_bytes": 56784
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-05b0d082245642ceada91e7c/artifacts/slide-003.png",
+      "media_type": "image/png",
+      "name": "slide-003.png",
+      "sha256": "sha256:bdbda013e34a46a6e5b7311e14d4b76c46b5436487432eba425fa717ceae06f0",
+      "size_bytes": 48303
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-05b0d082245642ceada91e7c/artifacts/slide-004.png",
+      "media_type": "image/png",
+      "name": "slide-004.png",
+      "sha256": "sha256:d4c8e0bcace69be343cc0fdb11fd92b842f62e6679daee50b508bfde62ef291c",
+      "size_bytes": 48862
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T08:12:55.998571Z",
+  "error": null,
+  "finished_at": "2026-07-22T08:12:57.585546Z",
+  "job_id": "tj-05b0d082245642ceada91e7c",
+  "metrics": {
+    "html_bytes": 769231,
+    "pdf_bytes": 44938,
+    "pdf_page_count": 4,
+    "slide_count": 4
+  },
+  "required_scope": "studio.render",
+  "result": {
+    "content_hash": "sha256:e897bc7649a66613813d49b6d3756b9a889ba4adc98e1b42ac87fdbc8bad07fe",
+    "narrative_validation": {
+      "content_hash": "sha256:e897bc7649a66613813d49b6d3756b9a889ba4adc98e1b42ac87fdbc8bad07fe",
+      "findings": [],
+      "minimum_font_sizes": {
+        "body": 16,
+        "deck_title": 50,
+        "slide_title": 35,
+        "subheading": 24
+      },
+      "narrative_arc": "learning_progression",
+      "passed": true,
+      "schema_version": "semantic_lesson_v1",
+      "slide_count": 4,
+      "slides": [
+        {
+          "body_item_count": 1,
+          "bullet_count": 0,
+          "has_formula": false,
+          "has_speaker_notes": true,
+          "kind": "opening",
+          "slide_id": "opening",
+          "visible_character_count": 189
+        },
+        {
+          "body_item_count": 0,
+          "bullet_count": 3,
+          "has_formula": true,
+          "has_speaker_notes": true,
+          "kind": "concept",
+          "slide_id": "neighborhoods",
+          "visible_character_count": 310
+        },
+        {
+          "body_item_count": 0,
+          "bullet_count": 3,
+          "has_formula": true,
+          "has_speaker_notes": true,
+          "kind": "example",
+          "slide_id": "worked-check",
+          "visible_character_count": 229
+        },
+        {
+          "body_item_count": 1,
+          "bullet_count": 0,
+          "has_formula": false,
+          "has_speaker_notes": true,
+          "kind": "synthesis",
+          "slide_id": "synthesis",
+          "visible_character_count": 247
+        }
+      ],
+      "template": "concept_journey"
+    },
+    "pdf_page_count": 4,
+    "render_report": {
+      "console_errors": [],
+      "failed_requests": [],
+      "minimum_font_sizes": {
+        "body": 16,
+        "deck_title": 50,
+        "slide_title": 35,
+        "subheading": 24
+      },
+      "overflow_findings": [],
+      "passed": true,
+      "slide_count": 4,
+      "slides": [
+        {
+          "body_font_pt": 18,
+          "client_height": 720,
+          "client_width": 1280,
+          "kind": "opening",
+          "scroll_height": 720,
+          "scroll_width": 1280,
+          "slide_id": "opening",
+          "subheading_font_pt": 24,
+          "title_font_pt": 54
+        },
+        {
+          "body_font_pt": 18,
+          "client_height": 720,
+          "client_width": 1280,
+          "kind": "concept",
+          "scroll_height": 720,
+          "scroll_width": 1280,
+          "slide_id": "neighborhoods",
+          "subheading_font_pt": 24,
+          "title_font_pt": 39
+        },
+        {
+          "body_font_pt": 18,
+          "client_height": 720,
+          "client_width": 1280,
+          "kind": "example",
+          "scroll_height": 720,
+          "scroll_width": 1280,
+          "slide_id": "worked-check",
+          "subheading_font_pt": 24,
+          "title_font_pt": 39
+        },
+        {
+          "body_font_pt": 18,
+          "client_height": 720,
+          "client_width": 1280,
+          "kind": "synthesis",
+          "scroll_height": 720,
+          "scroll_width": 1280,
+          "slide_id": "synthesis",
+          "subheading_font_pt": 24,
+          "title_font_pt": 39
+        }
+      ],
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      }
+    },
+    "schema_version": "semantic_lesson_v1",
+    "slide_count": 4,
+    "template": "concept_journey"
+  },
+  "started_at": "2026-07-22T08:12:56.013538Z",
+  "state": "succeeded",
+  "tool_id": "export.reveal",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

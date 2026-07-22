@@ -1,0 +1,356 @@
+{
+  "passed": true,
+  "slide_count": 4,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "minimum_font_sizes": {
+    "deck_title": 50,
+    "slide_title": 35,
+    "subheading": 24,
+    "body": 16
+  },
+  "slides": [
+    {
+      "slide_id": "opening",
+      "kind": "opening",
+      "elements": [
+        {
+          "role": "slide-index",
+          "left": 1180,
+          "top": 30,
+          "right": 1238,
+          "bottom": 60,
+          "scroll_width": 58,
+          "client_width": 58,
+          "scroll_height": 30,
+          "client_height": 30,
+          "font_pt": 15.999975000000001
+        },
+        {
+          "role": "deck-title",
+          "left": 82,
+          "top": 66,
+          "right": 1162,
+          "bottom": 246,
+          "scroll_width": 1080,
+          "client_width": 1080,
+          "scroll_height": 180,
+          "client_height": 180,
+          "font_pt": 54
+        },
+        {
+          "role": "subheading",
+          "left": 82,
+          "top": 260,
+          "right": 1162,
+          "bottom": 350,
+          "scroll_width": 1080,
+          "client_width": 1080,
+          "scroll_height": 90,
+          "client_height": 90,
+          "font_pt": 24
+        },
+        {
+          "role": "body",
+          "left": 82,
+          "top": 370,
+          "right": 1162,
+          "bottom": 500,
+          "scroll_width": 1080,
+          "client_width": 1080,
+          "scroll_height": 130,
+          "client_height": 130,
+          "font_pt": 18
+        }
+      ]
+    },
+    {
+      "slide_id": "neighborhoods",
+      "kind": "concept",
+      "elements": [
+        {
+          "role": "slide-index",
+          "left": 1180,
+          "top": 30,
+          "right": 1238,
+          "bottom": 60,
+          "scroll_width": 58,
+          "client_width": 58,
+          "scroll_height": 30,
+          "client_height": 30,
+          "font_pt": 15.999975000000001
+        },
+        {
+          "role": "slide-title",
+          "left": 82,
+          "top": 56,
+          "right": 1162,
+          "bottom": 186,
+          "scroll_width": 1080,
+          "client_width": 1080,
+          "scroll_height": 130,
+          "client_height": 130,
+          "font_pt": 39
+        },
+        {
+          "role": "subheading",
+          "left": 82,
+          "top": 198,
+          "right": 1162,
+          "bottom": 280,
+          "scroll_width": 1080,
+          "client_width": 1080,
+          "scroll_height": 82,
+          "client_height": 82,
+          "font_pt": 24
+        },
+        {
+          "role": "body",
+          "left": 118,
+          "top": 292,
+          "right": 1128,
+          "bottom": 352,
+          "scroll_width": 1010,
+          "client_width": 1010,
+          "scroll_height": 60,
+          "client_height": 60,
+          "font_pt": 18
+        },
+        {
+          "role": "body",
+          "left": 118,
+          "top": 356,
+          "right": 1128,
+          "bottom": 416,
+          "scroll_width": 1010,
+          "client_width": 1010,
+          "scroll_height": 60,
+          "client_height": 60,
+          "font_pt": 18
+        },
+        {
+          "role": "body",
+          "left": 118,
+          "top": 420,
+          "right": 1128,
+          "bottom": 480,
+          "scroll_width": 1010,
+          "client_width": 1010,
+          "scroll_height": 60,
+          "client_height": 60,
+          "font_pt": 18
+        },
+        {
+          "role": "formula",
+          "left": 108,
+          "top": 514,
+          "right": 1128,
+          "bottom": 602,
+          "scroll_width": 1020,
+          "client_width": 1020,
+          "scroll_height": 88,
+          "client_height": 88,
+          "font_pt": 24
+        }
+      ]
+    },
+    {
+      "slide_id": "worked-check",
+      "kind": "example",
+      "elements": [
+        {
+          "role": "slide-index",
+          "left": 1180,
+          "top": 30,
+          "right": 1238,
+          "bottom": 60,
+          "scroll_width": 58,
+          "client_width": 58,
+          "scroll_height": 30,
+          "client_height": 30,
+          "font_pt": 15.999975000000001
+        },
+        {
+          "role": "slide-title",
+          "left": 82,
+          "top": 54,
+          "right": 1162,
+          "bottom": 184,
+          "scroll_width": 1080,
+          "client_width": 1080,
+          "scroll_height": 130,
+          "client_height": 130,
+          "font_pt": 39
+        },
+        {
+          "role": "subheading",
+          "left": 82,
+          "top": 194,
+          "right": 1162,
+          "bottom": 276,
+          "scroll_width": 1080,
+          "client_width": 1080,
+          "scroll_height": 82,
+          "client_height": 82,
+          "font_pt": 24
+        },
+        {
+          "role": "body",
+          "left": 100,
+          "top": 310,
+          "right": 136,
+          "bottom": 336,
+          "scroll_width": 36,
+          "client_width": 36,
+          "scroll_height": 26,
+          "client_height": 26,
+          "font_pt": 15.999975000000001
+        },
+        {
+          "role": "body",
+          "left": 140,
+          "top": 310,
+          "right": 412,
+          "bottom": 398,
+          "scroll_width": 272,
+          "client_width": 272,
+          "scroll_height": 88,
+          "client_height": 88,
+          "font_pt": 18
+        },
+        {
+          "role": "body",
+          "left": 466,
+          "top": 310,
+          "right": 502,
+          "bottom": 336,
+          "scroll_width": 36,
+          "client_width": 36,
+          "scroll_height": 26,
+          "client_height": 26,
+          "font_pt": 15.999975000000001
+        },
+        {
+          "role": "body",
+          "left": 506,
+          "top": 310,
+          "right": 778,
+          "bottom": 398,
+          "scroll_width": 272,
+          "client_width": 272,
+          "scroll_height": 88,
+          "client_height": 88,
+          "font_pt": 18
+        },
+        {
+          "role": "body",
+          "left": 832,
+          "top": 310,
+          "right": 868,
+          "bottom": 336,
+          "scroll_width": 36,
+          "client_width": 36,
+          "scroll_height": 26,
+          "client_height": 26,
+          "font_pt": 15.999975000000001
+        },
+        {
+          "role": "body",
+          "left": 872,
+          "top": 310,
+          "right": 1144,
+          "bottom": 398,
+          "scroll_width": 272,
+          "client_width": 272,
+          "scroll_height": 88,
+          "client_height": 88,
+          "font_pt": 18
+        },
+        {
+          "role": "formula",
+          "left": 108,
+          "top": 532,
+          "right": 1128,
+          "bottom": 620,
+          "scroll_width": 1020,
+          "client_width": 1020,
+          "scroll_height": 88,
+          "client_height": 88,
+          "font_pt": 24
+        }
+      ]
+    },
+    {
+      "slide_id": "synthesis",
+      "kind": "synthesis",
+      "elements": [
+        {
+          "role": "slide-index",
+          "left": 1180,
+          "top": 72,
+          "right": 1238,
+          "bottom": 102,
+          "scroll_width": 58,
+          "client_width": 58,
+          "scroll_height": 30,
+          "client_height": 30,
+          "font_pt": 15.999975000000001
+        },
+        {
+          "role": "slide-title",
+          "left": 102,
+          "top": 84,
+          "right": 1142,
+          "bottom": 216,
+          "scroll_width": 1040,
+          "client_width": 1040,
+          "scroll_height": 132,
+          "client_height": 132,
+          "font_pt": 39
+        },
+        {
+          "role": "subheading",
+          "left": 102,
+          "top": 246,
+          "right": 1132,
+          "bottom": 338,
+          "scroll_width": 1030,
+          "client_width": 1030,
+          "scroll_height": 92,
+          "client_height": 92,
+          "font_pt": 24
+        },
+        {
+          "role": "body",
+          "left": 102,
+          "top": 362,
+          "right": 1132,
+          "bottom": 494,
+          "scroll_width": 1030,
+          "client_width": 1030,
+          "scroll_height": 132,
+          "client_height": 132,
+          "font_pt": 18
+        },
+        {
+          "role": "body",
+          "left": 102,
+          "top": 570,
+          "right": 602,
+          "bottom": 606,
+          "scroll_width": 500,
+          "client_width": 500,
+          "scroll_height": 36,
+          "client_height": 36,
+          "font_pt": 15.999975000000001
+        }
+      ]
+    }
+  ],
+  "overflow_findings": [],
+  "overlap_findings": [],
+  "console_errors": [],
+  "failed_requests": []
+}

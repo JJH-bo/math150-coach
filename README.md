@@ -39,6 +39,21 @@ download hash-verified artifacts. The current verified pack includes:
   order, and deterministic layout data;
 - `visualization.plot@1.0.0` for accessible Plotly HTML plus browser-rendered
   PNG/SVG artifacts with pixel-level nonblank validation.
+- `export.pptx@1.0.0` for editable native PowerPoint text and shapes, SVG
+  mathematics, speaker notes, and OOXML/render validation;
+- `export.reveal@1.0.0` for self-contained browser presentations, print PDF,
+  slide PNGs, and DOM quality gates;
+- `export.pdf@1.0.0` for fixed-layout distribution with deterministic metadata,
+  extractable text, and page evidence;
+- `export.html@1.0.0` for one-file offline browser lessons with a zero-external-
+  resource audit;
+- `export.package@1.0.0` for deterministic path-safe ZIP transfer with a
+  cryptographic file manifest.
+
+The GPT selects formats by teaching intent: PPTX for editable presenting,
+Reveal for browser presenting, PDF for fixed distribution, HTML for direct web
+use, and package for archival transfer. Multiple formats are generated from one
+`semantic_lesson_v1` source and must report the same content hash.
 
 The production Studio credential is authorized for all seven teaching scopes:
 read, compute, render, author, publish, rollback, and tool administration.

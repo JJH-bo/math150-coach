@@ -1,4 +1,5 @@
 {
+  "lesson_export_content_hash": "sha256:e897bc7649a66613813d49b6d3756b9a889ba4adc98e1b42ac87fdbc8bad07fe",
   "operation_ids": [
     "cancelStudioToolJob",
     "createClassroomDraft",
@@ -36,5 +37,12 @@
     "listStudioTools",
     "submitStudioToolJob"
   ],
-  "tool_protocol_version": "studio_tools_v1"
+  "tool_protocol_version": "studio_tools_v1",
+  "verified_lesson_exports": [
+    "reveal",
+    "pptx",
+    "pdf",
+    "html",
+    "package"
+  ]
 }

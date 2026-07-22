@@ -285,9 +285,13 @@ def test_railway_runbook_keeps_volume_and_secret_out_of_source() -> None:
 def test_docker_image_bootstraps_before_starting_the_server() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
 
+    assert "FROM node:24-bookworm-slim AS node-runtime" in dockerfile
     assert "python:3.12-slim" in dockerfile
     assert "chromium" in dockerfile
-    assert "npm ci --omit=dev" in dockerfile
+    assert "COPY --from=node-runtime /usr/local /usr/local" in dockerfile
+    assert "corepack prepare pnpm@11.9.0 --activate" in dockerfile
+    assert "pnpm install --frozen-lockfile --prod" in dockerfile
+    assert "package-lock.json" not in dockerfile
     assert "tools/bootstrap_ai_classroom.py" in dockerfile
     assert 'CLASSROOM_DATA_ROOT' in dockerfile
     assert 'exec uvicorn app.main:app' in dockerfile

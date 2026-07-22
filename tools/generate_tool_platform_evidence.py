@@ -150,6 +150,82 @@ def write_bytes(path: Path, content: bytes) -> None:
     path.write_bytes(content)
 
 
+def lesson_payload() -> dict[str, Any]:
+    return {
+        "schema_version": "semantic_lesson_v1",
+        "title": "Limits describe controlled approach",
+        "subtitle": "A visual introduction to local behavior",
+        "audience": "First-year calculus learners meeting limits for the first time",
+        "learning_objective": (
+            "Explain a finite limit using neighborhoods and distinguish approach "
+            "behavior from the function value at the target."
+        ),
+        "central_takeaway": (
+            "A limit is a claim about values arbitrarily near a target, supported "
+            "by a controllable input-output neighborhood relationship."
+        ),
+        "opening_question": "How can a function approach one value without reaching it?",
+        "closing_resolution": (
+            "The neighborhood relationship makes approach precise while leaving the "
+            "value at the target logically separate."
+        ),
+        "narrative_arc": "learning_progression",
+        "template": "concept_journey",
+        "slides": [
+            {
+                "slide_id": "opening",
+                "kind": "opening",
+                "title": "A function can approach a value it never reaches",
+                "narrative_job": "Create the need for a language of controlled approach.",
+                "primary_claim": "Nearness, not arrival, is the phenomenon we need to describe.",
+                "body": [
+                    "Watch the inputs move toward the target while the outputs settle near one value."
+                ],
+                "speaker_notes": "Invite learners to describe what remains stable during approach.",
+            },
+            {
+                "slide_id": "neighborhoods",
+                "kind": "concept",
+                "title": "Two linked neighborhoods make approach measurable",
+                "narrative_job": "Replace informal motion language with a controllable relationship.",
+                "primary_claim": "A chosen output tolerance determines how close inputs must be.",
+                "bullets": [
+                    "The output band is centered on the proposed limit.",
+                    "The input band is centered on the target.",
+                    "Every permitted input must land inside the output band.",
+                ],
+                "formula": "0 < |x-a| < \\delta \\Rightarrow |f(x)-L| < \\varepsilon",
+                "speaker_notes": "Name every symbol before reading the implication aloud.",
+            },
+            {
+                "slide_id": "worked-check",
+                "kind": "example",
+                "title": "For a line, the needed input band follows directly",
+                "narrative_job": "Demonstrate the control relationship without skipping algebra.",
+                "primary_claim": "For f(x)=2x+1 near x=3, choosing delta=epsilon/2 is sufficient.",
+                "bullets": [
+                    "Start from the output error |(2x+1)-7|.",
+                    "Factor it as 2|x-3|.",
+                    "Require |x-3| < epsilon/2.",
+                ],
+                "formula": "|f(x)-7| = 2|x-3| < \\varepsilon",
+                "speaker_notes": "Keep the implication direction explicit at each step.",
+            },
+            {
+                "slide_id": "synthesis",
+                "kind": "synthesis",
+                "title": "The limit records stable local behavior, not a point value",
+                "narrative_job": "Resolve the opening question and state the reusable understanding.",
+                "primary_claim": "Controlled neighborhoods explain approach even when f(a) differs or is absent.",
+                "body": [
+                    "You can now test a proposed limit by connecting any requested output tolerance to a sufficient input tolerance."
+                ],
+                "speaker_notes": "Return to the opening example and separate the hole from the nearby trend.",
+            },
+        ],
+    }
+
+
 def generate(output_root: Path) -> None:
     studio_key = "temporary-evidence-key-never-serialized"
     port = free_port()
@@ -284,10 +360,32 @@ def generate(output_root: Path) -> None:
                     "theme": "dark",
                 },
             )
+            for format_name, tool_id in (
+                ("reveal", "export.reveal"),
+                ("pptx", "export.pptx"),
+                ("pdf", "export.pdf"),
+                ("html", "export.html"),
+                ("package", "export.package"),
+            ):
+                jobs[format_name] = submit_and_wait(
+                    origin,
+                    studio_key,
+                    idempotency_key=f"evidence-semantic-lesson-{format_name}-v1",
+                    tool_id=tool_id,
+                    arguments=lesson_payload(),
+                    timeout_seconds=120,
+                )
             artifacts = {
                 name: download_artifacts(origin, studio_key, job)
                 for name, job in jobs.items()
             }
+
+            export_names = ("reveal", "pptx", "pdf", "html", "package")
+            content_hashes = {
+                name: jobs[name]["result"]["content_hash"] for name in export_names
+            }
+            if len(set(content_hashes.values())) != 1:
+                raise RuntimeError(f"cross-format lesson hash mismatch: {content_hashes}")
 
             action_schema = request_json(
                 f"{origin}/api/studio/v1/action-schema.json"
@@ -309,10 +407,23 @@ def generate(output_root: Path) -> None:
                     "listStudioTools",
                     "submitStudioToolJob",
                 ],
+                "lesson_export_content_hash": next(iter(content_hashes.values())),
+                "verified_lesson_exports": list(export_names),
             }
             serialized = json.dumps([registry, jobs, evidence]).lower()
             if studio_key.lower() in serialized or temporary.lower() in serialized:
                 raise RuntimeError("evidence contains a secret or temporary path")
+            forbidden_bytes = (
+                studio_key.lower().encode("utf-8"),
+                temporary.lower().encode("utf-8"),
+            )
+            for format_artifacts in artifacts.values():
+                for artifact_name, content in format_artifacts.items():
+                    lowered = content.lower()
+                    if any(forbidden in lowered for forbidden in forbidden_bytes):
+                        raise RuntimeError(
+                            f"artifact contains a secret or temporary path: {artifact_name}"
+                        )
             write_json(output_root / "tool-registry.json", registry)
             for name, job in jobs.items():
                 write_json(output_root / f"{name}-job.json", job)
@@ -322,6 +433,20 @@ def generate(output_root: Path) -> None:
             write_bytes(
                 output_root / "plot-validation.json",
                 artifacts["plot"]["validation.json"],
+            )
+            for format_name in export_names:
+                for artifact_name, content in artifacts[format_name].items():
+                    write_bytes(
+                        output_root / "lesson-exports" / format_name / artifact_name,
+                        content,
+                    )
+            write_json(
+                output_root / "lesson-exports" / "cross-format-report.json",
+                {
+                    "passed": True,
+                    "content_hash": next(iter(content_hashes.values())),
+                    "formats": list(export_names),
+                },
             )
         finally:
             process.terminate()

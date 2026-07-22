@@ -73,7 +73,7 @@ def test_tool_discovery_is_searchable_and_does_not_expose_secrets(
     assert "api_key" not in serialized
 
 
-def test_default_registry_exposes_complete_verified_math_plot_pack(
+def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
     tmp_path, monkeypatch
 ) -> None:
     monkeypatch.setenv("CLASSROOM_DATA_ROOT", str(tmp_path))
@@ -88,7 +88,37 @@ def test_default_registry_exposes_complete_verified_math_plot_pack(
         "math.verify",
         "math.graph",
         "visualization.plot",
+        "export.reveal",
+        "export.pptx",
+        "export.pdf",
+        "export.html",
+        "export.package",
     }
+
+
+def test_export_media_contracts_support_intent_based_format_selection(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CLASSROOM_DATA_ROOT", str(tmp_path))
+
+    definitions = {
+        definition.tool_id: definition
+        for definition in default_tool_service().registry.list(category="export")
+    }
+
+    assert set(definitions) == {
+        "export.reveal",
+        "export.pptx",
+        "export.pdf",
+        "export.html",
+        "export.package",
+    }
+    assert "application/vnd.openxmlformats-officedocument.presentationml.presentation" in definitions[
+        "export.pptx"
+    ].output_media_types
+    assert "application/pdf" in definitions["export.pdf"].output_media_types
+    assert "text/html" in definitions["export.html"].output_media_types
+    assert "application/zip" in definitions["export.package"].output_media_types
 
 
 def test_get_tool_returns_requested_verified_definition(tmp_path, monkeypatch) -> None:

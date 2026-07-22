@@ -1,0 +1,71 @@
+{
+  "content_hash": "sha256:e897bc7649a66613813d49b6d3756b9a889ba4adc98e1b42ac87fdbc8bad07fe",
+  "lesson": {
+    "audience": "First-year calculus learners meeting limits for the first time",
+    "central_takeaway": "A limit is a claim about values arbitrarily near a target, supported by a controllable input-output neighborhood relationship.",
+    "closing_resolution": "The neighborhood relationship makes approach precise while leaving the value at the target logically separate.",
+    "learning_objective": "Explain a finite limit using neighborhoods and distinguish approach behavior from the function value at the target.",
+    "narrative_arc": "learning_progression",
+    "opening_question": "How can a function approach one value without reaching it?",
+    "schema_version": "semantic_lesson_v1",
+    "slides": [
+      {
+        "body": [
+          "Watch the inputs move toward the target while the outputs settle near one value."
+        ],
+        "bullets": [],
+        "kind": "opening",
+        "narrative_job": "Create the need for a language of controlled approach.",
+        "primary_claim": "Nearness, not arrival, is the phenomenon we need to describe.",
+        "slide_id": "opening",
+        "speaker_notes": "Invite learners to describe what remains stable during approach.",
+        "title": "A function can approach a value it never reaches"
+      },
+      {
+        "body": [],
+        "bullets": [
+          "The output band is centered on the proposed limit.",
+          "The input band is centered on the target.",
+          "Every permitted input must land inside the output band."
+        ],
+        "formula": "0 < |x-a| < \\delta \\Rightarrow |f(x)-L| < \\varepsilon",
+        "kind": "concept",
+        "narrative_job": "Replace informal motion language with a controllable relationship.",
+        "primary_claim": "A chosen output tolerance determines how close inputs must be.",
+        "slide_id": "neighborhoods",
+        "speaker_notes": "Name every symbol before reading the implication aloud.",
+        "title": "Two linked neighborhoods make approach measurable"
+      },
+      {
+        "body": [],
+        "bullets": [
+          "Start from the output error |(2x+1)-7|.",
+          "Factor it as 2|x-3|.",
+          "Require |x-3| < epsilon/2."
+        ],
+        "formula": "|f(x)-7| = 2|x-3| < \\varepsilon",
+        "kind": "example",
+        "narrative_job": "Demonstrate the control relationship without skipping algebra.",
+        "primary_claim": "For f(x)=2x+1 near x=3, choosing delta=epsilon/2 is sufficient.",
+        "slide_id": "worked-check",
+        "speaker_notes": "Keep the implication direction explicit at each step.",
+        "title": "For a line, the needed input band follows directly"
+      },
+      {
+        "body": [
+          "You can now test a proposed limit by connecting any requested output tolerance to a sufficient input tolerance."
+        ],
+        "bullets": [],
+        "kind": "synthesis",
+        "narrative_job": "Resolve the opening question and state the reusable understanding.",
+        "primary_claim": "Controlled neighborhoods explain approach even when f(a) differs or is absent.",
+        "slide_id": "synthesis",
+        "speaker_notes": "Return to the opening example and separate the hole from the nearby trend.",
+        "title": "The limit records stable local behavior, not a point value"
+      }
+    ],
+    "subtitle": "A visual introduction to local behavior",
+    "template": "concept_journey",
+    "title": "Limits describe controlled approach"
+  }
+}

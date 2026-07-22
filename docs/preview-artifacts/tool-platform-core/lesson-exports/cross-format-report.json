@@ -1,0 +1,11 @@
+{
+  "content_hash": "sha256:e897bc7649a66613813d49b6d3756b9a889ba4adc98e1b42ac87fdbc8bad07fe",
+  "formats": [
+    "reveal",
+    "pptx",
+    "pdf",
+    "html",
+    "package"
+  ],
+  "passed": true
+}

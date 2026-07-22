@@ -1,0 +1,16 @@
+{
+  "actual_minimum_font_pt": 16.0,
+  "editable_text_shape_count": 24,
+  "findings": [],
+  "formula_svg_count": 2,
+  "formula_svg_valid_count": 2,
+  "minimum_font_sizes": {
+    "body": 16,
+    "deck_title": 50,
+    "slide_title": 35,
+    "subheading": 24
+  },
+  "passed": true,
+  "slide_count": 4,
+  "speaker_notes_count": 4
+}

@@ -1,0 +1,56 @@
+{
+  "content_hash": "sha256:e897bc7649a66613813d49b6d3756b9a889ba4adc98e1b42ac87fdbc8bad07fe",
+  "files": [
+    {
+      "bytes": 3627,
+      "media_type": "application/json",
+      "path": "lesson-spec.json",
+      "sha256": "fb0550afa05362da2e5083b371214cd8b3a6582531564bc83943c01edd50f567"
+    },
+    {
+      "bytes": 769231,
+      "media_type": "text/html",
+      "path": "lesson.html",
+      "sha256": "37250822cb48136195864d388aa1e2116510d1b718d2ea4a2fa19022d04bc0c5"
+    },
+    {
+      "bytes": 45043,
+      "media_type": "application/pdf",
+      "path": "lesson.pdf",
+      "sha256": "ad5c62f0776d932d8a605204b285d741554e446b45a1707bdeeebd051fdd35b9"
+    },
+    {
+      "bytes": 1373,
+      "media_type": "application/json",
+      "path": "render-report.json",
+      "sha256": "b554938fee5869d05bbb59a1744ec6dea0c662bbf0ed11e6ceabe311addc060f"
+    },
+    {
+      "bytes": 46460,
+      "media_type": "image/png",
+      "path": "slide-001.png",
+      "sha256": "81d4cd884765480797a865a92291ad55cb416cb6adf55cce9ba52f2896303623"
+    },
+    {
+      "bytes": 56846,
+      "media_type": "image/png",
+      "path": "slide-002.png",
+      "sha256": "6a2866fccf0034ecdd933770e030d0ad5ef28904f423440b9c0797a24fc2240d"
+    },
+    {
+      "bytes": 48253,
+      "media_type": "image/png",
+      "path": "slide-003.png",
+      "sha256": "71235972f3b7e2c03b162f2ba55d9aa5de9b5674818c50148267f22c00d3826d"
+    },
+    {
+      "bytes": 48872,
+      "media_type": "image/png",
+      "path": "slide-004.png",
+      "sha256": "4da348191a7c65798adc4cdab33ab705c5833b430397007f85bbd031637052dd"
+    }
+  ],
+  "lesson_schema_version": "semantic_lesson_v1",
+  "schema_version": "lesson_package_v1",
+  "slide_count": 4
+}

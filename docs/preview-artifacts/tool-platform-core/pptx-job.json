@@ -1,0 +1,580 @@
+{
+  "argument_hash": "sha256:2c56cb40579e7ab100686d38cf2bf86d5c871d484f906f3b1a20b782788450e4",
+  "arguments": {
+    "audience": "First-year calculus learners meeting limits for the first time",
+    "central_takeaway": "A limit is a claim about values arbitrarily near a target, supported by a controllable input-output neighborhood relationship.",
+    "closing_resolution": "The neighborhood relationship makes approach precise while leaving the value at the target logically separate.",
+    "learning_objective": "Explain a finite limit using neighborhoods and distinguish approach behavior from the function value at the target.",
+    "narrative_arc": "learning_progression",
+    "opening_question": "How can a function approach one value without reaching it?",
+    "schema_version": "semantic_lesson_v1",
+    "slides": [
+      {
+        "body": [
+          "Watch the inputs move toward the target while the outputs settle near one value."
+        ],
+        "kind": "opening",
+        "narrative_job": "Create the need for a language of controlled approach.",
+        "primary_claim": "Nearness, not arrival, is the phenomenon we need to describe.",
+        "slide_id": "opening",
+        "speaker_notes": "Invite learners to describe what remains stable during approach.",
+        "title": "A function can approach a value it never reaches"
+      },
+      {
+        "bullets": [
+          "The output band is centered on the proposed limit.",
+          "The input band is centered on the target.",
+          "Every permitted input must land inside the output band."
+        ],
+        "formula": "0 < |x-a| < \\delta \\Rightarrow |f(x)-L| < \\varepsilon",
+        "kind": "concept",
+        "narrative_job": "Replace informal motion language with a controllable relationship.",
+        "primary_claim": "A chosen output tolerance determines how close inputs must be.",
+        "slide_id": "neighborhoods",
+        "speaker_notes": "Name every symbol before reading the implication aloud.",
+        "title": "Two linked neighborhoods make approach measurable"
+      },
+      {
+        "bullets": [
+          "Start from the output error |(2x+1)-7|.",
+          "Factor it as 2|x-3|.",
+          "Require |x-3| < epsilon/2."
+        ],
+        "formula": "|f(x)-7| = 2|x-3| < \\varepsilon",
+        "kind": "example",
+        "narrative_job": "Demonstrate the control relationship without skipping algebra.",
+        "primary_claim": "For f(x)=2x+1 near x=3, choosing delta=epsilon/2 is sufficient.",
+        "slide_id": "worked-check",
+        "speaker_notes": "Keep the implication direction explicit at each step.",
+        "title": "For a line, the needed input band follows directly"
+      },
+      {
+        "body": [
+          "You can now test a proposed limit by connecting any requested output tolerance to a sufficient input tolerance."
+        ],
+        "kind": "synthesis",
+        "narrative_job": "Resolve the opening question and state the reusable understanding.",
+        "primary_claim": "Controlled neighborhoods explain approach even when f(a) differs or is absent.",
+        "slide_id": "synthesis",
+        "speaker_notes": "Return to the opening example and separate the hole from the nearby trend.",
+        "title": "The limit records stable local behavior, not a point value"
+      }
+    ],
+    "subtitle": "A visual introduction to local behavior",
+    "template": "concept_journey",
+    "title": "Limits describe controlled approach"
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/lesson-spec.json",
+      "media_type": "application/json",
+      "name": "lesson-spec.json",
+      "sha256": "sha256:fb0550afa05362da2e5083b371214cd8b3a6582531564bc83943c01edd50f567",
+      "size_bytes": 3627
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/lesson.pptx",
+      "media_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "name": "lesson.pptx",
+      "sha256": "sha256:148ffafa65c2d2577bc1c68daffc9e940f617d7ffe8ed1dd01baa6f415b077f4",
+      "size_bytes": 125209
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/layout-report.json",
+      "media_type": "application/json",
+      "name": "layout-report.json",
+      "sha256": "sha256:26b722e4ccbbf009bcec15ca1df4da0377b9f316bd81265664862c03382b9d23",
+      "size_bytes": 8484
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/ooxml-report.json",
+      "media_type": "application/json",
+      "name": "ooxml-report.json",
+      "sha256": "sha256:d52be12794686ce12bc80ffaa2f1cf159ae38c63750c375005bd596d0f8936eb",
+      "size_bytes": 343
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/montage.png",
+      "media_type": "image/png",
+      "name": "montage.png",
+      "sha256": "sha256:7bb8b30abfa2f260ebc27449c9403db3ae51871d780b9c13caec7c43a9a1e89c",
+      "size_bytes": 213739
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/slide-001.png",
+      "media_type": "image/png",
+      "name": "slide-001.png",
+      "sha256": "sha256:78ae925f5493e0ced1f2b409e5403f21ee4813bb4aee4e61d3faa9401dcfa74e",
+      "size_bytes": 47575
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/slide-002.png",
+      "media_type": "image/png",
+      "name": "slide-002.png",
+      "sha256": "sha256:dd522d9f6a7811f6a5ef6b08a8bc29b631bbf7052078160100fc06dd3da5c1a7",
+      "size_bytes": 65144
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/slide-003.png",
+      "media_type": "image/png",
+      "name": "slide-003.png",
+      "sha256": "sha256:836879df34df0bf9ba001931b838ee78b70c1137e4526c6557dfb38a46e55f71",
+      "size_bytes": 57847
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-699750972ba441daade43300/artifacts/slide-004.png",
+      "media_type": "image/png",
+      "name": "slide-004.png",
+      "sha256": "sha256:0ebadbdfa1fcbd2ae4ab2639bd0dfcf3cc628305f13ec755eab0896276b8ce88",
+      "size_bytes": 55183
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T08:12:57.646501Z",
+  "error": null,
+  "finished_at": "2026-07-22T08:12:58.988270Z",
+  "job_id": "tj-699750972ba441daade43300",
+  "metrics": {
+    "editable_text_shape_count": 24,
+    "pptx_bytes": 125209,
+    "slide_count": 4,
+    "speaker_notes_count": 4
+  },
+  "required_scope": "studio.render",
+  "result": {
+    "content_hash": "sha256:e897bc7649a66613813d49b6d3756b9a889ba4adc98e1b42ac87fdbc8bad07fe",
+    "layout_report": {
+      "console_errors": [],
+      "failed_requests": [],
+      "minimum_font_sizes": {
+        "body": 16,
+        "deck_title": 50,
+        "slide_title": 35,
+        "subheading": 24
+      },
+      "overflow_findings": [],
+      "overlap_findings": [],
+      "passed": true,
+      "slide_count": 4,
+      "slides": [
+        {
+          "elements": [
+            {
+              "bottom": 60,
+              "client_height": 30,
+              "client_width": 58,
+              "font_pt": 15.999975000000001,
+              "left": 1180,
+              "right": 1238,
+              "role": "slide-index",
+              "scroll_height": 30,
+              "scroll_width": 58,
+              "top": 30
+            },
+            {
+              "bottom": 246,
+              "client_height": 180,
+              "client_width": 1080,
+              "font_pt": 54,
+              "left": 82,
+              "right": 1162,
+              "role": "deck-title",
+              "scroll_height": 180,
+              "scroll_width": 1080,
+              "top": 66
+            },
+            {
+              "bottom": 350,
+              "client_height": 90,
+              "client_width": 1080,
+              "font_pt": 24,
+              "left": 82,
+              "right": 1162,
+              "role": "subheading",
+              "scroll_height": 90,
+              "scroll_width": 1080,
+              "top": 260
+            },
+            {
+              "bottom": 500,
+              "client_height": 130,
+              "client_width": 1080,
+              "font_pt": 18,
+              "left": 82,
+              "right": 1162,
+              "role": "body",
+              "scroll_height": 130,
+              "scroll_width": 1080,
+              "top": 370
+            }
+          ],
+          "kind": "opening",
+          "slide_id": "opening"
+        },
+        {
+          "elements": [
+            {
+              "bottom": 60,
+              "client_height": 30,
+              "client_width": 58,
+              "font_pt": 15.999975000000001,
+              "left": 1180,
+              "right": 1238,
+              "role": "slide-index",
+              "scroll_height": 30,
+              "scroll_width": 58,
+              "top": 30
+            },
+            {
+              "bottom": 186,
+              "client_height": 130,
+              "client_width": 1080,
+              "font_pt": 39,
+              "left": 82,
+              "right": 1162,
+              "role": "slide-title",
+              "scroll_height": 130,
+              "scroll_width": 1080,
+              "top": 56
+            },
+            {
+              "bottom": 280,
+              "client_height": 82,
+              "client_width": 1080,
+              "font_pt": 24,
+              "left": 82,
+              "right": 1162,
+              "role": "subheading",
+              "scroll_height": 82,
+              "scroll_width": 1080,
+              "top": 198
+            },
+            {
+              "bottom": 352,
+              "client_height": 60,
+              "client_width": 1010,
+              "font_pt": 18,
+              "left": 118,
+              "right": 1128,
+              "role": "body",
+              "scroll_height": 60,
+              "scroll_width": 1010,
+              "top": 292
+            },
+            {
+              "bottom": 416,
+              "client_height": 60,
+              "client_width": 1010,
+              "font_pt": 18,
+              "left": 118,
+              "right": 1128,
+              "role": "body",
+              "scroll_height": 60,
+              "scroll_width": 1010,
+              "top": 356
+            },
+            {
+              "bottom": 480,
+              "client_height": 60,
+              "client_width": 1010,
+              "font_pt": 18,
+              "left": 118,
+              "right": 1128,
+              "role": "body",
+              "scroll_height": 60,
+              "scroll_width": 1010,
+              "top": 420
+            },
+            {
+              "bottom": 602,
+              "client_height": 88,
+              "client_width": 1020,
+              "font_pt": 24,
+              "left": 108,
+              "right": 1128,
+              "role": "formula",
+              "scroll_height": 88,
+              "scroll_width": 1020,
+              "top": 514
+            }
+          ],
+          "kind": "concept",
+          "slide_id": "neighborhoods"
+        },
+        {
+          "elements": [
+            {
+              "bottom": 60,
+              "client_height": 30,
+              "client_width": 58,
+              "font_pt": 15.999975000000001,
+              "left": 1180,
+              "right": 1238,
+              "role": "slide-index",
+              "scroll_height": 30,
+              "scroll_width": 58,
+              "top": 30
+            },
+            {
+              "bottom": 184,
+              "client_height": 130,
+              "client_width": 1080,
+              "font_pt": 39,
+              "left": 82,
+              "right": 1162,
+              "role": "slide-title",
+              "scroll_height": 130,
+              "scroll_width": 1080,
+              "top": 54
+            },
+            {
+              "bottom": 276,
+              "client_height": 82,
+              "client_width": 1080,
+              "font_pt": 24,
+              "left": 82,
+              "right": 1162,
+              "role": "subheading",
+              "scroll_height": 82,
+              "scroll_width": 1080,
+              "top": 194
+            },
+            {
+              "bottom": 336,
+              "client_height": 26,
+              "client_width": 36,
+              "font_pt": 15.999975000000001,
+              "left": 100,
+              "right": 136,
+              "role": "body",
+              "scroll_height": 26,
+              "scroll_width": 36,
+              "top": 310
+            },
+            {
+              "bottom": 398,
+              "client_height": 88,
+              "client_width": 272,
+              "font_pt": 18,
+              "left": 140,
+              "right": 412,
+              "role": "body",
+              "scroll_height": 88,
+              "scroll_width": 272,
+              "top": 310
+            },
+            {
+              "bottom": 336,
+              "client_height": 26,
+              "client_width": 36,
+              "font_pt": 15.999975000000001,
+              "left": 466,
+              "right": 502,
+              "role": "body",
+              "scroll_height": 26,
+              "scroll_width": 36,
+              "top": 310
+            },
+            {
+              "bottom": 398,
+              "client_height": 88,
+              "client_width": 272,
+              "font_pt": 18,
+              "left": 506,
+              "right": 778,
+              "role": "body",
+              "scroll_height": 88,
+              "scroll_width": 272,
+              "top": 310
+            },
+            {
+              "bottom": 336,
+              "client_height": 26,
+              "client_width": 36,
+              "font_pt": 15.999975000000001,
+              "left": 832,
+              "right": 868,
+              "role": "body",
+              "scroll_height": 26,
+              "scroll_width": 36,
+              "top": 310
+            },
+            {
+              "bottom": 398,
+              "client_height": 88,
+              "client_width": 272,
+              "font_pt": 18,
+              "left": 872,
+              "right": 1144,
+              "role": "body",
+              "scroll_height": 88,
+              "scroll_width": 272,
+              "top": 310
+            },
+            {
+              "bottom": 620,
+              "client_height": 88,
+              "client_width": 1020,
+              "font_pt": 24,
+              "left": 108,
+              "right": 1128,
+              "role": "formula",
+              "scroll_height": 88,
+              "scroll_width": 1020,
+              "top": 532
+            }
+          ],
+          "kind": "example",
+          "slide_id": "worked-check"
+        },
+        {
+          "elements": [
+            {
+              "bottom": 102,
+              "client_height": 30,
+              "client_width": 58,
+              "font_pt": 15.999975000000001,
+              "left": 1180,
+              "right": 1238,
+              "role": "slide-index",
+              "scroll_height": 30,
+              "scroll_width": 58,
+              "top": 72
+            },
+            {
+              "bottom": 216,
+              "client_height": 132,
+              "client_width": 1040,
+              "font_pt": 39,
+              "left": 102,
+              "right": 1142,
+              "role": "slide-title",
+              "scroll_height": 132,
+              "scroll_width": 1040,
+              "top": 84
+            },
+            {
+              "bottom": 338,
+              "client_height": 92,
+              "client_width": 1030,
+              "font_pt": 24,
+              "left": 102,
+              "right": 1132,
+              "role": "subheading",
+              "scroll_height": 92,
+              "scroll_width": 1030,
+              "top": 246
+            },
+            {
+              "bottom": 494,
+              "client_height": 132,
+              "client_width": 1030,
+              "font_pt": 18,
+              "left": 102,
+              "right": 1132,
+              "role": "body",
+              "scroll_height": 132,
+              "scroll_width": 1030,
+              "top": 362
+            },
+            {
+              "bottom": 606,
+              "client_height": 36,
+              "client_width": 500,
+              "font_pt": 15.999975000000001,
+              "left": 102,
+              "right": 602,
+              "role": "body",
+              "scroll_height": 36,
+              "scroll_width": 500,
+              "top": 570
+            }
+          ],
+          "kind": "synthesis",
+          "slide_id": "synthesis"
+        }
+      ],
+      "viewport": {
+        "height": 720,
+        "width": 1280
+      }
+    },
+    "narrative_validation": {
+      "content_hash": "sha256:e897bc7649a66613813d49b6d3756b9a889ba4adc98e1b42ac87fdbc8bad07fe",
+      "findings": [],
+      "minimum_font_sizes": {
+        "body": 16,
+        "deck_title": 50,
+        "slide_title": 35,
+        "subheading": 24
+      },
+      "narrative_arc": "learning_progression",
+      "passed": true,
+      "schema_version": "semantic_lesson_v1",
+      "slide_count": 4,
+      "slides": [
+        {
+          "body_item_count": 1,
+          "bullet_count": 0,
+          "has_formula": false,
+          "has_speaker_notes": true,
+          "kind": "opening",
+          "slide_id": "opening",
+          "visible_character_count": 189
+        },
+        {
+          "body_item_count": 0,
+          "bullet_count": 3,
+          "has_formula": true,
+          "has_speaker_notes": true,
+          "kind": "concept",
+          "slide_id": "neighborhoods",
+          "visible_character_count": 310
+        },
+        {
+          "body_item_count": 0,
+          "bullet_count": 3,
+          "has_formula": true,
+          "has_speaker_notes": true,
+          "kind": "example",
+          "slide_id": "worked-check",
+          "visible_character_count": 229
+        },
+        {
+          "body_item_count": 1,
+          "bullet_count": 0,
+          "has_formula": false,
+          "has_speaker_notes": true,
+          "kind": "synthesis",
+          "slide_id": "synthesis",
+          "visible_character_count": 247
+        }
+      ],
+      "template": "concept_journey"
+    },
+    "ooxml_report": {
+      "actual_minimum_font_pt": 16.0,
+      "editable_text_shape_count": 24,
+      "findings": [],
+      "formula_svg_count": 2,
+      "formula_svg_valid_count": 2,
+      "minimum_font_sizes": {
+        "body": 16,
+        "deck_title": 50,
+        "slide_title": 35,
+        "subheading": 24
+      },
+      "passed": true,
+      "slide_count": 4,
+      "speaker_notes_count": 4
+    },
+    "schema_version": "semantic_lesson_v1",
+    "slide_count": 4,
+    "template": "concept_journey"
+  },
+  "started_at": "2026-07-22T08:12:57.661208Z",
+  "state": "succeeded",
+  "tool_id": "export.pptx",
+  "tool_version": "1.0.0",
+  "warnings": []
+}
