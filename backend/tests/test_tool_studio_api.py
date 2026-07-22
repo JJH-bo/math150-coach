@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -204,3 +206,55 @@ def test_openapi_exposes_stable_custom_gpt_tool_operation_ids(
         "cancelStudioToolJob",
         "getStudioToolArtifact",
     } <= operations
+
+
+def test_capabilities_grant_full_teaching_tool_authority(
+    tmp_path, monkeypatch
+) -> None:
+    response = client(tmp_path, monkeypatch).get(
+        "/api/studio/v1/capabilities",
+        headers=auth_headers(),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["tool_protocol_version"] == "studio_tools_v1"
+    assert set(payload["granted_tool_scopes"]) == {
+        "studio.read",
+        "studio.compute",
+        "studio.render",
+        "studio.author",
+        "studio.publish",
+        "studio.rollback",
+        "studio.admin_tools",
+    }
+    assert payload["tool_execution"] == {
+        "discovery_first": True,
+        "default_quality_tier": "verified",
+        "durable_jobs": True,
+        "supports_cancellation": True,
+        "supports_artifact_download": True,
+        "experimental_outputs_publish_eligible": False,
+    }
+
+
+def test_custom_gpt_instructions_define_the_complete_tool_protocol() -> None:
+    instructions = (
+        Path(__file__).resolve().parents[2] / "docs" / "custom-gpt-instructions.md"
+    ).read_text(encoding="utf-8")
+
+    for operation_id in (
+        "listStudioTools",
+        "getStudioTool",
+        "submitStudioToolJob",
+        "getStudioToolJob",
+        "cancelStudioToolJob",
+        "getStudioToolArtifact",
+    ):
+        assert f"`{operation_id}`" in instructions
+    assert "studio_tools_v1" in instructions
+    assert "verified" in instructions
+    assert "Idempotency-Key" in instructions
+    assert "repair_hint" in instructions
+    assert "不要向学习者索要 Studio key" in instructions
+    assert "不要向学习者索要内部 ID" in instructions

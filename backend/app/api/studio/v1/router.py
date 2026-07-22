@@ -309,6 +309,16 @@ def create_studio_router(
                 "requires_interaction_change_evidence": True,
                 "rejects_blank_or_noop_models": True,
             },
+            "tool_protocol_version": "studio_tools_v1",
+            "granted_tool_scopes": [scope.value for scope in ToolScope],
+            "tool_execution": {
+                "discovery_first": True,
+                "default_quality_tier": "verified",
+                "durable_jobs": True,
+                "supports_cancellation": True,
+                "supports_artifact_download": True,
+                "experimental_outputs_publish_eligible": False,
+            },
         }
 
     @router.get(

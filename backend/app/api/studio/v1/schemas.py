@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.classroom.model_contracts import PreviewViewport, TeachingModelManifest
 from app.classroom.models import ClassroomPackage
 from app.classroom.session_models import DetailedExpansion
-from app.tools.contracts import ToolDefinition
+from app.tools.contracts import ToolDefinition, ToolQualityTier, ToolScope
 
 
 class StudioRequest(BaseModel):
@@ -113,6 +113,15 @@ class TeachingModelWorkshopCapabilities(StudioRequest):
     rejects_blank_or_noop_models: Literal[True]
 
 
+class StudioToolExecutionCapabilities(StudioRequest):
+    discovery_first: Literal[True]
+    default_quality_tier: Literal[ToolQualityTier.VERIFIED]
+    durable_jobs: Literal[True]
+    supports_cancellation: Literal[True]
+    supports_artifact_download: Literal[True]
+    experimental_outputs_publish_eligible: Literal[False]
+
+
 class StudioCapabilitiesResponse(StudioRequest):
     studio_version: Literal["studio_v1"]
     schema_version: Literal["classroom_package_v1"]
@@ -125,6 +134,9 @@ class StudioCapabilitiesResponse(StudioRequest):
     autonomous_authoring: AutonomousAuthoringCapabilities
     live_learning_sessions: LiveLearningSessionCapabilities
     teaching_model_workshop: TeachingModelWorkshopCapabilities
+    tool_protocol_version: Literal["studio_tools_v1"]
+    granted_tool_scopes: list[ToolScope] = Field(min_length=7, max_length=7)
+    tool_execution: StudioToolExecutionCapabilities
 
 
 class WorkspaceModuleSummary(StudioRequest):
