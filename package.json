@@ -5,6 +5,8 @@
   "description": "Pinned Node runtime dependency for AI Classroom teaching-model previews.",
   "license": "UNLICENSED",
   "dependencies": {
-    "playwright": "1.61.1"
+    "mathjax-full": "3.2.2",
+    "playwright": "1.61.1",
+    "reveal.js": "6.0.1"
   }
 }
