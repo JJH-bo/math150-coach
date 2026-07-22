@@ -71,6 +71,7 @@ from app.classroom.validation import ClassroomPackageValidator
 from app.assets.repository import AssetRepository
 from app.tools.adapters.symbolic_math import SymbolicMathAdapter
 from app.tools.adapters.numeric_math import NumericMathAdapter
+from app.tools.adapters.optimize_math import OptimizeMathAdapter
 from app.tools.adapters.math_verify import MathVerifyAdapter
 from app.tools.adapters.graph_math import GraphMathAdapter
 from app.tools.adapters.plot_visualization import PlotAdapter
@@ -88,6 +89,7 @@ from app.tools.adapters.html_export import HtmlExportAdapter
 from app.tools.adapters.package_export import PackageExportAdapter
 from app.tools.adapters.asset_images import AssetIngestAdapter, AssetTransformAdapter
 from app.tools.adapters.page_preview import PagePreviewAdapter
+from app.tools.adapters.classroom_compose import ClassroomComposeAdapter
 from app.tools.adapters.classroom_patch import ClassroomPatchAdapter
 from app.tools.adapters.animation_visualization import AnimationAdapter
 from app.tools.contracts import (
@@ -178,6 +180,7 @@ def default_tool_service() -> ToolExecutionService:
             [
                 SymbolicMathAdapter(),
                 NumericMathAdapter(),
+                OptimizeMathAdapter(),
                 MathVerifyAdapter(),
                 GraphMathAdapter(),
                 PlotAdapter(),
@@ -194,6 +197,12 @@ def default_tool_service() -> ToolExecutionService:
                 AssetIngestAdapter(assets, jobs),
                 AssetTransformAdapter(assets),
                 PagePreviewAdapter(classrooms),
+                ClassroomComposeAdapter(
+                    ClassroomPackageValidator(
+                        model_resolver=models.get_registered,
+                        asset_resolver=assets.get,
+                    )
+                ),
                 ClassroomPatchAdapter(
                     classrooms,
                     ClassroomPackageValidator(

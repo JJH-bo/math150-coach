@@ -33,6 +33,9 @@ download hash-verified artifacts. The current verified pack includes:
 - `math.symbolic@1.0.0` for exact algebra, calculus, matrices, and LaTeX;
 - `math.numeric@1.0.0` for statistics, linear algebra, quadrature, roots,
   optimization, interpolation, ODEs, FFT, and probability distributions;
+- `math.optimize@1.0.0` for bounded continuous optimization, HiGHS linear
+  programs, and nonlinear least squares with explicit feasibility and
+  local/global optimum evidence;
 - `math.verify@1.0.0` for exact checks, deterministic domain sampling, and
   counterexample evidence;
 - `math.graph@1.0.0` for paths, components, cycles, centrality, topological
@@ -63,6 +66,9 @@ download hash-verified artifacts. The current verified pack includes:
 - `classroom.patch@1.0.0` for revision-pinned block/module/asset edits that
   produce a complete candidate package and semantic validation report without
   mutating the source draft or accepting arbitrary JSON pointers/scripts;
+- `classroom.compose@1.0.0` for validating and canonicalizing complete new
+  classroom packages, with coverage, teaching-contract, asset, model, and
+  binding evidence before an explicit draft write;
 - `template.list@1.0.0` for ranking verified teaching structures by learning
   intent, output medium, and interaction need rather than school subject;
 - `template.instantiate@1.0.0` for turning the selected structure into a

@@ -69,6 +69,22 @@
 
 下载 `patched-package.json` 与 `patch-report.json`：若 `publish_ready=false`，先按 validation issues 继续修补；若通过，则把完整候选包连同原 `expected_revision` 交给 `updateClassroomDraft` 原子写入。若 revision 已变化，重新读取最新草稿并在新版本上重放仍然适用的类型化修改，不覆盖并发结果。
 
+### 完整新课堂先组合、再写入草稿
+
+首次创建完整课堂包，或整体重组来源、模块、内容块、模型、资源和覆盖账本时，先调用 `classroom.compose`，不要直接把未经语义审计的大包交给草稿 Action。该工具只接收完整 `package`，执行结构校验、覆盖校验、教学契约校验、资源/模型/绑定校验，并生成规范化候选包与组合报告；它不会暗中写入草稿。
+
+下载 `composed-package.json` 与 `composition-report.json`。只有 `publish_ready=true`、`unresolved_knowledge_point_ids` 为空且资源、模型、绑定全部有效时，才把候选包交给 `createClassroomDraft` 或 `updateClassroomDraft`。若未通过，按报告修复完整包并重新组合；不得跳过组合门槛，也不得把失败结果当作局部补丁写入。完整新包用 `classroom.compose`，已有草稿的局部修改用 `classroom.patch`。
+
+### 数学优化使用结构化求解器并披露最优范围
+
+当教学内容需要连续约束优化、线性规划或非线性最小二乘时，发现并调用 `math.optimize`。只提交结构化变量、表达式、边界、约束、初值和容差；不得提交 Python、脚本、导入语句、文件路径或网络地址。
+
+- `linear_program` 使用 HiGHS，成功时可表述为“对所声明线性规划的全局最优解”，但仍要检查 `constraint_violation` 与 `constraint_evidence`。
+- `continuous` 使用 SLSQP，只能表述为“从给定初值得到的局部候选最优解”；不得把 `global_optimum=false` 的结果宣称为全局最优。必要时用不同合理初值重复求解并比较。
+- `least_squares` 使用有界 TRF，检查残差向量、残差范数与 `optimality`，并明确它是局部最小二乘结果。
+
+每次都下载 `optimization-result.json` 与 `optimization-solution.csv`，确认 `success=true`、约束违反量处于容差内、目标方向正确，再把数值结果写进讲解、图表或课堂包。求解失败、不可行或证据不足时，修正模型或明确说明没有得到可信解，不得编造最优结论。
+
 ### 变化过程优先使用结构化数学动画
 
 当知识关键在于“怎样变化、趋近、移动、变形或逐步建立”，静态图不足以表达机制时，发现并调用 `visualization.animation`。只提交工具 Schema 声明的坐标轴、采样曲线、点、线、向量、形状、Unicode 数学标签和时间线动作；不得提交 Python、Manim 源码、Shell、URL 或路径。每个动作都要写能独立理解该时段教学意义的 caption，整段提供能替代视觉过程的 alt text。

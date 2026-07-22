@@ -85,6 +85,7 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
     assert {definition.tool_id for definition in definitions} == {
         "math.symbolic",
         "math.numeric",
+        "math.optimize",
         "math.verify",
         "math.graph",
         "visualization.plot",
@@ -96,6 +97,7 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
         "asset.ingest",
         "asset.transform",
         "page.preview",
+        "classroom.compose",
         "classroom.patch",
         "visualization.animation",
         "export.reveal",
@@ -233,7 +235,12 @@ def test_classroom_registry_exposes_typed_non_mutating_patch_preparation(
         for definition in default_tool_service().registry.list(category="classroom")
     }
 
-    assert set(definitions) == {"classroom.patch"}
+    assert set(definitions) == {"classroom.compose", "classroom.patch"}
+    compose = definitions["classroom.compose"]
+    assert compose.required_scope == ToolScope.AUTHOR
+    assert compose.quality_tier == ToolQualityTier.VERIFIED
+    assert compose.input_schema["required"] == ["package"]
+    assert "script" not in compose.input_schema["properties"]
     patch = definitions["classroom.patch"]
     assert patch.required_scope == ToolScope.AUTHOR
     assert patch.quality_tier == ToolQualityTier.VERIFIED
