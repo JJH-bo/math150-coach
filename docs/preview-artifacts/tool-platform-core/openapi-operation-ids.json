@@ -1,0 +1,40 @@
+{
+  "operation_ids": [
+    "cancelStudioToolJob",
+    "createClassroomDraft",
+    "createTeachingModelDraft",
+    "getClassroomDraft",
+    "getStudioCapabilities",
+    "getStudioLearningSession",
+    "getStudioTool",
+    "getStudioToolArtifact",
+    "getStudioToolJob",
+    "getStudioWorkspace",
+    "getTeachingModelDraft",
+    "getTeachingModelPreview",
+    "getTeachingModelPreviewArtifact",
+    "listLearningSessions",
+    "listStudioTools",
+    "listTeachingModels",
+    "patchLearningSessionScene",
+    "publishClassroomDraft",
+    "registerTeachingModel",
+    "requestTeachingModelPreview",
+    "returnLearningSessionExpansion",
+    "rollbackClassroomPackage",
+    "submitStudioToolJob",
+    "updateClassroomDraft",
+    "updateTeachingModelDraft",
+    "validateClassroomDraft",
+    "validateTeachingModelDraft"
+  ],
+  "tool_operation_ids": [
+    "cancelStudioToolJob",
+    "getStudioTool",
+    "getStudioToolArtifact",
+    "getStudioToolJob",
+    "listStudioTools",
+    "submitStudioToolJob"
+  ],
+  "tool_protocol_version": "studio_tools_v1"
+}

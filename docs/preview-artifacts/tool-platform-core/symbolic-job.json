@@ -1,0 +1,59 @@
+{
+  "argument_hash": "sha256:4715f169e222a8136e6f5a27876ea70c496c1e714981131c8f6215eb23bed387",
+  "arguments": {
+    "expression": "x**2 - 1",
+    "operation": "factor",
+    "symbols": {
+      "x": {
+        "real": true
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f7c1bea1d08042e0befa6404/artifacts/symbolic-result.json",
+      "media_type": "application/json",
+      "name": "symbolic-result.json",
+      "sha256": "sha256:fd81b0bf679222eb1db5c8f3275c2acef6bd653828a963a0ebf3f7e284e51453",
+      "size_bytes": 277
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f7c1bea1d08042e0befa6404/artifacts/symbolic-result.tex",
+      "media_type": "text/x-tex",
+      "name": "symbolic-result.tex",
+      "sha256": "sha256:786e2cb0d6f5dc24f97cacc0186198876441cb740d8fbe7eee8bfaac0f9b5d94",
+      "size_bytes": 38
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T06:09:31.806964Z",
+  "error": null,
+  "finished_at": "2026-07-22T06:09:31.856024Z",
+  "job_id": "tj-f7c1bea1d08042e0befa6404",
+  "metrics": {
+    "operation_count": 3
+  },
+  "required_scope": "studio.compute",
+  "result": {
+    "assumptions": {
+      "x": {
+        "real": true
+      }
+    },
+    "details": {},
+    "equivalent": null,
+    "exact": "(x - 1)*(x + 1)",
+    "latex": "\\left(x - 1\\right) \\left(x + 1\\right)",
+    "operation": "factor",
+    "values": [],
+    "variables": [
+      "x"
+    ],
+    "warnings": []
+  },
+  "started_at": "2026-07-22T06:09:31.818786Z",
+  "state": "succeeded",
+  "tool_id": "math.symbolic",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

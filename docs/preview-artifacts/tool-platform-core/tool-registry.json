@@ -1,0 +1,192 @@
+{
+  "tools": [
+    {
+      "cacheable": true,
+      "category": "mathematics",
+      "description": "Perform structured exact algebra, calculus, limits, series, equation solving, matrix operations, and equivalence checks.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "bounds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "direction": {
+            "enum": [
+              "+",
+              "-",
+              "+-"
+            ],
+            "type": "string"
+          },
+          "expression": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "matrix_operation": {
+            "enum": [
+              "determinant",
+              "inverse",
+              "rank",
+              "eigenvalues"
+            ],
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "simplify",
+              "factor",
+              "expand",
+              "solve",
+              "differentiate",
+              "integrate",
+              "limit",
+              "series",
+              "matrix",
+              "equivalent"
+            ],
+            "type": "string"
+          },
+          "order": {
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "other_expression": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "point": {
+            "type": "string"
+          },
+          "symbols": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "boolean"
+              },
+              "propertyNames": {
+                "enum": [
+                  "complex",
+                  "finite",
+                  "integer",
+                  "negative",
+                  "nonnegative",
+                  "nonpositive",
+                  "nonzero",
+                  "positive",
+                  "real"
+                ]
+              },
+              "type": "object"
+            },
+            "maxProperties": 64,
+            "type": "object"
+          },
+          "variable": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "symbols"
+        ],
+        "type": "object"
+      },
+      "license": "BSD-3-Clause",
+      "max_artifact_bytes": 2097152,
+      "max_artifacts": 4,
+      "output_media_types": [
+        "application/json",
+        "text/plain; charset=utf-8",
+        "text/x-tex"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "type": "object"
+          },
+          "details": {
+            "type": "object"
+          },
+          "equivalent": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "exact": {
+            "type": "string"
+          },
+          "latex": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "values": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "operation",
+          "exact",
+          "latex",
+          "values",
+          "equivalent",
+          "variables",
+          "assumptions",
+          "warnings",
+          "details"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "exact_reference_cases",
+        "assumption_reporting",
+        "safe_structured_parser",
+        "operation_complexity_limit"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.compute",
+      "timeout_seconds": 30,
+      "title": "Verified symbolic mathematics",
+      "tool_id": "math.symbolic",
+      "upstream_project": "https://www.sympy.org/",
+      "version": "1.0.0"
+    }
+  ],
+  "total": 1
+}

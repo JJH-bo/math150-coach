@@ -23,6 +23,36 @@ The repository itself does not call an AI provider and does not need a provider
 API key. The custom GPT is the author and calls Studio Actions using the
 private `STUDIO_API_KEY`.
 
+## Studio Tool Platform
+
+`studio_tools_v1` gives the custom GPT one stable workflow for a growing set
+of high-quality teaching tools. It can discover strict tool contracts, submit
+idempotent durable jobs, poll terminal results, cancel obsolete work, and
+download hash-verified artifacts. The initial verified tool is
+`math.symbolic@1.0.0`, which supports exact simplification, factoring,
+expansion, solving, differentiation, integration, limits, series, matrices,
+and equivalence under declared assumptions.
+
+The production Studio credential is authorized for all seven teaching scopes:
+read, compute, render, author, publish, rollback, and tool administration.
+Those scopes do not expose the host shell, arbitrary server paths, deployment
+secrets, or unrestricted networking. Tools run with strict JSON schemas,
+bounded time and artifact limits, and job-local storage.
+
+The generic Action workflow is:
+
+```text
+GET  /api/studio/v1/tools
+GET  /api/studio/v1/tools/{tool_id}
+POST /api/studio/v1/tool-jobs
+GET  /api/studio/v1/tool-jobs/{job_id}
+POST /api/studio/v1/tool-jobs/{job_id}/cancel
+GET  /api/studio/v1/tool-jobs/{job_id}/artifacts/{artifact_name}
+```
+
+New math, plot, page, asset, presentation, document, and animation adapters
+register behind this protocol without changing the Custom GPT's workflow.
+
 ## Learning Package
 
 `classroom_package_v1` supports:
@@ -254,12 +284,14 @@ $env:PYTHONPATH = "backend"
 
 python tools/generate_project_b_preview_evidence.py
 python tools/generate_project_c_evidence.py
+python tools/generate_tool_platform_evidence.py
 ```
 
 Evidence is checked in under:
 
 - `docs/preview-artifacts/project-b/`
 - `docs/preview-artifacts/project-c/`
+- `docs/preview-artifacts/tool-platform-core/`
 
 ## Repository Map
 
@@ -267,6 +299,7 @@ Evidence is checked in under:
 backend/app/api/studio/v1/       GPT authoring API
 backend/app/api/classroom/v1/    read-only learner API
 backend/app/classroom/           package, release, model, preview domain
+backend/app/tools/               tool contracts, registry, jobs, adapters
 backend/classroom_data/          package and model seeds
 frontend/classroom/              learner learning universe
 frontend/model-runtime/          teaching-model host and preview shell
