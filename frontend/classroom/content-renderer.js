@@ -13,7 +13,9 @@ function text(value) {
 
 function safeUri(value) {
   const uri = String(value || "");
-  return /^(https?:\/\/|\/(?!\/)|data:image\/)/.test(uri) ? escapeHtml(uri) : "";
+  return /^\/api\/classroom\/v1\/assets\/a-[a-f0-9]{64}$/.test(uri)
+    ? escapeHtml(uri)
+    : "";
 }
 
 export function formatMath(latex, { display = true } = {}) {

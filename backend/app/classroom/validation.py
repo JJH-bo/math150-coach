@@ -5,6 +5,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from app.assets.models import AssetRecord
+from app.assets.repository import AssetRepositoryError
 from app.classroom.model_contracts import RegisteredModelRecord
 from app.classroom.model_repository import ModelRepositoryError
 from app.classroom.model_validation import parameter_value_is_valid
@@ -12,6 +14,7 @@ from app.classroom.models import (
     BindingEffect,
     BindingEffectKind,
     BindingTriggerKind,
+    AssetReference,
     ClassroomPackage,
     ContentBlock,
     ContentBlockKind,
@@ -48,11 +51,17 @@ class ClassroomValidationReport(BaseModel):
 
 RecordId = Callable[[str, str], None]
 ModelResolver = Callable[[str, str], RegisteredModelRecord]
+AssetResolver = Callable[[str], AssetRecord]
 
 
 class ClassroomPackageValidator:
-    def __init__(self, model_resolver: ModelResolver | None = None) -> None:
+    def __init__(
+        self,
+        model_resolver: ModelResolver | None = None,
+        asset_resolver: AssetResolver | None = None,
+    ) -> None:
         self.model_resolver = model_resolver
+        self.asset_resolver = asset_resolver
 
     def validate(self, package: ClassroomPackage) -> ClassroomValidationReport:
         issues: list[ValidationIssue] = []
@@ -71,6 +80,62 @@ class ClassroomPackageValidator:
                 )
             else:
                 seen_ids[object_id] = path
+
+        declared_assets: dict[str, AssetReference] = {}
+        for asset_index, asset in enumerate(package.assets):
+            asset_path = f"assets[{asset_index}]"
+            record_id(asset.asset_id, f"{asset_path}.asset_id")
+            declared_assets.setdefault(asset.asset_id, asset)
+            expected_uri = f"/api/classroom/v1/assets/{asset.asset_id}"
+            if asset.uri != expected_uri:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="noncanonical_asset_uri",
+                        path=f"{asset_path}.uri",
+                        message="Asset URI must use the immutable classroom asset endpoint.",
+                    )
+                )
+            if self.asset_resolver is None:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="asset_registry_unavailable",
+                        path=f"{asset_path}.asset_id",
+                        message="An asset registry is required to validate package assets.",
+                    )
+                )
+                continue
+            try:
+                registered = self.asset_resolver(asset.asset_id)
+            except (LookupError, AssetRepositoryError):
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="unregistered_asset",
+                        path=f"{asset_path}.asset_id",
+                        message="Package assets must reference registered immutable content.",
+                    )
+                )
+                continue
+            if asset.content_hash != registered.content_hash:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="asset_content_hash_mismatch",
+                        path=f"{asset_path}.content_hash",
+                        message="Declared asset content hash does not match the registry.",
+                    )
+                )
+            if asset.media_type != registered.media_type:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="asset_media_type_mismatch",
+                        path=f"{asset_path}.media_type",
+                        message="Declared asset media type does not match the registry.",
+                    )
+                )
 
         for course_index, course in enumerate(package.courses):
             course_path = f"courses[{course_index}]"
@@ -103,6 +168,7 @@ class ClassroomPackageValidator:
                             record_id,
                             issues,
                             knowledge_point_ids,
+                            declared_assets,
                         )
                     for segment_index, segment in enumerate(module.segments):
                         segment_path = f"{module_path}.segments[{segment_index}]"
@@ -114,6 +180,7 @@ class ClassroomPackageValidator:
                                 record_id,
                                 issues,
                                 knowledge_point_ids,
+                                declared_assets,
                             )
                 for relation_index, relation in enumerate(chapter.relations):
                     relation_path = f"{chapter_path}.relations[{relation_index}]"
@@ -295,6 +362,7 @@ class ClassroomPackageValidator:
         record_id: RecordId,
         issues: list[ValidationIssue],
         knowledge_point_ids: set[str],
+        declared_assets: dict[str, AssetReference],
     ) -> None:
         record_id(block.id, f"{path}.id")
         if not block.knowledge_point_ids:
@@ -317,6 +385,45 @@ class ClassroomPackageValidator:
                     )
                 )
         self._validate_renderable_data(block, path, issues)
+        if block.kind == ContentBlockKind.IMAGE:
+            asset_id = block.data.get("asset_id")
+            declared = (
+                declared_assets.get(asset_id) if isinstance(asset_id, str) else None
+            )
+            if declared is None:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="undeclared_image_asset",
+                        path=f"{path}.data.asset_id",
+                        message="Image blocks must reference an asset declared by the package.",
+                    )
+                )
+            alt = block.data.get("alt")
+            if not isinstance(alt, str) or len(alt.strip()) < 4:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="image_alt_text_required",
+                        path=f"{path}.data.alt",
+                        message="Image blocks require meaningful alternative text.",
+                    )
+                )
+            expected_uri = (
+                f"/api/classroom/v1/assets/{asset_id}"
+                if isinstance(asset_id, str)
+                else ""
+            )
+            uri = block.data.get("uri")
+            if uri != expected_uri or (declared is not None and uri != declared.uri):
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="noncanonical_image_uri",
+                        path=f"{path}.data.uri",
+                        message="Image URI must match its declared immutable classroom asset.",
+                    )
+                )
         self._find_forbidden_keys(block.data, f"{path}.data", issues)
         for branch_index, branch in enumerate(block.detail_branches):
             branch_path = f"{path}.detail_branches[{branch_index}]"
@@ -328,6 +435,7 @@ class ClassroomPackageValidator:
                     record_id,
                     issues,
                     knowledge_point_ids,
+                    declared_assets,
                 )
 
     def _validate_coverage_contract(

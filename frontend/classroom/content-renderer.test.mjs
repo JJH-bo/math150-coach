@@ -240,3 +240,27 @@ test("renderer escapes authored text and keeps unknown blocks readable", () => {
   assert.match(html, /&lt;script&gt;/);
   assert.match(html, /暂不支持的内容类型/);
 });
+
+test("renderer accepts only canonical content-addressed classroom images", () => {
+  const assetId = `a-${"1".repeat(64)}`;
+  const renderImage = (uri, alt = "A blue curve showing the function near the origin.") => renderModule({
+    id: "asset-images",
+    title: "资源边界",
+    blocks: [{
+      id: "image",
+      kind: "image",
+      data: { asset_id: assetId, uri, alt, caption: "Verified classroom image" },
+      detail_branches: [],
+    }],
+    segments: [],
+  });
+
+  const canonical = renderImage(`/api/classroom/v1/assets/${assetId}`);
+  const remote = renderImage("https://example.test/tracker.png");
+  const injected = renderImage(`/api/classroom/v1/assets/${assetId}`, '<script>bad</script>');
+
+  assert.match(canonical, new RegExp(`/api/classroom/v1/assets/${assetId}`));
+  assert.doesNotMatch(remote, /example\.test/);
+  assert.doesNotMatch(injected, /<script>/);
+  assert.match(injected, /&lt;script&gt;bad&lt;\/script&gt;/);
+});

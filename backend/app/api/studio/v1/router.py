@@ -127,10 +127,14 @@ def default_model_repository() -> TeachingModelRepository:
 def default_service() -> ClassroomAuthoringService:
     root, _ = _data_roots()
     models = default_model_repository()
+    assets = AssetRepository(root)
     return ClassroomAuthoringService(
         ClassroomRepository(root),
         IdempotencyLedger(root / "operations"),
-        ClassroomPackageValidator(model_resolver=models.get_registered),
+        ClassroomPackageValidator(
+            model_resolver=models.get_registered,
+            asset_resolver=assets.get,
+        ),
         model_repository=models,
     )
 
@@ -152,6 +156,7 @@ def default_session_service() -> LearningSessionService:
     runtime = ClassroomRuntimeService(
         ClassroomRepository(root),
         model_repository=default_model_repository(),
+        asset_repository=AssetRepository(root),
     )
     return LearningSessionService(
         LearningSessionRepository(root / "learning-sessions.sqlite3"),

@@ -48,6 +48,10 @@ download hash-verified artifacts. The current verified pack includes:
 - `visualization.scene3d@1.0.0` for bounded Three.js surfaces, vectors, and
   points in self-contained WebGL lessons, with camera controls, frustum checks,
   GPU/runtime evidence, and before/after orbit screenshots;
+- `asset.ingest@1.0.0` for verified PNG/JPEG/WebP upload or prior-job artifact
+  ingestion into an immutable, content-addressed classroom asset repository;
+- `asset.transform@1.0.0` for bounded contain/cover image resizing, format
+  conversion, metadata removal, and persistent derivative registration;
 - `template.list@1.0.0` for ranking verified teaching structures by learning
   intent, output medium, and interaction need rather than school subject;
 - `template.instantiate@1.0.0` for turning the selected structure into a
@@ -88,6 +92,15 @@ GET  /api/studio/v1/tool-jobs/{job_id}/artifacts/{artifact_name}
 
 New math, plot, page, asset, presentation, document, and animation adapters
 register behind this protocol without changing the Custom GPT's workflow.
+
+Classroom images follow one controlled chain: discover a verified generator or
+accept an explicit upload, call `asset.ingest`, optionally call
+`asset.transform`, declare the returned asset ID/hash/media type/canonical URI
+in the package, reference that declaration from an image block with meaningful
+alt text, then validate and publish. Never place a web URL, Data URI, server
+path, or temporary job path directly in learner content. Published images are
+served from `/api/classroom/v1/assets/a-<sha256>` with immutable caching and
+ETag validation.
 
 ## Learning Package
 

@@ -5,11 +5,16 @@ import os
 from collections.abc import Callable
 from pathlib import Path
 
-from fastapi import APIRouter, Query, Response
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Query, Request, Response
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.errors import api_error
+from app.assets.repository import (
+    AssetNotFoundError,
+    AssetRepository,
+    AssetRepositoryError,
+)
 from app.classroom.model_repository import (
     ModelNotFoundError,
     ModelRepositoryError,
@@ -65,6 +70,7 @@ def default_runtime() -> ClassroomRuntimeService:
     return ClassroomRuntimeService(
         ClassroomRepository(root),
         model_repository=TeachingModelRepository(root, seed_root=seed),
+        asset_repository=AssetRepository(root),
     )
 
 
@@ -113,6 +119,29 @@ def create_classroom_router(
         return Response(
             content=source,
             media_type="application/javascript",
+        )
+
+    @router.get(
+        "/assets/{asset_id}",
+        operation_id="getClassroomAsset",
+        response_class=FileResponse,
+    )
+    def asset(asset_id: str, request: Request):
+        record, path = _map_errors(
+            lambda: {"asset": runtime_factory().asset(asset_id)}
+        )["asset"]
+        etag = f'"{record.content_hash.removeprefix("sha256:")}"'
+        headers = {
+            "ETag": etag,
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "X-Content-Type-Options": "nosniff",
+        }
+        if request.headers.get("if-none-match") == etag:
+            return Response(status_code=304, headers=headers)
+        return FileResponse(
+            path,
+            media_type=record.media_type,
+            headers=headers,
         )
 
     @router.get(
@@ -261,6 +290,10 @@ def _map_errors(operation: Callable[[], dict]) -> dict:
         raise api_error(404, "classroom_not_found", str(exc))
     except ClassroomRepositoryError as exc:
         raise api_error(400, "classroom_repository_error", str(exc))
+    except AssetNotFoundError as exc:
+        raise api_error(404, "classroom_asset_not_found", str(exc))
+    except AssetRepositoryError as exc:
+        raise api_error(500, "classroom_asset_repository_error", str(exc))
     except ModelNotFoundError as exc:
         raise api_error(404, "teaching_model_not_found", str(exc))
     except ModelRepositoryError as exc:
