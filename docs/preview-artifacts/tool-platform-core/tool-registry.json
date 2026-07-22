@@ -2072,6 +2072,195 @@
     {
       "cacheable": true,
       "category": "visualization",
+      "description": "Render bounded node-edge diagrams through Mermaid 11 and real Chromium. The GPT supplies structured nodes and edges rather than executable Mermaid source. Outputs include canonical JSON/source, accessible self-contained SVG/HTML, PNG, alt text, and clipping/pixel/browser QA.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "maxLength": 2000,
+            "minLength": 40,
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "TB",
+              "TD",
+              "BT",
+              "RL",
+              "LR"
+            ],
+            "type": "string"
+          },
+          "edges": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "label": {
+                  "maxLength": 160,
+                  "type": "string"
+                },
+                "source": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,47}$",
+                  "type": "string"
+                },
+                "target": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,47}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "source",
+                "target"
+              ],
+              "type": "object"
+            },
+            "maxItems": 160,
+            "minItems": 0,
+            "type": "array"
+          },
+          "height": {
+            "maximum": 1600,
+            "minimum": 400,
+            "type": "integer"
+          },
+          "nodes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,47}$",
+                  "type": "string"
+                },
+                "label": {
+                  "maxLength": 180,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "shape": {
+                  "enum": [
+                    "rectangle",
+                    "rounded",
+                    "stadium",
+                    "circle",
+                    "diamond"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "label"
+              ],
+              "type": "object"
+            },
+            "maxItems": 80,
+            "minItems": 1,
+            "type": "array"
+          },
+          "theme": {
+            "enum": [
+              "light",
+              "dark"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "width": {
+            "maximum": 2400,
+            "minimum": 600,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "nodes",
+          "edges"
+        ],
+        "type": "object"
+      },
+      "license": "MIT",
+      "max_artifact_bytes": 67108864,
+      "max_artifacts": 10,
+      "output_media_types": [
+        "application/json",
+        "text/vnd.mermaid",
+        "image/svg+xml",
+        "text/html",
+        "image/png",
+        "text/plain"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "type": "string"
+          },
+          "diagram_sha256": {
+            "type": "string"
+          },
+          "edge_count": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "node_count": {
+            "type": "integer"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "validation": {
+            "type": "object"
+          },
+          "width": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "node_count",
+          "edge_count",
+          "width",
+          "height",
+          "theme",
+          "diagram_sha256",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "required_descriptive_alt_text",
+        "structured_non_executable_input",
+        "strict_mermaid_security",
+        "real_browser_render",
+        "zero_console_or_request_errors",
+        "svg_structure_and_visible_nodes",
+        "no_clipping",
+        "pixel_variance_nonblank"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.render",
+      "timeout_seconds": 90,
+      "title": "Verified structured concept and process diagrams",
+      "tool_id": "visualization.diagram",
+      "upstream_project": "https://mermaid.js.org/",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "visualization",
       "description": "Create validated line, scatter, bar, area, histogram, heatmap, contour, and surface visuals with accessible alt text, canonical Plotly JSON, self-contained HTML, PNG, SVG, and pixel-level QA.",
       "deterministic": true,
       "execution_mode": "async",
@@ -2254,5 +2443,5 @@
       "version": "1.0.0"
     }
   ],
-  "total": 10
+  "total": 11
 }

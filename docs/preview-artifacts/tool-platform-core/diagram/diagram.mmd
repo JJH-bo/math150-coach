@@ -1,0 +1,8 @@
+flowchart LR
+    observe("Observe<br/>nearby values")
+    epsilon["Choose output<br/>tolerance ε"]
+    delta["Find input<br/>tolerance δ"]
+    verify(["Verify the<br/>limit claim"])
+    observe -->|focus output| epsilon
+    epsilon -->|control input| delta
+    delta -->|check all points| verify

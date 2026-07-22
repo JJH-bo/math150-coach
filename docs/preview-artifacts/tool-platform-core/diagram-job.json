@@ -1,0 +1,158 @@
+{
+  "argument_hash": "sha256:454dad27e5ce5398c1d5681e03651f9d07a5429b85d4439f4f36cd1e6cbbea4e",
+  "arguments": {
+    "alt_text": "A left-to-right concept flow from observing nearby values, through choosing an output tolerance and a matching input tolerance, to a verified finite-limit statement.",
+    "direction": "LR",
+    "edges": [
+      {
+        "label": "focus output",
+        "source": "observe",
+        "target": "epsilon"
+      },
+      {
+        "label": "control input",
+        "source": "epsilon",
+        "target": "delta"
+      },
+      {
+        "label": "check all points",
+        "source": "delta",
+        "target": "verify"
+      }
+    ],
+    "height": 620,
+    "nodes": [
+      {
+        "id": "observe",
+        "label": "Observe nearby values",
+        "shape": "rounded"
+      },
+      {
+        "id": "epsilon",
+        "label": "Choose output tolerance ε"
+      },
+      {
+        "id": "delta",
+        "label": "Find input tolerance δ"
+      },
+      {
+        "id": "verify",
+        "label": "Verify the limit claim",
+        "shape": "stadium"
+      }
+    ],
+    "theme": "dark",
+    "title": "From informal approach to a precise limit",
+    "width": 1000
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f4f1125264d244dd98eeaf90/artifacts/diagram.json",
+      "media_type": "application/json",
+      "name": "diagram.json",
+      "sha256": "sha256:69700a2a79dfc0641dbad2ec4bad9950b7231dd498e6151eddeeb50171ac9690",
+      "size_bytes": 1101
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f4f1125264d244dd98eeaf90/artifacts/diagram.mmd",
+      "media_type": "text/vnd.mermaid",
+      "name": "diagram.mmd",
+      "sha256": "sha256:2e70f3dff3bcaf5db180c8273951297ea64b97f763013693b481cd09f9c11d28",
+      "size_bytes": 306
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f4f1125264d244dd98eeaf90/artifacts/diagram.svg",
+      "media_type": "image/svg+xml",
+      "name": "diagram.svg",
+      "sha256": "sha256:be09f2246acc4c8e5463c3a41b46b6575098db5d1802d65351815ca3e45bd179",
+      "size_bytes": 61929
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f4f1125264d244dd98eeaf90/artifacts/diagram.html",
+      "media_type": "text/html",
+      "name": "diagram.html",
+      "sha256": "sha256:152d43e608114358c1e14be4cfb7d8c822b80c13a7f6ded6378676c68779c7c4",
+      "size_bytes": 62522
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f4f1125264d244dd98eeaf90/artifacts/diagram.png",
+      "media_type": "image/png",
+      "name": "diagram.png",
+      "sha256": "sha256:3dd14c1d7954a6c870ddc01ed83cd48c6f1f57b14d3e5030a4859ad0fdf76332",
+      "size_bytes": 23399
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f4f1125264d244dd98eeaf90/artifacts/alt.txt",
+      "media_type": "text/plain",
+      "name": "alt.txt",
+      "sha256": "sha256:565c69fe575968d53fade3a19c13f8dd0a39877ba653fc066b0644995cf1165f",
+      "size_bytes": 167
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-f4f1125264d244dd98eeaf90/artifacts/validation.json",
+      "media_type": "application/json",
+      "name": "validation.json",
+      "sha256": "sha256:8d136703657806449e7fa635005d937c303f2e805e30b888a449281c22c78ca9",
+      "size_bytes": 736
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T08:33:05.235240Z",
+  "error": null,
+  "finished_at": "2026-07-22T08:33:06.339480Z",
+  "job_id": "tj-f4f1125264d244dd98eeaf90",
+  "metrics": {
+    "edge_count": 3,
+    "node_count": 4,
+    "png_bytes": 23399,
+    "svg_bytes": 61929
+  },
+  "required_scope": "studio.render",
+  "result": {
+    "alt_text": "A left-to-right concept flow from observing nearby values, through choosing an output tolerance and a matching input tolerance, to a verified finite-limit statement.",
+    "diagram_sha256": "sha256:1d8bf3c0119e1b46b78cfb65678904ae07332f4ac79e99ea570d98b6c9da9519",
+    "edge_count": 3,
+    "height": 620,
+    "node_count": 4,
+    "theme": "dark",
+    "title": "From informal approach to a precise limit",
+    "validation": {
+      "alt_text_bytes": 167,
+      "clipped": false,
+      "console_errors": [],
+      "failed_requests": [],
+      "html_bytes": 62522,
+      "minimum_effective_font_px": 15.998528758522319,
+      "node_count": 4,
+      "page_errors": [],
+      "passed": true,
+      "png_bytes": 23399,
+      "png_channel_variance": 921.7295062898386,
+      "png_unique_colors": 782,
+      "rendered_edge_path_count": 3,
+      "renderer": "Mermaid 11.16.0",
+      "source_bytes": 306,
+      "specification_bytes": 1101,
+      "svg_bounds": {
+        "bottom": 388.09375,
+        "height": 74.59375,
+        "left": 41.046875,
+        "right": 958.953125,
+        "top": 313.5,
+        "width": 917.90625
+      },
+      "svg_bytes": 61929,
+      "text_count": 7,
+      "viewport": {
+        "height": 620,
+        "width": 1000
+      }
+    },
+    "width": 1000
+  },
+  "started_at": "2026-07-22T08:33:05.253010Z",
+  "state": "succeeded",
+  "tool_id": "visualization.diagram",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

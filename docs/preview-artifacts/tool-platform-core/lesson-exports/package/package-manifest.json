@@ -32,22 +32,22 @@
       "sha256": "81d4cd884765480797a865a92291ad55cb416cb6adf55cce9ba52f2896303623"
     },
     {
-      "bytes": 56846,
+      "bytes": 56841,
       "media_type": "image/png",
       "path": "slide-002.png",
-      "sha256": "6a2866fccf0034ecdd933770e030d0ad5ef28904f423440b9c0797a24fc2240d"
+      "sha256": "845b1257d06f9056a34fb05db9e724cbdd4967640e5b7c7bd9af737f35964e37"
     },
     {
-      "bytes": 48253,
+      "bytes": 48196,
       "media_type": "image/png",
       "path": "slide-003.png",
-      "sha256": "71235972f3b7e2c03b162f2ba55d9aa5de9b5674818c50148267f22c00d3826d"
+      "sha256": "b65fec4aebe7d61dda7462433fdd0325b83ef99f1fcfb35edc8d835a50a54af8"
     },
     {
-      "bytes": 48872,
+      "bytes": 48857,
       "media_type": "image/png",
       "path": "slide-004.png",
-      "sha256": "4da348191a7c65798adc4cdab33ab705c5833b430397007f85bbd031637052dd"
+      "sha256": "d9fb8f238b3f381892fd1843917da1f19e70276ef51cba066305cbd29f8d1c30"
     }
   ],
   "lesson_schema_version": "semantic_lesson_v1",

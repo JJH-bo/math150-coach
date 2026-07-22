@@ -1,0 +1,1 @@
+A left-to-right concept flow from observing nearby values, through choosing an output tolerance and a matching input tolerance, to a verified finite-limit statement.

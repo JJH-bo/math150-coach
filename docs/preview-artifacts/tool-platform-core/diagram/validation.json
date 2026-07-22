@@ -1,0 +1,32 @@
+{
+  "alt_text_bytes": 167,
+  "clipped": false,
+  "console_errors": [],
+  "failed_requests": [],
+  "html_bytes": 62522,
+  "minimum_effective_font_px": 15.998528758522319,
+  "node_count": 4,
+  "page_errors": [],
+  "passed": true,
+  "png_bytes": 23399,
+  "png_channel_variance": 921.7295062898386,
+  "png_unique_colors": 782,
+  "rendered_edge_path_count": 3,
+  "renderer": "Mermaid 11.16.0",
+  "source_bytes": 306,
+  "specification_bytes": 1101,
+  "svg_bounds": {
+    "bottom": 388.09375,
+    "height": 74.59375,
+    "left": 41.046875,
+    "right": 958.953125,
+    "top": 313.5,
+    "width": 917.90625
+  },
+  "svg_bytes": 61929,
+  "text_count": 7,
+  "viewport": {
+    "height": 620,
+    "width": 1000
+  }
+}

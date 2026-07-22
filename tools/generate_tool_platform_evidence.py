@@ -360,6 +360,36 @@ def generate(output_root: Path) -> None:
                     "theme": "dark",
                 },
             )
+            jobs["diagram"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-limit-concept-diagram-v1",
+                tool_id="visualization.diagram",
+                timeout_seconds=60,
+                arguments={
+                    "title": "From informal approach to a precise limit",
+                    "alt_text": (
+                        "A left-to-right concept flow from observing nearby values, "
+                        "through choosing an output tolerance and a matching input "
+                        "tolerance, to a verified finite-limit statement."
+                    ),
+                    "direction": "LR",
+                    "theme": "dark",
+                    "width": 1000,
+                    "height": 620,
+                    "nodes": [
+                        {"id": "observe", "label": "Observe nearby values", "shape": "rounded"},
+                        {"id": "epsilon", "label": "Choose output tolerance ε"},
+                        {"id": "delta", "label": "Find input tolerance δ"},
+                        {"id": "verify", "label": "Verify the limit claim", "shape": "stadium"},
+                    ],
+                    "edges": [
+                        {"source": "observe", "target": "epsilon", "label": "focus output"},
+                        {"source": "epsilon", "target": "delta", "label": "control input"},
+                        {"source": "delta", "target": "verify", "label": "check all points"},
+                    ],
+                },
+            )
             for format_name, tool_id in (
                 ("reveal", "export.reveal"),
                 ("pptx", "export.pptx"),
@@ -434,6 +464,8 @@ def generate(output_root: Path) -> None:
                 output_root / "plot-validation.json",
                 artifacts["plot"]["validation.json"],
             )
+            for artifact_name, content in artifacts["diagram"].items():
+                write_bytes(output_root / "diagram" / artifact_name, content)
             for format_name in export_names:
                 for artifact_name, content in artifacts[format_name].items():
                     write_bytes(

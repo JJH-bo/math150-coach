@@ -88,12 +88,30 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
         "math.verify",
         "math.graph",
         "visualization.plot",
+        "visualization.diagram",
         "export.reveal",
         "export.pptx",
         "export.pdf",
         "export.html",
         "export.package",
     }
+
+
+def test_visualization_registry_includes_structured_diagram_media(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CLASSROOM_DATA_ROOT", str(tmp_path))
+
+    definitions = {
+        definition.tool_id: definition
+        for definition in default_tool_service().registry.list(category="visualization")
+    }
+
+    assert set(definitions) == {"visualization.plot", "visualization.diagram"}
+    diagram = definitions["visualization.diagram"]
+    assert "image/svg+xml" in diagram.output_media_types
+    assert "image/png" in diagram.output_media_types
+    assert "source" not in diagram.input_schema["properties"]
 
 
 def test_export_media_contracts_support_intent_based_format_selection(

@@ -66,60 +66,60 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cf7bb2b135ed42e7954aa707/artifacts/lesson-spec.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-23f54bbbc1c843569924a595/artifacts/lesson-spec.json",
       "media_type": "application/json",
       "name": "lesson-spec.json",
       "sha256": "sha256:fb0550afa05362da2e5083b371214cd8b3a6582531564bc83943c01edd50f567",
       "size_bytes": 3627
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cf7bb2b135ed42e7954aa707/artifacts/lesson.html",
+      "download_path": "/api/studio/v1/tool-jobs/tj-23f54bbbc1c843569924a595/artifacts/lesson.html",
       "media_type": "text/html",
       "name": "lesson.html",
       "sha256": "sha256:37250822cb48136195864d388aa1e2116510d1b718d2ea4a2fa19022d04bc0c5",
       "size_bytes": 769231
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cf7bb2b135ed42e7954aa707/artifacts/html-audit.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-23f54bbbc1c843569924a595/artifacts/html-audit.json",
       "media_type": "application/json",
       "name": "html-audit.json",
       "sha256": "sha256:80f552ae32cf0587f019c03472fce8a8eb6862f4663c2e532c23917194104d31",
       "size_bytes": 1750
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cf7bb2b135ed42e7954aa707/artifacts/slide-001.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-23f54bbbc1c843569924a595/artifacts/slide-001.png",
       "media_type": "image/png",
       "name": "slide-001.png",
       "sha256": "sha256:81d4cd884765480797a865a92291ad55cb416cb6adf55cce9ba52f2896303623",
       "size_bytes": 46460
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cf7bb2b135ed42e7954aa707/artifacts/slide-002.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-23f54bbbc1c843569924a595/artifacts/slide-002.png",
       "media_type": "image/png",
       "name": "slide-002.png",
-      "sha256": "sha256:e08d1cc83e9d9f55d2750f7fc159573731042bc1a151d9bdea02bbf8b2d947a1",
-      "size_bytes": 56798
+      "sha256": "sha256:7452e402a291c6e5111e2fb1a7c89dc717eec0fceadc47aea7fa9cc6bb7e7041",
+      "size_bytes": 56787
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cf7bb2b135ed42e7954aa707/artifacts/slide-003.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-23f54bbbc1c843569924a595/artifacts/slide-003.png",
       "media_type": "image/png",
       "name": "slide-003.png",
-      "sha256": "sha256:345bddc347a75f9ac2d48f0fa5f31edea8340faee10e05372466c6eb36904770",
-      "size_bytes": 48195
+      "sha256": "sha256:b3e9818ba228751d75e76a8be5dd5aa3cb89be7c92edfac4dbba2084c1543e2d",
+      "size_bytes": 48206
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-cf7bb2b135ed42e7954aa707/artifacts/slide-004.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-23f54bbbc1c843569924a595/artifacts/slide-004.png",
       "media_type": "image/png",
       "name": "slide-004.png",
-      "sha256": "sha256:f443066e5a269f317405641d55fc28b372d1b4bc52e655ed6dbe185601b78c07",
-      "size_bytes": 48831
+      "sha256": "sha256:9729d169ac6cc2fa06bd77effb669ba745d78b89107583783240dd49ebfead6c",
+      "size_bytes": 48842
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T08:13:00.821680Z",
+  "created_at": "2026-07-22T08:33:11.352086Z",
   "error": null,
-  "finished_at": "2026-07-22T08:13:02.443630Z",
-  "job_id": "tj-cf7bb2b135ed42e7954aa707",
+  "finished_at": "2026-07-22T08:33:13.095794Z",
+  "job_id": "tj-23f54bbbc1c843569924a595",
   "metrics": {
     "html_bytes": 769231,
     "slide_count": 4
@@ -201,7 +201,7 @@
     "schema_version": "semantic_lesson_v1",
     "slide_count": 4
   },
-  "started_at": "2026-07-22T08:13:00.835397Z",
+  "started_at": "2026-07-22T08:33:11.367814Z",
   "state": "succeeded",
   "tool_id": "export.html",
   "tool_version": "1.0.0",
