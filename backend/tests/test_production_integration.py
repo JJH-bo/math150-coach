@@ -289,6 +289,7 @@ def test_docker_image_bootstraps_before_starting_the_server() -> None:
     assert "python:3.12-slim" in dockerfile
     assert "chromium" in dockerfile
     assert "COPY --from=node-runtime /usr/local /usr/local" in dockerfile
+    assert "corepack enable pnpm" in dockerfile
     assert "corepack prepare pnpm@11.9.0 --activate" in dockerfile
     assert "pnpm install --frozen-lockfile --prod" in dockerfile
     assert "package-lock.json" not in dockerfile

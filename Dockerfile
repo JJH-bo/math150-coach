@@ -28,7 +28,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=node-runtime /usr/local /usr/local
-RUN corepack enable \
+RUN corepack enable pnpm \
     && corepack prepare pnpm@11.9.0 --activate
 
 WORKDIR /app
