@@ -93,6 +93,8 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
         "visualization.scene3d",
         "template.list",
         "template.instantiate",
+        "asset.ingest",
+        "asset.transform",
         "export.reveal",
         "export.pptx",
         "export.pdf",
@@ -169,6 +171,25 @@ def test_export_media_contracts_support_intent_based_format_selection(
     assert "application/pdf" in definitions["export.pdf"].output_media_types
     assert "text/html" in definitions["export.html"].output_media_types
     assert "application/zip" in definitions["export.package"].output_media_types
+
+
+def test_asset_registry_supports_persistent_ingest_and_transform(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CLASSROOM_DATA_ROOT", str(tmp_path))
+
+    definitions = {
+        definition.tool_id: definition
+        for definition in default_tool_service().registry.list(category="asset")
+    }
+
+    assert set(definitions) == {"asset.ingest", "asset.transform"}
+    assert definitions["asset.ingest"].required_scope == ToolScope.AUTHOR
+    assert definitions["asset.transform"].required_scope == ToolScope.RENDER
+    assert definitions["asset.ingest"].quality_tier == ToolQualityTier.VERIFIED
+    assert "content_base64" in definitions["asset.ingest"].input_schema["properties"]
+    assert "url" not in definitions["asset.ingest"].input_schema["properties"]
+    assert "host_path" not in definitions["asset.transform"].input_schema["properties"]
 
 
 def test_get_tool_returns_requested_verified_definition(tmp_path, monkeypatch) -> None:

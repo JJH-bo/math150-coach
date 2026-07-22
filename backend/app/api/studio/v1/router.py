@@ -68,6 +68,7 @@ from app.classroom.repository import (
     ClassroomRepositoryError,
 )
 from app.classroom.validation import ClassroomPackageValidator
+from app.assets.repository import AssetRepository
 from app.tools.adapters.symbolic_math import SymbolicMathAdapter
 from app.tools.adapters.numeric_math import NumericMathAdapter
 from app.tools.adapters.math_verify import MathVerifyAdapter
@@ -85,6 +86,7 @@ from app.tools.adapters.pptx_export import PptxExportAdapter
 from app.tools.adapters.pdf_export import PdfExportAdapter
 from app.tools.adapters.html_export import HtmlExportAdapter
 from app.tools.adapters.package_export import PackageExportAdapter
+from app.tools.adapters.asset_images import AssetIngestAdapter, AssetTransformAdapter
 from app.tools.contracts import (
     ToolDefinition,
     ToolJob,
@@ -159,6 +161,8 @@ def default_session_service() -> LearningSessionService:
 
 def default_tool_service() -> ToolExecutionService:
     root, _ = _data_roots()
+    jobs = ToolJobRepository(root)
+    assets = AssetRepository(root)
     return ToolExecutionService(
         ToolRegistry(
             [
@@ -177,9 +181,11 @@ def default_tool_service() -> ToolExecutionService:
                 PdfExportAdapter(),
                 HtmlExportAdapter(),
                 PackageExportAdapter(),
+                AssetIngestAdapter(assets, jobs),
+                AssetTransformAdapter(assets),
             ]
         ),
-        ToolJobRepository(root),
+        jobs,
         IdempotencyLedger(root / "tool-idempotency"),
     )
 
