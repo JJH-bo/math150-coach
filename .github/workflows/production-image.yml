@@ -1,0 +1,70 @@
+name: Production image
+
+on:
+  push:
+    branches:
+      - main
+      - feature/ai-classroom-foundation
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IMAGE_NAME: math150-ai-classroom:${{ github.sha }}
+      SMOKE_CONTAINER: math150-production-smoke
+      STUDIO_API_KEY: ci-only-production-smoke-key
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build --tag "$IMAGE_NAME" .
+
+      - name: Verify pinned Manim runtime
+        run: |
+          version="$(docker run --rm "$IMAGE_NAME" python -m manim --version)"
+          printf '%s\n' "$version"
+          grep -F "Manim Community v0.20.1" <<<"$version"
+
+      - name: Start production server
+        run: |
+          docker run --detach \
+            --name "$SMOKE_CONTAINER" \
+            --publish 8000:8000 \
+            --env STUDIO_API_KEY="$STUDIO_API_KEY" \
+            --env AI_CLASSROOM_PUBLIC_ORIGIN=http://127.0.0.1:8000 \
+            --env CLASSROOM_DATA_ROOT=/tmp/classroom-data \
+            "$IMAGE_NAME"
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs "$SMOKE_CONTAINER"
+          exit 1
+
+      - name: Verify full tool catalog and render animation through public API
+        run: |
+          docker exec "$SMOKE_CONTAINER" \
+            python tools/verify_production_runtime.py \
+              --origin http://127.0.0.1:8000 \
+              --spec tools/fixtures/production-animation.json
+
+      - name: Show server logs after failure
+        if: failure()
+        run: docker logs "$SMOKE_CONTAINER" || true
+
+      - name: Stop production server
+        if: always()
+        run: docker rm --force "$SMOKE_CONTAINER" || true

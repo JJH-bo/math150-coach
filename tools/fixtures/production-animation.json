@@ -1,0 +1,74 @@
+{
+  "title": "Production quadratic animation smoke test",
+  "alt_text": "A blue quadratic curve appears on coordinate axes and a yellow point moves toward the curve's minimum at the origin.",
+  "width": 640,
+  "height": 360,
+  "fps": 15,
+  "background": "#0B1119",
+  "output_format": "mp4",
+  "objects": [
+    {
+      "id": "axes",
+      "type": "axes",
+      "x_range": [-3, 3, 1],
+      "y_range": [0, 5, 1],
+      "x_length": 8,
+      "y_length": 4.5,
+      "position": [0, -0.3],
+      "color": "#9FB0C3"
+    },
+    {
+      "id": "curve",
+      "type": "polyline",
+      "axes_id": "axes",
+      "points": [[-2, 4], [-1, 1], [0, 0], [1, 1], [2, 4]],
+      "color": "#33C3FF",
+      "stroke_width": 6
+    },
+    {
+      "id": "point",
+      "type": "dot",
+      "position": [-2.6, 1.4],
+      "radius": 0.12,
+      "color": "#F6C85F"
+    }
+  ],
+  "timeline": [
+    {
+      "action": "create",
+      "object_id": "axes",
+      "duration": 0.2,
+      "caption": "Coordinate axes establish the input and output scales."
+    },
+    {
+      "action": "create",
+      "object_id": "curve",
+      "duration": 0.4,
+      "caption": "A sampled quadratic curve appears symmetrically around the origin."
+    },
+    {
+      "action": "fade_in",
+      "object_id": "point",
+      "duration": 0.2,
+      "caption": "A yellow point marks a position near the left branch of the curve."
+    },
+    {
+      "action": "move_to",
+      "object_id": "point",
+      "to": [0, -0.3],
+      "duration": 0.6,
+      "caption": "The point moves toward the origin, where the quadratic reaches its minimum."
+    },
+    {
+      "action": "indicate",
+      "object_id": "point",
+      "duration": 0.3,
+      "caption": "The minimum point is highlighted at the origin."
+    },
+    {
+      "action": "wait",
+      "duration": 0.2,
+      "caption": "The completed mathematical relationship remains visible."
+    }
+  ]
+}
