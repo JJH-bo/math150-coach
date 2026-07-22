@@ -1,0 +1,24 @@
+{
+  "applied": false,
+  "counts": {
+    "assets": 0,
+    "bindings": 2,
+    "blocks": 5,
+    "chapters": 1,
+    "courses": 1,
+    "detail_branches": 1,
+    "knowledge_points": 3,
+    "model_instances": 1,
+    "modules": 1,
+    "segments": 3
+  },
+  "next_action": "Call createClassroomDraft or updateClassroomDraft with composed-package.json.",
+  "package_content_hash": "sha256:0b0de9d855c2786a52352f3e69fcb00ed17d35db42fa107f8441f8d876c065bf",
+  "package_id": "calculus-foundations",
+  "publish_ready": true,
+  "schema_version": "classroom_package_v1",
+  "validation": {
+    "issues": [],
+    "passed": true
+  }
+}

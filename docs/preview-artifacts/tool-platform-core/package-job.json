@@ -66,34 +66,34 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-d0a95106105e4b9cb60697fc/artifacts/lesson-spec.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-02ed0f6aa2f04cee9d718184/artifacts/lesson-spec.json",
       "media_type": "application/json",
       "name": "lesson-spec.json",
       "sha256": "sha256:fb0550afa05362da2e5083b371214cd8b3a6582531564bc83943c01edd50f567",
       "size_bytes": 3627
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-d0a95106105e4b9cb60697fc/artifacts/lesson-package.zip",
+      "download_path": "/api/studio/v1/tool-jobs/tj-02ed0f6aa2f04cee9d718184/artifacts/lesson-package.zip",
       "media_type": "application/zip",
       "name": "lesson-package.zip",
-      "sha256": "sha256:cce783e49dd7707233980b99522d8fe440ef0fc04eb7d8af1ca651a4d8e102a6",
-      "size_bytes": 719530
+      "sha256": "sha256:64ee18f077f95102e42da249a68924988223dabd5cbffea2b3e010e151ec0b4f",
+      "size_bytes": 719511
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-d0a95106105e4b9cb60697fc/artifacts/package-manifest.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-02ed0f6aa2f04cee9d718184/artifacts/package-manifest.json",
       "media_type": "application/json",
       "name": "package-manifest.json",
-      "sha256": "sha256:7450abde699858b32594e123bd8688fe8757e1f5e56b103f9bc1b2aae5684876",
+      "sha256": "sha256:1b2311c2ef7818a13b7123143c1dfa085d5bb0385314b6a8d0c07b1c28407857",
       "size_bytes": 1701
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:48:22.991588Z",
+  "created_at": "2026-07-22T11:46:36.857763Z",
   "error": null,
-  "finished_at": "2026-07-22T10:48:24.561197Z",
-  "job_id": "tj-d0a95106105e4b9cb60697fc",
+  "finished_at": "2026-07-22T11:46:38.385655Z",
+  "job_id": "tj-02ed0f6aa2f04cee9d718184",
   "metrics": {
-    "archive_bytes": 719530,
+    "archive_bytes": 719511,
     "packaged_file_count": 9,
     "slide_count": 4
   },
@@ -128,28 +128,28 @@
           "sha256": "b554938fee5869d05bbb59a1744ec6dea0c662bbf0ed11e6ceabe311addc060f"
         },
         {
-          "bytes": 46476,
+          "bytes": 46460,
           "media_type": "image/png",
           "path": "slide-001.png",
-          "sha256": "d29991d7f54a02b8b34f6eedc1a2dbd3495d10c228d63bd6061542c29cc78f11"
+          "sha256": "81d4cd884765480797a865a92291ad55cb416cb6adf55cce9ba52f2896303623"
         },
         {
-          "bytes": 56800,
+          "bytes": 56788,
           "media_type": "image/png",
           "path": "slide-002.png",
-          "sha256": "6f22b5a8fcb9ee6b1cadfa11b31ccd091b22a1932f506cce910bbcdc9f2474b8"
+          "sha256": "a15545acfdd8180f3c4fb54025f76f06a5619ebc07a8d4a92f61239922564183"
         },
         {
-          "bytes": 48208,
+          "bytes": 48210,
           "media_type": "image/png",
           "path": "slide-003.png",
-          "sha256": "40f613f99e479a2a1989c5c6fdb3bf20bcbf26a59932a523bc2e3993054b2670"
+          "sha256": "356f90c2eca9d6d00898385e0c2c2bee9ed54f3fd1dff88a0faa94c29b93f0aa"
         },
         {
-          "bytes": 48825,
+          "bytes": 48851,
           "media_type": "image/png",
           "path": "slide-004.png",
-          "sha256": "9811e2f8f3c3110ea2bd168ac49f03d7e807541355a355f9edc23cc51150a903"
+          "sha256": "5211a888ed0306a6acdb0f2fb731d4cfec4937954d8bbd7c328dfd51dc457232"
         }
       ],
       "lesson_schema_version": "semantic_lesson_v1",
@@ -159,7 +159,7 @@
     "schema_version": "lesson_package_v1",
     "slide_count": 4
   },
-  "started_at": "2026-07-22T10:48:23.005739Z",
+  "started_at": "2026-07-22T11:46:36.867248Z",
   "state": "succeeded",
   "tool_id": "export.package",
   "tool_version": "1.0.0",

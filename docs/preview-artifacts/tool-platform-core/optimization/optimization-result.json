@@ -1,0 +1,51 @@
+{
+  "constraint_violation": 0.0,
+  "details": {
+    "constraint_evidence": [
+      {
+        "expression": "x + y",
+        "relation": ">=",
+        "rhs": 3.0,
+        "value": 3.0,
+        "violation": 0.0
+      }
+    ],
+    "global_optimum": false,
+    "optimum_scope": "local",
+    "trace": [
+      {
+        "iteration": 1,
+        "objective": 5.0,
+        "point": [
+          2.0,
+          4.0
+        ]
+      },
+      {
+        "iteration": 2,
+        "objective": 0.0,
+        "point": [
+          1.0,
+          2.0
+        ]
+      }
+    ]
+  },
+  "evaluations": 7,
+  "goal": "minimize",
+  "iterations": 2,
+  "objective_value": 0.0,
+  "operation": "continuous",
+  "optimality": 1.4901161193847656e-08,
+  "solution": {
+    "x": 1.0,
+    "y": 2.0
+  },
+  "solver": "scipy.optimize.minimize.SLSQP",
+  "status": "Optimization terminated successfully",
+  "success": true,
+  "variables": [
+    "x",
+    "y"
+  ]
+}

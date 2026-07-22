@@ -1,0 +1,119 @@
+{
+  "argument_hash": "sha256:8f7952cfc3fb7a926c91c8e9440c2034044555fba7d8bc228159ac67cb25f1d0",
+  "arguments": {
+    "bounds": [
+      [
+        -5,
+        5
+      ],
+      [
+        -5,
+        5
+      ]
+    ],
+    "constraints": [
+      {
+        "expression": "x + y",
+        "relation": ">=",
+        "rhs": 3
+      }
+    ],
+    "goal": "minimize",
+    "initial_point": [
+      0,
+      0
+    ],
+    "max_iterations": 500,
+    "objective_expression": "(x - 1)**2 + (y - 2)**2",
+    "operation": "continuous",
+    "tolerance": 1e-09,
+    "variables": [
+      "x",
+      "y"
+    ]
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-1c2a7e65d84c42f8aa2346ce/artifacts/optimization-result.json",
+      "media_type": "application/json",
+      "name": "optimization-result.json",
+      "sha256": "sha256:6ab5d2c9b8767fb2c2688f4dbd0b44e1b08b1fb535602ddb32bbb47e1bc288cb",
+      "size_bytes": 969
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-1c2a7e65d84c42f8aa2346ce/artifacts/optimization-solution.csv",
+      "media_type": "text/csv",
+      "name": "optimization-solution.csv",
+      "sha256": "sha256:41dfcf7931c7ef2c7fe2e2df36bf15db4a6a4aa9fd0bfa5ea2ee86e352facc24",
+      "size_bytes": 72
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T11:46:12.507557Z",
+  "error": null,
+  "finished_at": "2026-07-22T11:46:12.542048Z",
+  "job_id": "tj-1c2a7e65d84c42f8aa2346ce",
+  "metrics": {
+    "constraint_violation": 0.0,
+    "evaluations": 7,
+    "iterations": 2,
+    "variable_count": 2
+  },
+  "required_scope": "studio.compute",
+  "result": {
+    "constraint_violation": 0.0,
+    "details": {
+      "constraint_evidence": [
+        {
+          "expression": "x + y",
+          "relation": ">=",
+          "rhs": 3.0,
+          "value": 3.0,
+          "violation": 0.0
+        }
+      ],
+      "global_optimum": false,
+      "optimum_scope": "local",
+      "trace": [
+        {
+          "iteration": 1,
+          "objective": 5.0,
+          "point": [
+            2.0,
+            4.0
+          ]
+        },
+        {
+          "iteration": 2,
+          "objective": 0.0,
+          "point": [
+            1.0,
+            2.0
+          ]
+        }
+      ]
+    },
+    "evaluations": 7,
+    "goal": "minimize",
+    "iterations": 2,
+    "objective_value": 0.0,
+    "operation": "continuous",
+    "optimality": 1.4901161193847656e-08,
+    "solution": {
+      "x": 1.0,
+      "y": 2.0
+    },
+    "solver": "scipy.optimize.minimize.SLSQP",
+    "status": "Optimization terminated successfully",
+    "success": true,
+    "variables": [
+      "x",
+      "y"
+    ]
+  },
+  "started_at": "2026-07-22T11:46:12.518582Z",
+  "state": "succeeded",
+  "tool_id": "math.optimize",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

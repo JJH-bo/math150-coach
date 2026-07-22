@@ -539,6 +539,13 @@ def generate(output_root: Path) -> None:
                 "\n\nThis explanation was checked through a typed Studio patch."
             )
             jobs = {}
+            jobs["classroom-compose"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-complete-classroom-compose-v1",
+                tool_id="classroom.compose",
+                arguments={"package": draft_record["package"]},
+            )
             jobs["classroom-patch"] = submit_and_wait(
                 origin,
                 studio_key,
@@ -578,6 +585,29 @@ def generate(output_root: Path) -> None:
                     "variable": "x",
                     "interval": [0, "pi"],
                     "tolerance": 1e-10,
+                },
+            )
+            jobs["optimization"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-constrained-optimization-v1",
+                tool_id="math.optimize",
+                arguments={
+                    "operation": "continuous",
+                    "variables": ["x", "y"],
+                    "goal": "minimize",
+                    "objective_expression": "(x - 1)**2 + (y - 2)**2",
+                    "initial_point": [0, 0],
+                    "bounds": [[-5, 5], [-5, 5]],
+                    "constraints": [
+                        {
+                            "expression": "x + y",
+                            "relation": ">=",
+                            "rhs": 3,
+                        }
+                    ],
+                    "tolerance": 1e-9,
+                    "max_iterations": 500,
                 },
             )
             jobs["verification"] = submit_and_wait(
@@ -890,6 +920,12 @@ def generate(output_root: Path) -> None:
                     output_root / "classroom-patch" / artifact_name,
                     content,
                 )
+            for tool_job in ("classroom-compose", "optimization"):
+                for artifact_name, content in artifacts[tool_job].items():
+                    write_bytes(
+                        output_root / tool_job / artifact_name,
+                        content,
+                    )
             for format_name in export_names:
                 for artifact_name, content in artifacts[format_name].items():
                     write_bytes(

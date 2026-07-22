@@ -423,6 +423,85 @@
       "version": "1.0.0"
     },
     {
+      "cacheable": true,
+      "category": "classroom",
+      "description": "Normalize one complete classroom_package_v1 candidate, validate its coverage evidence, teaching structure, assets, models, bindings, and stable IDs, and emit a canonical package plus repair-oriented report. The operation is non-mutating; a publish-ready artifact is applied only through the revision-safe classroom draft Actions.",
+      "deterministic": true,
+      "execution_mode": "sync",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "package": {
+            "description": "A complete classroom_package_v1 candidate.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "package"
+        ],
+        "type": "object"
+      },
+      "license": "Project-owned / MIT",
+      "max_artifact_bytes": 67108864,
+      "max_artifacts": 2,
+      "output_media_types": [
+        "application/json"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "applied": {
+            "type": "boolean"
+          },
+          "counts": {
+            "type": "object"
+          },
+          "package_content_hash": {
+            "type": "string"
+          },
+          "package_id": {
+            "type": "string"
+          },
+          "publish_ready": {
+            "type": "boolean"
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "validation": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "package_id",
+          "schema_version",
+          "package_content_hash",
+          "counts",
+          "applied",
+          "publish_ready",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "complete_classroom_package_v1",
+        "pydantic_structural_validation",
+        "semantic_publish_validation",
+        "coverage_and_teaching_contracts",
+        "registered_asset_and_model_resolution",
+        "canonical_content_hash",
+        "non_mutating_candidate_generation",
+        "repair_oriented_validation_report"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.author",
+      "timeout_seconds": 30,
+      "title": "Compose and verify a complete classroom package",
+      "tool_id": "classroom.compose",
+      "upstream_project": "Project Classroom Package v1 and Pydantic v2",
+      "version": "1.0.0"
+    },
+    {
       "cacheable": false,
       "category": "classroom",
       "description": "Read one exact classroom draft revision and apply typed block, module, or asset-declaration edits to a candidate copy. Emits the complete structurally valid candidate package and semantic validation report. This tool never mutates the draft; apply the candidate with the existing revision-safe updateClassroomDraft Action after inspecting the report.",
@@ -2286,6 +2365,265 @@
     {
       "cacheable": true,
       "category": "mathematics",
+      "description": "Solve structured continuous nonlinear programs, linear programs, and bounded nonlinear least-squares problems with SciPy. Inputs declare variables, bounds, objectives, residuals, and constraints explicitly; Python, callbacks, solver code, files, URLs, and shell commands are never accepted.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "bounds": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              ],
+              "type": "array"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "constraints": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "expression": {
+                  "maxLength": 20000,
+                  "type": "string"
+                },
+                "relation": {
+                  "enum": [
+                    "<=",
+                    "==",
+                    ">="
+                  ],
+                  "type": "string"
+                },
+                "rhs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "expression",
+                "relation",
+                "rhs"
+              ],
+              "type": "object"
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "goal": {
+            "enum": [
+              "minimize",
+              "maximize"
+            ],
+            "type": "string"
+          },
+          "initial_point": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "linear_constraints": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "coefficients": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "maxItems": 64,
+                  "type": "array"
+                },
+                "relation": {
+                  "enum": [
+                    "<=",
+                    "==",
+                    ">="
+                  ],
+                  "type": "string"
+                },
+                "rhs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "coefficients",
+                "relation",
+                "rhs"
+              ],
+              "type": "object"
+            },
+            "maxItems": 256,
+            "type": "array"
+          },
+          "max_iterations": {
+            "maximum": 10000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "objective_coefficients": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "objective_expression": {
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "continuous",
+              "linear_program",
+              "least_squares"
+            ],
+            "type": "string"
+          },
+          "residual_expressions": {
+            "items": {
+              "maxLength": 20000,
+              "type": "string"
+            },
+            "maxItems": 512,
+            "minItems": 1,
+            "type": "array"
+          },
+          "tolerance": {
+            "maximum": 0.1,
+            "minimum": 1e-15,
+            "type": "number"
+          },
+          "variables": {
+            "items": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "operation",
+          "variables"
+        ],
+        "type": "object"
+      },
+      "license": "BSD-3-Clause",
+      "max_artifact_bytes": 16777216,
+      "max_artifacts": 4,
+      "output_media_types": [
+        "application/json",
+        "text/csv"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "constraint_violation": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "details": {
+            "type": "object"
+          },
+          "evaluations": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "goal": {
+            "type": "string"
+          },
+          "iterations": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "objective_value": {
+            "type": "number"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "optimality": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "solution": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object"
+          },
+          "solver": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "operation",
+          "solver",
+          "success",
+          "status",
+          "goal",
+          "variables",
+          "solution",
+          "objective_value",
+          "constraint_violation",
+          "optimality",
+          "iterations",
+          "evaluations",
+          "details"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "arbitrary_code_rejected",
+        "bounded_variables_and_constraints",
+        "finite_solution_and_objective",
+        "solver_success_required",
+        "postsolve_feasibility_check",
+        "local_vs_global_optimum_disclosed",
+        "deterministic_reference_cases"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.compute",
+      "timeout_seconds": 30,
+      "title": "Verified bounded mathematical optimization",
+      "tool_id": "math.optimize",
+      "upstream_project": "SciPy 1.17.1",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "mathematics",
       "description": "Perform structured exact algebra, calculus, limits, series, equation solving, matrix operations, and equivalence checks.",
       "deterministic": true,
       "execution_mode": "async",
@@ -3708,5 +4046,5 @@
       "version": "1.0.0"
     }
   ],
-  "total": 20
+  "total": 22
 }

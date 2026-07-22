@@ -139,49 +139,49 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/animation.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-ed6c4dc145884441b3cf9921/artifacts/animation.json",
       "media_type": "application/json",
       "name": "animation.json",
       "sha256": "sha256:55c2de3444099e2e5efe6735b35aa1893660248b560d94aee43ace15e965479f",
       "size_bytes": 3330
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/animation.mp4",
+      "download_path": "/api/studio/v1/tool-jobs/tj-ed6c4dc145884441b3cf9921/artifacts/animation.mp4",
       "media_type": "video/mp4",
       "name": "animation.mp4",
       "sha256": "sha256:bbfe3425fee348d555d9f246d3e218270579791d7d8b44d28c7470ab6b56783f",
       "size_bytes": 37922
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/poster.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-ed6c4dc145884441b3cf9921/artifacts/poster.png",
       "media_type": "image/png",
       "name": "poster.png",
       "sha256": "sha256:bc15deead4d7c481d457702512f3cca5e66e78016d06ed608496c1a3d39b99df",
       "size_bytes": 25269
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/frame-sheet.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-ed6c4dc145884441b3cf9921/artifacts/frame-sheet.png",
       "media_type": "image/png",
       "name": "frame-sheet.png",
       "sha256": "sha256:f29b158960156e686438ecdc70fe8a92a61641f48b7cc8dd075c524e7bff498f",
       "size_bytes": 26537
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/captions.vtt",
+      "download_path": "/api/studio/v1/tool-jobs/tj-ed6c4dc145884441b3cf9921/artifacts/captions.vtt",
       "media_type": "text/vtt",
       "name": "captions.vtt",
       "sha256": "sha256:a614285b3ae22ffcc847108461461544965f95039007f66916cd92c01f667b20",
       "size_bytes": 683
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/alt.txt",
+      "download_path": "/api/studio/v1/tool-jobs/tj-ed6c4dc145884441b3cf9921/artifacts/alt.txt",
       "media_type": "text/plain",
       "name": "alt.txt",
       "sha256": "sha256:0a1f3acc06b7e0c25b61b76385e0a8824af7a8db0313d2980c88fe61188c6a7e",
       "size_bytes": 141
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-c7eb49ae48bc410bb13dd06f/artifacts/validation.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-ed6c4dc145884441b3cf9921/artifacts/validation.json",
       "media_type": "application/json",
       "name": "validation.json",
       "sha256": "sha256:2b59533667aadfa4c4f5af931c198f008a0817fec1b1ca370beb1494a2d22e41",
@@ -189,10 +189,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:48:09.546700Z",
+  "created_at": "2026-07-22T11:46:23.823745Z",
   "error": null,
-  "finished_at": "2026-07-22T10:48:11.390368Z",
-  "job_id": "tj-c7eb49ae48bc410bb13dd06f",
+  "finished_at": "2026-07-22T11:46:25.611903Z",
+  "job_id": "tj-ed6c4dc145884441b3cf9921",
   "metrics": {
     "action_count": 7,
     "duration_seconds": 2.866341145833333,
@@ -270,7 +270,7 @@
       "width": 640
     }
   },
-  "started_at": "2026-07-22T10:48:09.557620Z",
+  "started_at": "2026-07-22T11:46:23.839002Z",
   "state": "succeeded",
   "tool_id": "visualization.animation",
   "tool_version": "1.0.0",

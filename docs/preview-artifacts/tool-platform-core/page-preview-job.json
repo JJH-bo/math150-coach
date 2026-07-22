@@ -10,28 +10,28 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-ab69e173e8b34dfcb673eafd/artifacts/preview-request.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-44ef32396ecd4409901b5e82/artifacts/preview-request.json",
       "media_type": "application/json",
       "name": "preview-request.json",
       "sha256": "sha256:4a1489409e2a55f450e03b236bbaf1789b0b9a559fe9ff54bfd24cffd8c3f85b",
       "size_bytes": 422
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-ab69e173e8b34dfcb673eafd/artifacts/desktop.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-44ef32396ecd4409901b5e82/artifacts/desktop.png",
       "media_type": "image/png",
       "name": "desktop.png",
       "sha256": "sha256:76fdd73c93919439bb6df5f813cd52b7d8a0913bbfd4ec65f4ecd6a79c13b75a",
       "size_bytes": 223600
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-ab69e173e8b34dfcb673eafd/artifacts/mobile.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-44ef32396ecd4409901b5e82/artifacts/mobile.png",
       "media_type": "image/png",
       "name": "mobile.png",
       "sha256": "sha256:db2fb3097144b9247e7bbd2e51a2928346636f322bca8acd0e82ed651c08a58c",
       "size_bytes": 92829
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-ab69e173e8b34dfcb673eafd/artifacts/preview-report.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-44ef32396ecd4409901b5e82/artifacts/preview-report.json",
       "media_type": "application/json",
       "name": "preview-report.json",
       "sha256": "sha256:4e7879eb336a65425ff657199d1f516605c181a903ec0c483106f4d72c8ab7f9",
@@ -39,10 +39,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:48:11.593416Z",
+  "created_at": "2026-07-22T11:46:25.822338Z",
   "error": null,
-  "finished_at": "2026-07-22T10:48:16.795876Z",
-  "job_id": "tj-ab69e173e8b34dfcb673eafd",
+  "finished_at": "2026-07-22T11:46:30.600320Z",
+  "job_id": "tj-44ef32396ecd4409901b5e82",
   "metrics": {
     "model_expected": true,
     "reveal_steps": 2,
@@ -114,7 +114,7 @@
     },
     "viewport_count": 2
   },
-  "started_at": "2026-07-22T10:48:11.603251Z",
+  "started_at": "2026-07-22T11:46:25.832483Z",
   "state": "succeeded",
   "tool_id": "page.preview",
   "tool_version": "1.0.0",

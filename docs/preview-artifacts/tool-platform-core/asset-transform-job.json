@@ -12,14 +12,14 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-49cf82637dba46c095cf30fc/artifacts/asset.webp",
+      "download_path": "/api/studio/v1/tool-jobs/tj-983428d1f119493299c41f0c/artifacts/asset.webp",
       "media_type": "image/webp",
       "name": "asset.webp",
       "sha256": "sha256:4c144a63bc5cbcdc47ae26155020ba9e78a563cf1211ef3f3e6c74453b229451",
       "size_bytes": 8076
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-49cf82637dba46c095cf30fc/artifacts/validation-report.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-983428d1f119493299c41f0c/artifacts/validation-report.json",
       "media_type": "application/json",
       "name": "validation-report.json",
       "sha256": "sha256:8cced719a6a0e194511f132d72606718c35264c4a721cf2587916a32404f1da4",
@@ -27,10 +27,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:48:05.365581Z",
+  "created_at": "2026-07-22T11:46:19.685915Z",
   "error": null,
-  "finished_at": "2026-07-22T10:48:05.482583Z",
-  "job_id": "tj-49cf82637dba46c095cf30fc",
+  "finished_at": "2026-07-22T11:46:19.817766Z",
+  "job_id": "tj-983428d1f119493299c41f0c",
   "metrics": {
     "duplicate": false,
     "output_bytes": 8076,
@@ -72,7 +72,7 @@
       "width": 640
     }
   },
-  "started_at": "2026-07-22T10:48:05.376392Z",
+  "started_at": "2026-07-22T11:46:19.700680Z",
   "state": "succeeded",
   "tool_id": "asset.transform",
   "tool_version": "1.0.0",
