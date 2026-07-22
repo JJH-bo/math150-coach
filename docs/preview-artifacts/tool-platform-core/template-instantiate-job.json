@@ -9,7 +9,7 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-90c77bc06f9a4bcf8cf77029/artifacts/lesson-blueprint.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-f2c44c39165146d1999611e3/artifacts/lesson-blueprint.json",
       "media_type": "application/json",
       "name": "lesson-blueprint.json",
       "sha256": "sha256:f6e5eba375ac0ec4f16cf98ee45ab9b610a11ca3489ae23ba90351cf01c167af",
@@ -17,10 +17,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:10:04.983378Z",
+  "created_at": "2026-07-22T10:21:22.930312Z",
   "error": null,
-  "finished_at": "2026-07-22T10:10:05.019600Z",
-  "job_id": "tj-90c77bc06f9a4bcf8cf77029",
+  "finished_at": "2026-07-22T10:21:22.953453Z",
+  "job_id": "tj-f2c44c39165146d1999611e3",
   "metrics": {
     "slide_blueprint_count": 6
   },
@@ -65,7 +65,7 @@
     },
     "required_next_step": "author_and_validate_semantic_lesson_v1"
   },
-  "started_at": "2026-07-22T10:10:04.997690Z",
+  "started_at": "2026-07-22T10:21:22.941646Z",
   "state": "succeeded",
   "tool_id": "template.instantiate",
   "tool_version": "1.0.0",

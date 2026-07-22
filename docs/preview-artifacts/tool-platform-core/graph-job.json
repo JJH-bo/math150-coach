@@ -49,21 +49,21 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-f64d7ddb76774ec6a24a6465/artifacts/graph-result.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-72c1a53d17414d60b2818f01/artifacts/graph-result.json",
       "media_type": "application/json",
       "name": "graph-result.json",
       "sha256": "sha256:5f71501a29692882d82aefb0dfa61077fc46bd0680d7fb3b284c9d4183cc3ec0",
       "size_bytes": 1207
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-f64d7ddb76774ec6a24a6465/artifacts/graph-nodes.csv",
+      "download_path": "/api/studio/v1/tool-jobs/tj-72c1a53d17414d60b2818f01/artifacts/graph-nodes.csv",
       "media_type": "text/csv",
       "name": "graph-nodes.csv",
       "sha256": "sha256:77ba46f2f404d68d39d5a8b7ed9a8a374837f9004130515b18552ac89f427df9",
       "size_bytes": 108
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-f64d7ddb76774ec6a24a6465/artifacts/graph-edges.csv",
+      "download_path": "/api/studio/v1/tool-jobs/tj-72c1a53d17414d60b2818f01/artifacts/graph-edges.csv",
       "media_type": "text/csv",
       "name": "graph-edges.csv",
       "sha256": "sha256:d4284c0cb69dbb5889d394de2c21cb7535f2d99a5c5838e38eb3a9af653bdf50",
@@ -71,10 +71,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:09:54.931364Z",
+  "created_at": "2026-07-22T10:21:12.045193Z",
   "error": null,
-  "finished_at": "2026-07-22T10:09:54.959524Z",
-  "job_id": "tj-f64d7ddb76774ec6a24a6465",
+  "finished_at": "2026-07-22T10:21:12.076670Z",
+  "job_id": "tj-72c1a53d17414d60b2818f01",
   "metrics": {
     "edge_count": 4,
     "node_count": 4
@@ -148,7 +148,7 @@
     },
     "weighted": true
   },
-  "started_at": "2026-07-22T10:09:54.940351Z",
+  "started_at": "2026-07-22T10:21:12.054284Z",
   "state": "succeeded",
   "tool_id": "math.graph",
   "tool_version": "1.0.0",

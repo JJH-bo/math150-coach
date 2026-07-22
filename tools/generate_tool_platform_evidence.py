@@ -359,11 +359,12 @@ def generate(output_root: Path) -> None:
     port = free_port()
     origin = f"http://127.0.0.1:{port}"
     with tempfile.TemporaryDirectory(prefix="math150-tool-evidence-") as temporary:
+        data_root = Path(temporary) / "data"
         environment = os.environ.copy()
         environment.update(
             {
                 "APP_PROFILE": "mixed",
-                "CLASSROOM_DATA_ROOT": str(Path(temporary) / "data"),
+                "CLASSROOM_DATA_ROOT": str(data_root),
                 "STUDIO_API_KEY": studio_key,
                 "AI_CLASSROOM_PUBLIC_ORIGIN": origin,
                 "PYTHONPATH": str(ROOT / "backend"),
@@ -372,6 +373,20 @@ def generate(output_root: Path) -> None:
         browser = configured_browser()
         if browser is not None:
             environment["MODEL_PREVIEW_BROWSER"] = browser
+        subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "tools" / "bootstrap_ai_classroom.py"),
+                "--data-root",
+                str(data_root),
+            ],
+            cwd=ROOT,
+            env=environment,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            check=True,
+            timeout=60,
+        )
         process = subprocess.Popen(
             [
                 sys.executable,
@@ -606,6 +621,21 @@ def generate(output_root: Path) -> None:
                     "output_mode": "mixed",
                 },
             )
+            jobs["page-preview"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-published-limit-page-preview-v1",
+                tool_id="page.preview",
+                timeout_seconds=120,
+                arguments={
+                    "package_id": "calculus-foundations",
+                    "module_id": "limit-core",
+                    "viewports": "both",
+                    "reveal_steps": 2,
+                    "open_first_detail": True,
+                    "quality_profile": "standard",
+                },
+            )
             for format_name, tool_id in (
                 ("reveal", "export.reveal"),
                 ("pptx", "export.pptx"),
@@ -698,6 +728,11 @@ def generate(output_root: Path) -> None:
                         output_root / template_job / artifact_name,
                         content,
                     )
+            for artifact_name, content in artifacts["page-preview"].items():
+                write_bytes(
+                    output_root / "page-preview" / artifact_name,
+                    content,
+                )
             for format_name in export_names:
                 for artifact_name, content in artifacts[format_name].items():
                     write_bytes(

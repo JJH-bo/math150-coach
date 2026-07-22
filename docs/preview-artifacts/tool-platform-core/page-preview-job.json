@@ -1,0 +1,122 @@
+{
+  "argument_hash": "sha256:e56cd0ccee4bd78efafe4f4f060ea6cc45635be2bc3c7dde06b85fa017bcfbbf",
+  "arguments": {
+    "module_id": "limit-core",
+    "open_first_detail": true,
+    "package_id": "calculus-foundations",
+    "quality_profile": "standard",
+    "reveal_steps": 2,
+    "viewports": "both"
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-b2ab4e3d24634bd0bd4b1976/artifacts/preview-request.json",
+      "media_type": "application/json",
+      "name": "preview-request.json",
+      "sha256": "sha256:4a1489409e2a55f450e03b236bbaf1789b0b9a559fe9ff54bfd24cffd8c3f85b",
+      "size_bytes": 422
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-b2ab4e3d24634bd0bd4b1976/artifacts/desktop.png",
+      "media_type": "image/png",
+      "name": "desktop.png",
+      "sha256": "sha256:1627fd12f4caf24141598f20038604722215e87df66b19d03989a813b3bf25a7",
+      "size_bytes": 221170
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-b2ab4e3d24634bd0bd4b1976/artifacts/mobile.png",
+      "media_type": "image/png",
+      "name": "mobile.png",
+      "sha256": "sha256:db2fb3097144b9247e7bbd2e51a2928346636f322bca8acd0e82ed651c08a58c",
+      "size_bytes": 92829
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-b2ab4e3d24634bd0bd4b1976/artifacts/preview-report.json",
+      "media_type": "application/json",
+      "name": "preview-report.json",
+      "sha256": "sha256:51742898c18ed2883c868661f6438a7a72c88c7bf557a96753bef7f73586abcb",
+      "size_bytes": 1537
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T10:21:23.010556Z",
+  "error": null,
+  "finished_at": "2026-07-22T10:21:30.159561Z",
+  "job_id": "tj-b2ab4e3d24634bd0bd4b1976",
+  "metrics": {
+    "model_expected": true,
+    "reveal_steps": 2,
+    "screenshot_bytes": 313999,
+    "viewport_count": 2
+  },
+  "required_scope": "studio.render",
+  "result": {
+    "module_id": "limit-core",
+    "package_id": "calculus-foundations",
+    "release_version": "r-0b0de9d855c2786a",
+    "request_sha256": "sha256:ecdaf6292191c262d0d53649270323a2767d1b97f33afcd9550afab6e2ec1f93",
+    "validation": {
+      "images": [
+        {
+          "bytes": 221170,
+          "channel_variance": 1016.9763737429714,
+          "name": "desktop.png",
+          "unique_colors": 1557
+        },
+        {
+          "bytes": 92829,
+          "channel_variance": 1938.6694629453305,
+          "name": "mobile.png",
+          "unique_colors": 1685
+        }
+      ],
+      "module_id": "limit-core",
+      "package_id": "calculus-foundations",
+      "passed": true,
+      "release_version": "r-0b0de9d855c2786a",
+      "runtime": "classroom_runtime_v1",
+      "viewports": [
+        {
+          "accessibility_issues": [],
+          "baseline_steps": 3,
+          "clipped_text": [],
+          "console_errors": [],
+          "failed_requests": [],
+          "formula_count": 1,
+          "horizontal_overflow": 0,
+          "model_canvas_visible": true,
+          "model_expected": true,
+          "module_title": "高等数学 / 极限 / 极限的核心机制",
+          "name": "desktop",
+          "screenshot": "desktop.png",
+          "unrendered_math": 0,
+          "viewport_height": 960,
+          "viewport_width": 1440
+        },
+        {
+          "accessibility_issues": [],
+          "baseline_steps": 3,
+          "clipped_text": [],
+          "console_errors": [],
+          "failed_requests": [],
+          "formula_count": 1,
+          "horizontal_overflow": 0,
+          "model_canvas_visible": true,
+          "model_expected": true,
+          "module_title": "高等数学 / 极限 / 极限的核心机制",
+          "name": "mobile",
+          "screenshot": "mobile.png",
+          "unrendered_math": 0,
+          "viewport_height": 844,
+          "viewport_width": 390
+        }
+      ]
+    },
+    "viewport_count": 2
+  },
+  "started_at": "2026-07-22T10:21:23.022866Z",
+  "state": "succeeded",
+  "tool_id": "page.preview",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

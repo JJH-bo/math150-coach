@@ -1,0 +1,21 @@
+{
+  "model_expected": true,
+  "module_id": "limit-core",
+  "open_first_detail": true,
+  "package_id": "calculus-foundations",
+  "quality_profile": "standard",
+  "release_version": "r-0b0de9d855c2786a",
+  "reveal_steps": 2,
+  "viewports": [
+    {
+      "height": 960,
+      "name": "desktop",
+      "width": 1440
+    },
+    {
+      "height": 844,
+      "name": "mobile",
+      "width": 390
+    }
+  ]
+}

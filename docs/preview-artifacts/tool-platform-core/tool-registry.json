@@ -2492,6 +2492,118 @@
       "version": "1.0.0"
     },
     {
+      "cacheable": false,
+      "category": "page",
+      "description": "Open one immutable published module in the project-owned learner UI at desktop and/or mobile size. Exercises progressive reveal and an optional detail branch, then verifies mathematics rendering, teaching models, overflow, clipping, accessibility, network requests, console output, and nonblank screenshots. The tool accepts no URL, HTML, CSS, or script.",
+      "deterministic": false,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "module_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$",
+            "type": "string"
+          },
+          "open_first_detail": {
+            "default": true,
+            "type": "boolean"
+          },
+          "package_id": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,79}$",
+            "type": "string"
+          },
+          "quality_profile": {
+            "default": "standard",
+            "enum": [
+              "standard",
+              "high"
+            ],
+            "type": "string"
+          },
+          "reveal_steps": {
+            "default": 1,
+            "maximum": 20,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewports": {
+            "default": "both",
+            "enum": [
+              "desktop",
+              "mobile",
+              "both"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "package_id",
+          "module_id"
+        ],
+        "type": "object"
+      },
+      "license": "Project-owned / Apache-2.0",
+      "max_artifact_bytes": 50331648,
+      "max_artifacts": 4,
+      "output_media_types": [
+        "application/json",
+        "image/png"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "module_id": {
+            "type": "string"
+          },
+          "package_id": {
+            "type": "string"
+          },
+          "release_version": {
+            "type": "string"
+          },
+          "request_sha256": {
+            "type": "string"
+          },
+          "validation": {
+            "type": "object"
+          },
+          "viewport_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "package_id",
+          "release_version",
+          "module_id",
+          "viewport_count",
+          "request_sha256",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "registered_immutable_release",
+        "real_learner_runtime",
+        "bounded_project_owned_origin",
+        "desktop_mobile_viewports",
+        "progressive_reveal_exercised",
+        "mathematics_rendered",
+        "declared_model_visible",
+        "zero_horizontal_overflow",
+        "zero_clipped_text",
+        "accessible_controls_and_media",
+        "zero_console_or_request_errors",
+        "pixel_variance_nonblank"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.render",
+      "timeout_seconds": 120,
+      "title": "Preview a published classroom in the real learner runtime",
+      "tool_id": "page.preview",
+      "upstream_project": "Project Classroom Runtime and Playwright 1.61.1",
+      "version": "1.0.0"
+    },
+    {
       "cacheable": true,
       "category": "template",
       "description": "Create an authoring blueprint from a verified teaching template without pretending placeholder content is a finished lesson.",
@@ -3311,5 +3423,5 @@
       "version": "1.0.0"
     }
   ],
-  "total": 17
+  "total": 18
 }

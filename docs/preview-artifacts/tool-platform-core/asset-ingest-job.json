@@ -1,33 +1,33 @@
 {
-  "argument_hash": "sha256:e999590a4b2ea10d02391119e535b4b0d72058abecacee3a51eebb2248ae0109",
+  "argument_hash": "sha256:ef603cafad9ea609535eeede220b9a12071204e0e4146aab3d29f47c02d151f8",
   "arguments": {
     "alt_text": "A symmetric quadratic curve with its minimum at the origin.",
     "filename": "quadratic.png",
     "output_format": "png",
     "source_artifact_name": "figure.png",
-    "source_job_id": "tj-765c7bed79fd4642a1557acf"
+    "source_job_id": "tj-251d8bd739394c958de4e7ea"
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-751b72f6d72a4b9d80e73772/artifacts/asset.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-77085f1db52047f78af0327e/artifacts/asset.png",
       "media_type": "image/png",
       "name": "asset.png",
       "sha256": "sha256:bcff35d9a11c63c85c9cc79c2b45b58bfb6fd8afa4fee59061db58c85b3611ae",
       "size_bytes": 28509
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-751b72f6d72a4b9d80e73772/artifacts/validation-report.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-77085f1db52047f78af0327e/artifacts/validation-report.json",
       "media_type": "application/json",
       "name": "validation-report.json",
-      "sha256": "sha256:af4d0bded6b955193fa183967ee5c47f548edcb500991bd9e9b979f85cf95ef7",
+      "sha256": "sha256:c7032dae12f1baccc4c27c14b9af89681fe5ee863af2c66d5fa15d015ffe273f",
       "size_bytes": 532
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:10:00.491049Z",
+  "created_at": "2026-07-22T10:21:18.606996Z",
   "error": null,
-  "finished_at": "2026-07-22T10:10:00.592823Z",
-  "job_id": "tj-751b72f6d72a4b9d80e73772",
+  "finished_at": "2026-07-22T10:21:18.729736Z",
+  "job_id": "tj-77085f1db52047f78af0327e",
   "metrics": {
     "duplicate": false,
     "height": 520,
@@ -59,13 +59,13 @@
       "second_decode_verified": true,
       "source_artifact_name": "figure.png",
       "source_format": "PNG",
-      "source_job_id": "tj-765c7bed79fd4642a1557acf",
+      "source_job_id": "tj-251d8bd739394c958de4e7ea",
       "source_kind": "studio_job_artifact",
       "source_sha256": "sha256:a26120af1d40f62488a69aa4737f345431fad8260226047931d261210be81925",
       "width": 800
     }
   },
-  "started_at": "2026-07-22T10:10:00.503476Z",
+  "started_at": "2026-07-22T10:21:18.620409Z",
   "state": "succeeded",
   "tool_id": "asset.ingest",
   "tool_version": "1.0.0",
