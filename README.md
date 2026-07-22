@@ -56,6 +56,9 @@ download hash-verified artifacts. The current verified pack includes:
   learner runtime at desktop and mobile sizes, exercising reveal/detail flows,
   and rejecting formula, model, overflow, clipping, accessibility, console,
   network, or blank-render failures;
+- `classroom.patch@1.0.0` for revision-pinned block/module/asset edits that
+  produce a complete candidate package and semantic validation report without
+  mutating the source draft or accepting arbitrary JSON pointers/scripts;
 - `template.list@1.0.0` for ranking verified teaching structures by learning
   intent, output medium, and interaction need rather than school subject;
 - `template.instantiate@1.0.0` for turning the selected structure into a
@@ -111,6 +114,13 @@ both viewports. A failed page gate is an objectively failed release: repair the
 draft and republish, or roll back when the release cannot be repaired safely.
 The tool previews only project-owned published package/module IDs; it accepts
 no external URL, HTML, CSS, JavaScript, host path, or credential.
+
+For focused page edits, the GPT reads the current draft revision, calls
+`classroom.patch` with typed ID-targeted operations, downloads the candidate
+package and patch report, repairs any reported semantic issue, then applies the
+complete candidate through `updateClassroomDraft` using the same expected
+revision. This keeps editing compositional without bypassing revision safety or
+the publish validator.
 
 ## Learning Package
 

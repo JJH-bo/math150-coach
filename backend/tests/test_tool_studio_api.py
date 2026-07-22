@@ -96,6 +96,7 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
         "asset.ingest",
         "asset.transform",
         "page.preview",
+        "classroom.patch",
         "export.reveal",
         "export.pptx",
         "export.pdf",
@@ -210,6 +211,24 @@ def test_page_registry_previews_only_published_project_content(
     assert "package_id" in preview.input_schema["required"]
     assert "url" not in preview.input_schema["properties"]
     assert "script" not in preview.input_schema["properties"]
+
+
+def test_classroom_registry_exposes_typed_non_mutating_patch_preparation(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CLASSROOM_DATA_ROOT", str(tmp_path))
+
+    definitions = {
+        definition.tool_id: definition
+        for definition in default_tool_service().registry.list(category="classroom")
+    }
+
+    assert set(definitions) == {"classroom.patch"}
+    patch = definitions["classroom.patch"]
+    assert patch.required_scope == ToolScope.AUTHOR
+    assert patch.quality_tier == ToolQualityTier.VERIFIED
+    assert "operations" in patch.input_schema["required"]
+    assert "script" not in patch.input_schema["properties"]
 
 
 def test_get_tool_returns_requested_verified_definition(tmp_path, monkeypatch) -> None:

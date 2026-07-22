@@ -88,6 +88,7 @@ from app.tools.adapters.html_export import HtmlExportAdapter
 from app.tools.adapters.package_export import PackageExportAdapter
 from app.tools.adapters.asset_images import AssetIngestAdapter, AssetTransformAdapter
 from app.tools.adapters.page_preview import PagePreviewAdapter
+from app.tools.adapters.classroom_patch import ClassroomPatchAdapter
 from app.tools.contracts import (
     ToolDefinition,
     ToolJob,
@@ -169,6 +170,8 @@ def default_tool_service() -> ToolExecutionService:
     root, _ = _data_roots()
     jobs = ToolJobRepository(root)
     assets = AssetRepository(root)
+    classrooms = ClassroomRepository(root)
+    models = default_model_repository()
     return ToolExecutionService(
         ToolRegistry(
             [
@@ -189,7 +192,14 @@ def default_tool_service() -> ToolExecutionService:
                 PackageExportAdapter(),
                 AssetIngestAdapter(assets, jobs),
                 AssetTransformAdapter(assets),
-                PagePreviewAdapter(ClassroomRepository(root)),
+                PagePreviewAdapter(classrooms),
+                ClassroomPatchAdapter(
+                    classrooms,
+                    ClassroomPackageValidator(
+                        model_resolver=models.get_registered,
+                        asset_resolver=assets.get,
+                    ),
+                ),
             ]
         ),
         jobs,
