@@ -95,6 +95,7 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
         "template.instantiate",
         "asset.ingest",
         "asset.transform",
+        "page.preview",
         "export.reveal",
         "export.pptx",
         "export.pdf",
@@ -190,6 +191,25 @@ def test_asset_registry_supports_persistent_ingest_and_transform(
     assert "content_base64" in definitions["asset.ingest"].input_schema["properties"]
     assert "url" not in definitions["asset.ingest"].input_schema["properties"]
     assert "host_path" not in definitions["asset.transform"].input_schema["properties"]
+
+
+def test_page_registry_previews_only_published_project_content(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CLASSROOM_DATA_ROOT", str(tmp_path))
+
+    definitions = {
+        definition.tool_id: definition
+        for definition in default_tool_service().registry.list(category="page")
+    }
+
+    assert set(definitions) == {"page.preview"}
+    preview = definitions["page.preview"]
+    assert preview.required_scope == ToolScope.RENDER
+    assert preview.quality_tier == ToolQualityTier.VERIFIED
+    assert "package_id" in preview.input_schema["required"]
+    assert "url" not in preview.input_schema["properties"]
+    assert "script" not in preview.input_schema["properties"]
 
 
 def test_get_tool_returns_requested_verified_definition(tmp_path, monkeypatch) -> None:

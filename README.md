@@ -52,6 +52,10 @@ download hash-verified artifacts. The current verified pack includes:
   ingestion into an immutable, content-addressed classroom asset repository;
 - `asset.transform@1.0.0` for bounded contain/cover image resizing, format
   conversion, metadata removal, and persistent derivative registration;
+- `page.preview@1.0.0` for opening an immutable published module in the real
+  learner runtime at desktop and mobile sizes, exercising reveal/detail flows,
+  and rejecting formula, model, overflow, clipping, accessibility, console,
+  network, or blank-render failures;
 - `template.list@1.0.0` for ranking verified teaching structures by learning
   intent, output medium, and interaction need rather than school subject;
 - `template.instantiate@1.0.0` for turning the selected structure into a
@@ -101,6 +105,12 @@ alt text, then validate and publish. Never place a web URL, Data URI, server
 path, or temporary job path directly in learner content. Published images are
 served from `/api/classroom/v1/assets/a-<sha256>` with immutable caching and
 ETag validation.
+
+After publishing, the GPT runs `page.preview` for each changed core module with
+both viewports. A failed page gate is an objectively failed release: repair the
+draft and republish, or roll back when the release cannot be repaired safely.
+The tool previews only project-owned published package/module IDs; it accepts
+no external URL, HTML, CSS, JavaScript, host path, or credential.
 
 ## Learning Package
 
