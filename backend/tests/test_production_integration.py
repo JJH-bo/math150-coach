@@ -295,3 +295,26 @@ def test_docker_image_bootstraps_before_starting_the_server() -> None:
     assert "tools/bootstrap_ai_classroom.py" in dockerfile
     assert 'CLASSROOM_DATA_ROOT' in dockerfile
     assert 'exec uvicorn app.main:app' in dockerfile
+
+
+def test_classroom_self_hosts_mathjax_runtime_and_fonts() -> None:
+    studio = TestClient(create_app("mixed"))
+
+    page = studio.get("/classroom/")
+    runtime = studio.get(
+        "/classroom-vendor/mathjax/tex-mml-chtml-mathjax-tex.js"
+    )
+    speech_worker = studio.get(
+        "/classroom-vendor/mathjax/sre/speech-worker.js"
+    )
+    font = studio.get("/classroom-vendor/mathjax/chtml/woff2/mjx-tex-n.woff2")
+
+    assert page.status_code == 200
+    assert "cdn.jsdelivr.net" not in page.text
+    assert "/classroom-vendor/mathjax/" in page.text
+    assert runtime.status_code == 200
+    assert len(runtime.content) > 900_000
+    assert speech_worker.status_code == 200
+    assert len(speech_worker.content) > 1_000
+    assert font.status_code == 200
+    assert len(font.content) > 1_000

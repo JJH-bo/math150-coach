@@ -31,6 +31,7 @@ const state = {
   activeContentId: null,
   scrollTimer: null,
   focusTimer: null,
+  fullscreenScrollTop: null,
   modulePayload: null,
   learningSession: null,
   sessionAccess: null,
@@ -462,6 +463,7 @@ function scheduleSessionFocus(contentId) {
         state.learningSession.revision,
         contentId,
       );
+      renderSessionContent();
       watchLearningSession();
     } catch (error) {
       await recoverSessionConflict(error);
@@ -497,8 +499,17 @@ function disposeActiveModule() {
 }
 
 function toggleFullscreen(active) {
+  if (active) state.fullscreenScrollTop = window.scrollY;
   dom.modelDock.classList.toggle("is-fullscreen", active);
   document.body.style.overflow = active ? "hidden" : "";
+  if (!active && state.fullscreenScrollTop !== null) {
+    const restoreTop = state.fullscreenScrollTop;
+    state.fullscreenScrollTop = null;
+    window.scrollTo({ top: restoreTop, behavior: "instant" });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: restoreTop, behavior: "instant" });
+    });
+  }
   saveScene();
 }
 

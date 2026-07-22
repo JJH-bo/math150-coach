@@ -68,18 +68,25 @@ async function main() {
       return response.json();
     };
     const studioPatch = async (body, key) => {
-      const response = await fetch(
-        `${baseUrl}/api/studio/v1/learning-sessions/${access.sessionId}/scene`,
-        {
-          method: "PATCH",
-          headers: { ...studioHeaders, "Idempotency-Key": key },
-          body: JSON.stringify(body),
-        },
-      );
-      if (!response.ok) {
+      let payload = body;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const response = await fetch(
+          `${baseUrl}/api/studio/v1/learning-sessions/${access.sessionId}/scene`,
+          {
+            method: "PATCH",
+            headers: { ...studioHeaders, "Idempotency-Key": key },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (response.ok) return response.json();
+        if (response.status === 409) {
+          const latest = await studioGet();
+          payload = { ...payload, expected_revision: latest.revision };
+          continue;
+        }
         throw new Error(`studio patch failed: ${response.status} ${await response.text()}`);
       }
-      return response.json();
+      throw new Error("studio patch remained conflicted after three attempts");
     };
     let liveSession = await studioGet();
     const parentBlock = liveSession.baseline_steps[0].blocks[0].id;
@@ -205,6 +212,9 @@ async function main() {
     await page.locator("#fullscreenModel").click();
     report.checks.fullscreen_open = await page.locator("#modelDock").evaluate((element) => element.classList.contains("is-fullscreen"));
     await page.locator("#closeFullscreenModel").click();
+    await page.evaluate(() => new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
     report.checks.fullscreen_return_scroll_delta = Math.abs(
       (await page.evaluate(() => window.scrollY)) - scrollBefore
     );

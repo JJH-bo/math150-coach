@@ -12,6 +12,7 @@ from app.classroom.session_models import (
     ScenePatch,
 )
 from app.classroom.session_repository import (
+    LearningSessionConflictError,
     LearningSessionRepository,
     LearningSessionRepositoryError,
 )
@@ -82,11 +83,20 @@ class LearningSessionService:
         content_id: str,
     ) -> LearningSession:
         self.get_for_learner(session_id, access_token=access_token)
-        return self.repository.set_active_content(
-            session_id,
-            expected_revision=expected_revision,
-            content_id=content_id,
-        )
+        revision = expected_revision
+        conflict: LearningSessionConflictError | None = None
+        for _ in range(3):
+            try:
+                return self.repository.set_active_content(
+                    session_id,
+                    expected_revision=revision,
+                    content_id=content_id,
+                )
+            except LearningSessionConflictError as exc:
+                conflict = exc
+                revision = self.repository.get(session_id).session.revision
+        assert conflict is not None
+        raise conflict
 
     def events(
         self,

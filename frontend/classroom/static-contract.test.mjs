@@ -38,12 +38,15 @@ test("visual system prioritizes reading, responsive model dock, and reduced moti
   assert.match(css, /@media\s*\(max-width:\s*860px\)/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /\.model-dock\.is-fullscreen/);
+  assert.match(app, /fullscreenScrollTop/);
+  assert.match(app, /window\.scrollTo\(\{ top: restoreTop, behavior: "instant" \}\)/);
 });
 
 test("learning stage distinguishes stable baseline from GPT detailed expansion", () => {
   assert.match(app, /createSessionClient/);
   assert.match(app, /renderLearningSession/);
   assert.match(app, /watchLearningSession/);
+  assert.match(app, /sessionClient\.focus[\s\S]+renderSessionContent\(\);[\s\S]+watchLearningSession\(\);/);
   assert.match(css, /\.baseline-step/);
   assert.match(css, /\.primary-learning-action/);
   assert.match(css, /\.live-expansion/);
@@ -56,7 +59,8 @@ test("learning stage distinguishes stable baseline from GPT detailed expansion",
 });
 
 test("classroom uses a real mathematics engine with readable fallback", () => {
-  assert.match(html, /mathjax@3\/es5\/tex-chtml\.js/);
+  assert.match(html, /\/classroom-vendor\/mathjax\/tex-mml-chtml-mathjax-tex\.js/);
+  assert.doesNotMatch(html, /<script[^>]+https?:\/\//);
   assert.match(app, /typesetMath/);
   assert.match(css, /\.math-typeset/);
   assert.match(css, /\.math-render-fallback/);

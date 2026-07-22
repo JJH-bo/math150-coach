@@ -16,6 +16,20 @@ from app.config import AppProfile, resolve_app_profile
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 CLASSROOM_FRONTEND_DIR = FRONTEND_DIR / "classroom"
 MODEL_RUNTIME_DIR = FRONTEND_DIR / "model-runtime"
+MATHJAX_VENDOR_DIR = (
+    Path(__file__).resolve().parents[2]
+    / "node_modules"
+    / "@mathjax"
+    / "mathjax-tex-font"
+)
+MATHJAX_SRE_DIR = (
+    Path(__file__).resolve().parents[2]
+    / "node_modules"
+    / "@mathjax"
+    / "src"
+    / "bundle"
+    / "sre"
+)
 
 
 def _make_action_compatible_schema(schema: dict) -> dict:
@@ -112,6 +126,18 @@ def create_app(profile: AppProfile | str | None = None) -> FastAPI:
                 "/classroom-runtime",
                 StaticFiles(directory=MODEL_RUNTIME_DIR),
                 name="classroom-model-runtime",
+            )
+        if MATHJAX_VENDOR_DIR.exists():
+            if MATHJAX_SRE_DIR.exists():
+                application.mount(
+                    "/classroom-vendor/mathjax/sre",
+                    StaticFiles(directory=MATHJAX_SRE_DIR),
+                    name="classroom-mathjax-sre",
+                )
+            application.mount(
+                "/classroom-vendor/mathjax",
+                StaticFiles(directory=MATHJAX_VENDOR_DIR),
+                name="classroom-mathjax-runtime",
             )
         if CLASSROOM_FRONTEND_DIR.exists():
             application.mount(

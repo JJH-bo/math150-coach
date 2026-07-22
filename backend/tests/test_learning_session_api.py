@@ -162,6 +162,31 @@ def test_learner_updates_exact_active_content_and_replays_events(
     assert "event: session.created" in events.text
 
 
+def test_learner_focus_rebases_over_concurrent_session_updates(
+    tmp_path, monkeypatch
+) -> None:
+    client = app_client(tmp_path, monkeypatch)
+    session_id, access_token = create_session(client)
+    revealed = client.post(
+        f"/api/classroom/v1/learning-sessions/{session_id}/reveal",
+        json={"access_token": access_token, "expected_revision": 1},
+    )
+
+    focused = client.post(
+        f"/api/classroom/v1/learning-sessions/{session_id}/interactions",
+        json={
+            "access_token": access_token,
+            "expected_revision": 1,
+            "active_content_id": "limit-intro",
+        },
+    )
+
+    assert revealed.status_code == 200
+    assert focused.status_code == 200
+    assert focused.json()["revision"] == 3
+    assert focused.json()["active_content_id"] == "limit-intro"
+
+
 def test_studio_discovers_active_session_and_inserts_exact_expansion(
     tmp_path, monkeypatch
 ) -> None:
