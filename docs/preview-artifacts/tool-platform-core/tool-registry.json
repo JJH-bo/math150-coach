@@ -2603,7 +2603,128 @@
       "tool_id": "visualization.plot",
       "upstream_project": "https://plotly.com/python/ and https://github.com/plotly/Kaleido",
       "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "visualization",
+      "description": "Render bounded mathematical surfaces, vectors, and points with pinned Three.js, WebGL, lighting, axes, camera controls, self-contained HTML, poster and interaction screenshots, and real-browser state-change QA. The input is structured scene data and never arbitrary JavaScript.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "maxLength": 2000,
+            "minLength": 40,
+            "type": "string"
+          },
+          "camera": {
+            "type": "object"
+          },
+          "height": {
+            "maximum": 1600,
+            "minimum": 550,
+            "type": "integer"
+          },
+          "objects": {
+            "items": {
+              "type": "object"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "type": "array"
+          },
+          "theme": {
+            "enum": [
+              "light",
+              "dark"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "width": {
+            "maximum": 2400,
+            "minimum": 800,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "camera",
+          "objects"
+        ],
+        "type": "object"
+      },
+      "license": "MIT",
+      "max_artifact_bytes": 134217728,
+      "max_artifacts": 10,
+      "output_media_types": [
+        "application/json",
+        "text/html",
+        "image/png",
+        "text/plain"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "type": "string"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "object_count": {
+            "type": "integer"
+          },
+          "scene_sha256": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "validation": {
+            "type": "object"
+          },
+          "width": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "object_count",
+          "width",
+          "height",
+          "scene_sha256",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "required_descriptive_alt_text",
+        "structured_non_executable_scene",
+        "finite_bounded_meshes",
+        "self_contained_pinned_threejs",
+        "real_webgl_browser_render",
+        "camera_interaction_exercised",
+        "interaction_changes_scene_state",
+        "visible_rendered_objects",
+        "zero_console_or_request_errors",
+        "pixel_variance_nonblank"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.render",
+      "timeout_seconds": 120,
+      "title": "Verified interactive Three.js mathematical scenes",
+      "tool_id": "visualization.scene3d",
+      "upstream_project": "https://threejs.org/",
+      "version": "1.0.0"
     }
   ],
-  "total": 12
+  "total": 13
 }

@@ -1,0 +1,294 @@
+{
+  "argument_hash": "sha256:112eeb6b19acc78254260c6d351cacdd7678ec5c1149123af77d8555acdb775e",
+  "arguments": {
+    "alt_text": "An interactive three-dimensional scene of the saddle surface z equals x squared minus y squared, with colored axes and camera orbit controls that reveal upward curvature along x and downward curvature along y.",
+    "camera": {
+      "azimuth": 42,
+      "distance": 16,
+      "elevation": 28,
+      "target": [
+        0,
+        0,
+        0
+      ]
+    },
+    "height": 650,
+    "objects": [
+      {
+        "color": "#33C3FF",
+        "id": "saddle",
+        "label": "z = x² - y²",
+        "opacity": 1.0,
+        "type": "surface",
+        "x": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "y": [
+          -2.0,
+          -1.5,
+          -1.0,
+          -0.5,
+          0.0,
+          0.5,
+          1.0,
+          1.5,
+          2.0
+        ],
+        "z": [
+          [
+            0.0,
+            -1.75,
+            -3.0,
+            -3.75,
+            -4.0,
+            -3.75,
+            -3.0,
+            -1.75,
+            0.0
+          ],
+          [
+            1.75,
+            0.0,
+            -1.25,
+            -2.0,
+            -2.25,
+            -2.0,
+            -1.25,
+            0.0,
+            1.75
+          ],
+          [
+            3.0,
+            1.25,
+            0.0,
+            -0.75,
+            -1.0,
+            -0.75,
+            0.0,
+            1.25,
+            3.0
+          ],
+          [
+            3.75,
+            2.0,
+            0.75,
+            0.0,
+            -0.25,
+            0.0,
+            0.75,
+            2.0,
+            3.75
+          ],
+          [
+            4.0,
+            2.25,
+            1.0,
+            0.25,
+            0.0,
+            0.25,
+            1.0,
+            2.25,
+            4.0
+          ],
+          [
+            3.75,
+            2.0,
+            0.75,
+            0.0,
+            -0.25,
+            0.0,
+            0.75,
+            2.0,
+            3.75
+          ],
+          [
+            3.0,
+            1.25,
+            0.0,
+            -0.75,
+            -1.0,
+            -0.75,
+            0.0,
+            1.25,
+            3.0
+          ],
+          [
+            1.75,
+            0.0,
+            -1.25,
+            -2.0,
+            -2.25,
+            -2.0,
+            -1.25,
+            0.0,
+            1.75
+          ],
+          [
+            0.0,
+            -1.75,
+            -3.0,
+            -3.75,
+            -4.0,
+            -3.75,
+            -3.0,
+            -1.75,
+            0.0
+          ]
+        ]
+      },
+      {
+        "color": "#FF6B8A",
+        "direction": [
+          0,
+          0,
+          2.5
+        ],
+        "id": "normal",
+        "label": "normal at the origin",
+        "origin": [
+          0,
+          0,
+          0
+        ],
+        "type": "vector"
+      },
+      {
+        "color": "#F6C85F",
+        "id": "origin",
+        "label": "origin",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "size": 0.16,
+        "type": "point"
+      }
+    ],
+    "theme": "dark",
+    "title": "A saddle bends in opposite directions",
+    "width": 1000
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d7fa7c145d79446bb3f9ea9d/artifacts/scene.json",
+      "media_type": "application/json",
+      "name": "scene.json",
+      "sha256": "sha256:304e3119dfb29976917d8d1b0f0f35713bdfde35ec7d99d42716509ec812bec6",
+      "size_bytes": 3032
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d7fa7c145d79446bb3f9ea9d/artifacts/scene.html",
+      "media_type": "text/html",
+      "name": "scene.html",
+      "sha256": "sha256:3feed81b430b2ebbb9b2bfb079a42cf5924209babccc7a11e21ce479b3d0b1ee",
+      "size_bytes": 775989
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d7fa7c145d79446bb3f9ea9d/artifacts/poster.png",
+      "media_type": "image/png",
+      "name": "poster.png",
+      "sha256": "sha256:750d9997b90aff8250764e3b012445893a68505b457ff10eee195e52be86dee2",
+      "size_bytes": 187045
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d7fa7c145d79446bb3f9ea9d/artifacts/interaction.png",
+      "media_type": "image/png",
+      "name": "interaction.png",
+      "sha256": "sha256:d944bdedac00c79b39c162c75c508af2ab305a3da145b2e52517d7bacc6b9300",
+      "size_bytes": 162366
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d7fa7c145d79446bb3f9ea9d/artifacts/alt.txt",
+      "media_type": "text/plain",
+      "name": "alt.txt",
+      "sha256": "sha256:b8989c8c8bf5e192e22d719ffd40be97eee6309cb134b5968b027a00187d712d",
+      "size_bytes": 211
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-d7fa7c145d79446bb3f9ea9d/artifacts/validation.json",
+      "media_type": "application/json",
+      "name": "validation.json",
+      "sha256": "sha256:c1d6f5b01844e1b37caf5cc2576a418cf202ce9739fc79e31b5e3dda430a3b95",
+      "size_bytes": 1244
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T09:04:35.576363Z",
+  "error": null,
+  "finished_at": "2026-07-22T09:04:37.193200Z",
+  "job_id": "tj-d7fa7c145d79446bb3f9ea9d",
+  "metrics": {
+    "object_count": 3,
+    "poster_bytes": 187045,
+    "triangle_count": 2728
+  },
+  "required_scope": "studio.render",
+  "result": {
+    "alt_text": "An interactive three-dimensional scene of the saddle surface z equals x squared minus y squared, with colored axes and camera orbit controls that reveal upward curvature along x and downward curvature along y.",
+    "height": 650,
+    "object_count": 3,
+    "scene_sha256": "sha256:7d60ccb7544cff07c4c38dac57242123b0b5d8021a0e408c49ab11f85dc6d0af",
+    "title": "A saddle bends in opposite directions",
+    "validation": {
+      "console_errors": [],
+      "draw_calls": 13,
+      "failed_requests": [],
+      "frustum_clipped": false,
+      "html_bytes": 775989,
+      "images": [
+        {
+          "bytes": 187045,
+          "channel_variance": 4334.610957422145,
+          "name": "poster.png",
+          "unique_colors": 1551
+        },
+        {
+          "bytes": 162366,
+          "channel_variance": 4025.0387018441565,
+          "name": "interaction.png",
+          "unique_colors": 1564
+        }
+      ],
+      "interaction_changed": true,
+      "interaction_exercised": true,
+      "page_errors": [],
+      "passed": true,
+      "poster_channel_variance": 4334.610957422145,
+      "poster_unique_colors": 1551,
+      "projected_bounds": {
+        "max_x": 0.44467605756641276,
+        "max_y": 0.8490698515419614,
+        "max_z": 0.9951910171553597,
+        "min_x": -0.4365205090589088,
+        "min_y": -0.91707115194867,
+        "min_z": 0.9914997793992893
+      },
+      "rendered_object_count": 3,
+      "renderer": "Three.js 0.185.1 structured scene runtime",
+      "restored_to_baseline": true,
+      "specification_bytes": 3032,
+      "target_azimuth": 112,
+      "triangle_count": 2728,
+      "viewport": {
+        "height": 650,
+        "width": 1000
+      },
+      "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+    },
+    "width": 1000
+  },
+  "started_at": "2026-07-22T09:04:35.597121Z",
+  "state": "succeeded",
+  "tool_id": "visualization.scene3d",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

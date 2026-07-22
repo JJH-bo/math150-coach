@@ -90,6 +90,7 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
         "visualization.plot",
         "visualization.diagram",
         "visualization.geometry2d",
+        "visualization.scene3d",
         "export.reveal",
         "export.pptx",
         "export.pdf",
@@ -112,6 +113,7 @@ def test_visualization_registry_includes_structured_diagram_media(
         "visualization.plot",
         "visualization.diagram",
         "visualization.geometry2d",
+        "visualization.scene3d",
     }
     diagram = definitions["visualization.diagram"]
     assert "image/svg+xml" in diagram.output_media_types
@@ -120,6 +122,9 @@ def test_visualization_registry_includes_structured_diagram_media(
     geometry = definitions["visualization.geometry2d"]
     assert "text/html" in geometry.output_media_types
     assert "script" not in geometry.input_schema["properties"]
+    scene = definitions["visualization.scene3d"]
+    assert "text/html" in scene.output_media_types
+    assert "script" not in scene.input_schema["properties"]
 
 
 def test_export_media_contracts_support_intent_based_format_selection(

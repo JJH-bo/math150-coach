@@ -1,0 +1,46 @@
+{
+  "console_errors": [],
+  "draw_calls": 13,
+  "failed_requests": [],
+  "frustum_clipped": false,
+  "html_bytes": 775989,
+  "images": [
+    {
+      "bytes": 187045,
+      "channel_variance": 4334.610957422145,
+      "name": "poster.png",
+      "unique_colors": 1551
+    },
+    {
+      "bytes": 162366,
+      "channel_variance": 4025.0387018441565,
+      "name": "interaction.png",
+      "unique_colors": 1564
+    }
+  ],
+  "interaction_changed": true,
+  "interaction_exercised": true,
+  "page_errors": [],
+  "passed": true,
+  "poster_channel_variance": 4334.610957422145,
+  "poster_unique_colors": 1551,
+  "projected_bounds": {
+    "max_x": 0.44467605756641276,
+    "max_y": 0.8490698515419614,
+    "max_z": 0.9951910171553597,
+    "min_x": -0.4365205090589088,
+    "min_y": -0.91707115194867,
+    "min_z": 0.9914997793992893
+  },
+  "rendered_object_count": 3,
+  "renderer": "Three.js 0.185.1 structured scene runtime",
+  "restored_to_baseline": true,
+  "specification_bytes": 3032,
+  "target_azimuth": 112,
+  "triangle_count": 2728,
+  "viewport": {
+    "height": 650,
+    "width": 1000
+  },
+  "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A78B) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+}

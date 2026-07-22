@@ -1,0 +1,1 @@
+An interactive three-dimensional scene of the saddle surface z equals x squared minus y squared, with colored axes and camera orbit controls that reveal upward curvature along x and downward curvature along y.

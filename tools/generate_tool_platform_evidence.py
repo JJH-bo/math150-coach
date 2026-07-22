@@ -294,6 +294,55 @@ def geometry_payload() -> dict[str, Any]:
     }
 
 
+def scene3d_payload() -> dict[str, Any]:
+    axis = [value / 2 for value in range(-4, 5)]
+    return {
+        "title": "A saddle bends in opposite directions",
+        "alt_text": (
+            "An interactive three-dimensional scene of the saddle surface z equals x "
+            "squared minus y squared, with colored axes and camera orbit controls that "
+            "reveal upward curvature along x and downward curvature along y."
+        ),
+        "width": 1000,
+        "height": 650,
+        "theme": "dark",
+        "camera": {
+            "azimuth": 42,
+            "elevation": 28,
+            "distance": 16,
+            "target": [0, 0, 0],
+        },
+        "objects": [
+            {
+                "id": "saddle",
+                "type": "surface",
+                "label": "z = x² - y²",
+                "color": "#33C3FF",
+                "opacity": 1.0,
+                "x": axis,
+                "y": axis,
+                "z": [[x * x - y * y for x in axis] for y in axis],
+            },
+            {
+                "id": "normal",
+                "type": "vector",
+                "label": "normal at the origin",
+                "color": "#FF6B8A",
+                "origin": [0, 0, 0],
+                "direction": [0, 0, 2.5],
+            },
+            {
+                "id": "origin",
+                "type": "point",
+                "label": "origin",
+                "color": "#F6C85F",
+                "position": [0, 0, 0],
+                "size": 0.16,
+            },
+        ],
+    }
+
+
 def generate(output_root: Path) -> None:
     studio_key = "temporary-evidence-key-never-serialized"
     port = free_port()
@@ -466,6 +515,14 @@ def generate(output_root: Path) -> None:
                 timeout_seconds=60,
                 arguments=geometry_payload(),
             )
+            jobs["scene3d"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-saddle-scene3d-v1",
+                tool_id="visualization.scene3d",
+                timeout_seconds=90,
+                arguments=scene3d_payload(),
+            )
             for format_name, tool_id in (
                 ("reveal", "export.reveal"),
                 ("pptx", "export.pptx"),
@@ -544,6 +601,8 @@ def generate(output_root: Path) -> None:
                 write_bytes(output_root / "diagram" / artifact_name, content)
             for artifact_name, content in artifacts["geometry2d"].items():
                 write_bytes(output_root / "geometry2d" / artifact_name, content)
+            for artifact_name, content in artifacts["scene3d"].items():
+                write_bytes(output_root / "scene3d" / artifact_name, content)
             for format_name in export_names:
                 for artifact_name, content in artifacts[format_name].items():
                     write_bytes(

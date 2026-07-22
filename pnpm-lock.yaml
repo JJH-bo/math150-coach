@@ -26,6 +26,9 @@ importers:
       reveal.js:
         specifier: 6.0.1
         version: 6.0.1
+      three:
+        specifier: 0.185.1
+        version: 0.185.1
 
 packages:
 
@@ -532,6 +535,9 @@ packages:
 
   stylis@4.4.0:
     resolution: {integrity: sha512-5Z9ZpRzfuH6l/UAvCPAPUo3665Nk2wLaZU3x+TLHKVzIz33+sbJqbtrYoC3KD4/uVOr2Zp+L0LySezP9OHV9yA==}
+
+  three@0.185.1:
+    resolution: {integrity: sha512-5aojFCXKwnjBRZvUnt3WFfEcvUJgkN5LlijRFN95hMy8WVkG4I0QNcJE+OuWvuJ0bOdStrbfXn0pkd6/QyiAlg==}
 
   tinyexec@1.2.4:
     resolution: {integrity: sha512-SHf/r48b7vOrjve9PxJo3MN5v5yuyjHvdUcrQffT3WXMUfnGmHDVbC4k3sHJaJTgZCwpUplIaAo5ANtMyp3YHg==}
@@ -1121,6 +1127,8 @@ snapshots:
       safe-buffer: 5.1.2
 
   stylis@4.4.0: {}
+
+  three@0.185.1: {}
 
   tinyexec@1.2.4: {}
 

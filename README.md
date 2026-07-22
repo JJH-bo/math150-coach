@@ -45,6 +45,9 @@ download hash-verified artifacts. The current verified pack includes:
 - `visualization.geometry2d@1.0.0` for bounded SVG coordinate scenes with safe
   affine parameter bindings, accessible controls, automatic real-browser
   interaction exercise, state-change evidence, and before/after screenshots;
+- `visualization.scene3d@1.0.0` for bounded Three.js surfaces, vectors, and
+  points in self-contained WebGL lessons, with camera controls, frustum checks,
+  GPU/runtime evidence, and before/after orbit screenshots;
 - `export.pptx@1.0.0` for editable native PowerPoint text and shapes, SVG
   mathematics, speaker notes, and OOXML/render validation;
 - `export.reveal@1.0.0` for self-contained browser presentations, print PDF,
