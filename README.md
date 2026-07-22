@@ -28,10 +28,17 @@ private `STUDIO_API_KEY`.
 `studio_tools_v1` gives the custom GPT one stable workflow for a growing set
 of high-quality teaching tools. It can discover strict tool contracts, submit
 idempotent durable jobs, poll terminal results, cancel obsolete work, and
-download hash-verified artifacts. The initial verified tool is
-`math.symbolic@1.0.0`, which supports exact simplification, factoring,
-expansion, solving, differentiation, integration, limits, series, matrices,
-and equivalence under declared assumptions.
+download hash-verified artifacts. The current verified pack includes:
+
+- `math.symbolic@1.0.0` for exact algebra, calculus, matrices, and LaTeX;
+- `math.numeric@1.0.0` for statistics, linear algebra, quadrature, roots,
+  optimization, interpolation, ODEs, FFT, and probability distributions;
+- `math.verify@1.0.0` for exact checks, deterministic domain sampling, and
+  counterexample evidence;
+- `math.graph@1.0.0` for paths, components, cycles, centrality, topological
+  order, and deterministic layout data;
+- `visualization.plot@1.0.0` for accessible Plotly HTML plus browser-rendered
+  PNG/SVG artifacts with pixel-level nonblank validation.
 
 The production Studio credential is authorized for all seven teaching scopes:
 read, compute, render, author, publish, rollback, and tool administration.

@@ -3,6 +3,411 @@
     {
       "cacheable": true,
       "category": "mathematics",
+      "description": "Analyze bounded directed or undirected graphs with summaries, paths, components, cycles, topological order, centrality, and deterministic layout coordinates for teaching diagrams.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "algorithm": {
+            "maxLength": 40,
+            "type": "string"
+          },
+          "directed": {
+            "type": "boolean"
+          },
+          "edges": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "label": {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                "source": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$",
+                  "type": "string"
+                },
+                "target": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$",
+                  "type": "string"
+                },
+                "weight": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "source",
+                "target"
+              ],
+              "type": "object"
+            },
+            "maxItems": 5000,
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "group": {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                "id": {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$",
+                  "type": "string"
+                },
+                "label": {
+                  "maxLength": 200,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "type": "object"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "type": "array"
+          },
+          "operation": {
+            "enum": [
+              "summary",
+              "shortest_path",
+              "components",
+              "cycles",
+              "topological_order",
+              "centrality",
+              "layout"
+            ],
+            "type": "string"
+          },
+          "source": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$",
+            "type": "string"
+          },
+          "target": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$",
+            "type": "string"
+          },
+          "weighted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "operation",
+          "nodes",
+          "edges"
+        ],
+        "type": "object"
+      },
+      "license": "BSD-3-Clause",
+      "max_artifact_bytes": 33554432,
+      "max_artifacts": 8,
+      "output_media_types": [
+        "application/json",
+        "text/csv"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "directed": {
+            "type": "boolean"
+          },
+          "edges": {
+            "type": "array"
+          },
+          "nodes": {
+            "type": "array"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "result": {
+            "type": "object"
+          },
+          "weighted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "operation",
+          "directed",
+          "weighted",
+          "nodes",
+          "edges",
+          "result"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "valid_node_references",
+        "finite_nonnegative_path_weights",
+        "canonical_ordering",
+        "deterministic_layout_seed",
+        "reference_algorithms"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.compute",
+      "timeout_seconds": 30,
+      "title": "Verified graph algorithms and layout data",
+      "tool_id": "math.graph",
+      "upstream_project": "https://networkx.org/",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "mathematics",
+      "description": "Run bounded numerical statistics, linear algebra, quadrature, root finding, scalar optimization, interpolation, ODE, FFT, and named probability distribution operations without arbitrary code execution.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "bounds": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "bracket": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "distribution": {
+            "enum": [
+              "normal",
+              "binomial",
+              "poisson"
+            ],
+            "type": "string"
+          },
+          "distribution_operation": {
+            "enum": [
+              "pdf",
+              "pmf",
+              "cdf",
+              "ppf"
+            ],
+            "type": "string"
+          },
+          "expression": {
+            "maxLength": 20000,
+            "type": "string"
+          },
+          "expressions": {
+            "items": {
+              "maxLength": 20000,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "initial_values": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "interval": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            ],
+            "type": "array"
+          },
+          "matrix": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "maxItems": 200,
+            "type": "array"
+          },
+          "method": {
+            "maxLength": 40,
+            "type": "string"
+          },
+          "operation": {
+            "enum": [
+              "statistics",
+              "linear_solve",
+              "eigenvalues",
+              "quadrature",
+              "root",
+              "minimize_scalar",
+              "interpolate",
+              "ode",
+              "fft",
+              "distribution"
+            ],
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "maxProperties": 10,
+            "type": "object"
+          },
+          "points": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 20000,
+            "type": "array"
+          },
+          "quantiles": {
+            "items": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            "maxItems": 101,
+            "type": "array"
+          },
+          "query_points": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 20000,
+            "type": "array"
+          },
+          "sample_count": {
+            "maximum": 5000,
+            "minimum": 2,
+            "type": "integer"
+          },
+          "sample_spacing": {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "tolerance": {
+            "exclusiveMinimum": 0,
+            "type": "number"
+          },
+          "values": {
+            "maxItems": 20000,
+            "type": "array"
+          },
+          "variable": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "variables": {
+            "items": {
+              "maxLength": 64,
+              "type": "string"
+            },
+            "maxItems": 65,
+            "type": "array"
+          },
+          "vector": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "x": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "y": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "type": "object"
+      },
+      "license": "BSD-3-Clause",
+      "max_artifact_bytes": 16777216,
+      "max_artifacts": 8,
+      "output_media_types": [
+        "application/json",
+        "text/csv"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "details": {
+            "type": "object"
+          },
+          "method": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "scalar": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "values": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "operation",
+          "method",
+          "success",
+          "scalar",
+          "values",
+          "details"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "finite_outputs",
+        "convergence_reporting",
+        "reference_cases",
+        "safe_structured_expressions",
+        "bounded_arrays"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.compute",
+      "timeout_seconds": 30,
+      "title": "Verified numerical mathematics",
+      "tool_id": "math.numeric",
+      "upstream_project": "https://numpy.org/ and https://scipy.org/",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "mathematics",
       "description": "Perform structured exact algebra, calculus, limits, series, equation solving, matrix operations, and equivalence checks.",
       "deterministic": true,
       "execution_mode": "async",
@@ -186,7 +591,353 @@
       "tool_id": "math.symbolic",
       "upstream_project": "https://www.sympy.org/",
       "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "mathematics",
+      "description": "Cross-check two declared expressions using exact symbolic reasoning and deterministic domain-aware numeric samples, reporting assumptions, excluded points, uncertainty, and a concrete counterexample when found.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "domains": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "maxProperties": 16,
+            "type": "object"
+          },
+          "left_expression": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "right_expression": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "sample_count": {
+            "maximum": 200,
+            "minimum": 3,
+            "type": "integer"
+          },
+          "symbols": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "boolean"
+              },
+              "type": "object"
+            },
+            "maxProperties": 16,
+            "type": "object"
+          },
+          "tolerance": {
+            "maximum": 0.1,
+            "minimum": 1e-15,
+            "type": "number"
+          }
+        },
+        "required": [
+          "left_expression",
+          "right_expression",
+          "symbols"
+        ],
+        "type": "object"
+      },
+      "license": "BSD-3-Clause",
+      "max_artifact_bytes": 16777216,
+      "max_artifacts": 8,
+      "output_media_types": [
+        "application/json",
+        "text/csv"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptions": {
+            "type": "object"
+          },
+          "counterexample": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "domains": {
+            "type": "object"
+          },
+          "exact_equivalent": {
+            "type": "boolean"
+          },
+          "excluded_points": {
+            "type": "array"
+          },
+          "excluded_sample_count": {
+            "type": "integer"
+          },
+          "max_absolute_error": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "max_relative_error": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sample_evidence": {
+            "type": "array"
+          },
+          "symbolic_difference": {
+            "type": "string"
+          },
+          "tested_sample_count": {
+            "type": "integer"
+          },
+          "tolerance": {
+            "type": "number"
+          },
+          "variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "verdict": {
+            "enum": [
+              "equivalent",
+              "not_equivalent",
+              "inconclusive"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "exact_equivalent",
+          "symbolic_difference",
+          "variables",
+          "assumptions",
+          "domains",
+          "tolerance",
+          "tested_sample_count",
+          "excluded_sample_count",
+          "excluded_points",
+          "max_absolute_error",
+          "max_relative_error",
+          "counterexample",
+          "sample_evidence"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "exact_symbolic_first",
+        "domain_assumption_reporting",
+        "deterministic_numeric_samples",
+        "counterexample_evidence",
+        "inconclusive_is_not_equivalent"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.compute",
+      "timeout_seconds": 30,
+      "title": "Independent mathematical expression verification",
+      "tool_id": "math.verify",
+      "upstream_project": "https://www.sympy.org/ and https://numpy.org/",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "visualization",
+      "description": "Create validated line, scatter, bar, area, histogram, heatmap, contour, and surface visuals with accessible alt text, canonical Plotly JSON, self-contained HTML, PNG, SVG, and pixel-level QA.",
+      "deterministic": true,
+      "execution_mode": "async",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "maxLength": 2000,
+            "minLength": 40,
+            "type": "string"
+          },
+          "height": {
+            "maximum": 1600,
+            "minimum": 400,
+            "type": "integer"
+          },
+          "theme": {
+            "enum": [
+              "light",
+              "dark"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          },
+          "traces": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "color": {
+                  "pattern": "^#[0-9A-Fa-f]{6}$",
+                  "type": "string"
+                },
+                "name": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "opacity": {
+                  "maximum": 1,
+                  "minimum": 0.05,
+                  "type": "number"
+                },
+                "type": {
+                  "enum": [
+                    "line",
+                    "scatter",
+                    "bar",
+                    "area",
+                    "histogram",
+                    "heatmap",
+                    "contour",
+                    "surface"
+                  ],
+                  "type": "string"
+                },
+                "x": {
+                  "maxItems": 50000,
+                  "type": "array"
+                },
+                "y": {
+                  "maxItems": 50000,
+                  "type": "array"
+                },
+                "z": {
+                  "maxItems": 1000,
+                  "type": "array"
+                }
+              },
+              "required": [
+                "type",
+                "name"
+              ],
+              "type": "object"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "type": "array"
+          },
+          "width": {
+            "maximum": 2400,
+            "minimum": 600,
+            "type": "integer"
+          },
+          "x_label": {
+            "maxLength": 160,
+            "minLength": 1,
+            "type": "string"
+          },
+          "y_label": {
+            "maxLength": 160,
+            "minLength": 1,
+            "type": "string"
+          },
+          "z_label": {
+            "maxLength": 160,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "x_label",
+          "y_label",
+          "alt_text",
+          "traces"
+        ],
+        "type": "object"
+      },
+      "license": "MIT",
+      "max_artifact_bytes": 67108864,
+      "max_artifacts": 12,
+      "output_media_types": [
+        "application/json",
+        "text/html",
+        "image/png",
+        "image/svg+xml",
+        "text/plain"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "alt_text": {
+            "type": "string"
+          },
+          "figure_sha256": {
+            "type": "string"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "point_count": {
+            "type": "integer"
+          },
+          "theme": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "trace_count": {
+            "type": "integer"
+          },
+          "validation": {
+            "type": "object"
+          },
+          "width": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "title",
+          "alt_text",
+          "trace_count",
+          "point_count",
+          "width",
+          "height",
+          "theme",
+          "figure_sha256",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "required_descriptive_alt_text",
+        "finite_visible_marks",
+        "static_browser_render",
+        "pixel_variance_nonblank",
+        "svg_structure",
+        "bounded_readable_dimensions"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.render",
+      "timeout_seconds": 90,
+      "title": "Verified interactive and static mathematical plots",
+      "tool_id": "visualization.plot",
+      "upstream_project": "https://plotly.com/python/ and https://github.com/plotly/Kaleido",
+      "version": "1.0.0"
     }
   ],
-  "total": 1
+  "total": 5
 }

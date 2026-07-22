@@ -1,0 +1,57 @@
+{
+  "argument_hash": "sha256:6c02b51f7a9e321de9153615ccfab22e308427807ac0271a969b2e0d315ac0e3",
+  "arguments": {
+    "expression": "sin(x)",
+    "interval": [
+      0,
+      "pi"
+    ],
+    "operation": "quadrature",
+    "tolerance": 1e-10,
+    "variable": "x"
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-92400c94135149e7a4e259d6/artifacts/numeric-result.json",
+      "media_type": "application/json",
+      "name": "numeric-result.json",
+      "sha256": "sha256:be546e48e6f8669e56aea2affe97546b9b41a112d9f3744b8f7149767d59266f",
+      "size_bytes": 268
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-92400c94135149e7a4e259d6/artifacts/numeric-table.csv",
+      "media_type": "text/csv",
+      "name": "numeric-table.csv",
+      "sha256": "sha256:edaef067fff5d5ea2c572916e6af41448b507de3e77ebaa5c125e93b6daf1f3b",
+      "size_bytes": 18
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T06:37:57.355095Z",
+  "error": null,
+  "finished_at": "2026-07-22T06:37:57.396575Z",
+  "job_id": "tj-92400c94135149e7a4e259d6",
+  "metrics": {
+    "output_value_count": 0
+  },
+  "required_scope": "studio.compute",
+  "result": {
+    "details": {
+      "estimated_absolute_error": 2.220446049250313e-14,
+      "interval": [
+        0.0,
+        3.141592653589793
+      ]
+    },
+    "method": "scipy.integrate.quad",
+    "operation": "quadrature",
+    "scalar": 2.0,
+    "success": true,
+    "values": []
+  },
+  "started_at": "2026-07-22T06:37:57.367090Z",
+  "state": "succeeded",
+  "tool_id": "math.numeric",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

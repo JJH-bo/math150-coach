@@ -1,0 +1,356 @@
+{
+  "argument_hash": "sha256:19bb29aabd7ba894fe23ea11dc9d5674810cf8f0c95918cda48bf34432c785c7",
+  "arguments": {
+    "domains": {
+      "x": [
+        -6.283185307179586,
+        6.283185307179586
+      ]
+    },
+    "left_expression": "sin(x)**2 + cos(x)**2",
+    "right_expression": "1",
+    "symbols": {
+      "x": {
+        "real": true
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-4fbf4027589b4f179e6ebf59/artifacts/verification-result.json",
+      "media_type": "application/json",
+      "name": "verification-result.json",
+      "sha256": "sha256:7df12d5aa2ff865ab4fb0d396d377ef7123b3fb39996fdbabd6747b2b786327e",
+      "size_bytes": 6435
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-4fbf4027589b4f179e6ebf59/artifacts/verification-samples.csv",
+      "media_type": "text/csv",
+      "name": "verification-samples.csv",
+      "sha256": "sha256:e58f85013e0ac8d8fffa82bdc7ee0639da11ebe64af33927cf1d4758859493b6",
+      "size_bytes": 1529
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T06:37:57.433408Z",
+  "error": null,
+  "finished_at": "2026-07-22T06:37:57.542239Z",
+  "job_id": "tj-4fbf4027589b4f179e6ebf59",
+  "metrics": {
+    "excluded_sample_count": 0,
+    "tested_sample_count": 31
+  },
+  "required_scope": "studio.compute",
+  "result": {
+    "assumptions": {
+      "x": {
+        "real": true
+      }
+    },
+    "counterexample": null,
+    "domains": {
+      "x": [
+        -6.283185307179586,
+        6.283185307179586
+      ]
+    },
+    "exact_equivalent": true,
+    "excluded_points": [],
+    "excluded_sample_count": 0,
+    "max_absolute_error": 2.220446049250313e-16,
+    "max_relative_error": 2.2204460492503126e-16,
+    "sample_evidence": [
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -6.283185307179586
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 6.283185307179586
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 0.0
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -3.141592653589793
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 3.141592653589793
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -4.71238898038469
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 1.5707963267948966
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -1.5707963267948966
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 4.71238898038469
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -5.497787143782138
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 2.220446049250313e-16,
+        "inputs": {
+          "x": 0.7853981633974483
+        },
+        "left": 1.0000000000000002,
+        "relative_error": 2.2204460492503126e-16,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -2.356194490192345
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 3.9269908169872423
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -3.9269908169872414
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 2.356194490192344
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 2.220446049250313e-16,
+        "inputs": {
+          "x": -0.7853981633974483
+        },
+        "left": 1.0000000000000002,
+        "relative_error": 2.2204460492503126e-16,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 2.220446049250313e-16,
+        "inputs": {
+          "x": 5.497787143782137
+        },
+        "left": 1.0000000000000002,
+        "relative_error": 2.2204460492503126e-16,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -5.890486225480862
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 0.3926990816987246
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -2.748893571891069
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 3.5342917352885177
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -4.319689898685965
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 1.9634954084936211
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 1.1102230246251565e-16,
+        "inputs": {
+          "x": -1.178097245096172
+        },
+        "left": 0.9999999999999999,
+        "relative_error": 1.1102230246251565e-16,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 1.1102230246251565e-16,
+        "inputs": {
+          "x": 5.105088062083414
+        },
+        "left": 0.9999999999999999,
+        "relative_error": 1.1102230246251565e-16,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 1.1102230246251565e-16,
+        "inputs": {
+          "x": -5.105088062083414
+        },
+        "left": 0.9999999999999999,
+        "relative_error": 1.1102230246251565e-16,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 1.1102230246251565e-16,
+        "inputs": {
+          "x": 1.178097245096172
+        },
+        "left": 0.9999999999999999,
+        "relative_error": 1.1102230246251565e-16,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -1.9634954084936211
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": 4.319689898685965
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 0.0,
+        "inputs": {
+          "x": -3.5342917352885173
+        },
+        "left": 1.0,
+        "relative_error": 0.0,
+        "right": 1.0
+      },
+      {
+        "absolute_error": 1.1102230246251565e-16,
+        "inputs": {
+          "x": 2.7488935718910685
+        },
+        "left": 0.9999999999999999,
+        "relative_error": 1.1102230246251565e-16,
+        "right": 1.0
+      }
+    ],
+    "symbolic_difference": "0",
+    "tested_sample_count": 31,
+    "tolerance": 1e-09,
+    "variables": [
+      "x"
+    ],
+    "verdict": "equivalent"
+  },
+  "started_at": "2026-07-22T06:37:57.442553Z",
+  "state": "succeeded",
+  "tool_id": "math.verify",
+  "tool_version": "1.0.0",
+  "warnings": []
+}
