@@ -1,0 +1,80 @@
+{
+  "argument_hash": "sha256:ec447027d4eb454504f90066f2a5e3d783f64a89b2cf549cb2b3fcab9e453d45",
+  "arguments": {
+    "allow_upscale": false,
+    "asset_id": "a-bcff35d9a11c63c85c9cc79c2b45b58bfb6fd8afa4fee59061db58c85b3611ae",
+    "background": "#ffffff",
+    "height": 360,
+    "mode": "cover",
+    "output_format": "webp",
+    "quality": 88,
+    "width": 640
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-b55d190b5c3c4192bb5c1243/artifacts/asset.webp",
+      "media_type": "image/webp",
+      "name": "asset.webp",
+      "sha256": "sha256:4c144a63bc5cbcdc47ae26155020ba9e78a563cf1211ef3f3e6c74453b229451",
+      "size_bytes": 8076
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-b55d190b5c3c4192bb5c1243/artifacts/validation-report.json",
+      "media_type": "application/json",
+      "name": "validation-report.json",
+      "sha256": "sha256:8cced719a6a0e194511f132d72606718c35264c4a721cf2587916a32404f1da4",
+      "size_bytes": 541
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T10:10:00.669823Z",
+  "error": null,
+  "finished_at": "2026-07-22T10:10:00.813455Z",
+  "job_id": "tj-b55d190b5c3c4192bb5c1243",
+  "metrics": {
+    "duplicate": false,
+    "output_bytes": 8076,
+    "output_height": 360,
+    "output_width": 640,
+    "source_height": 520,
+    "source_width": 800
+  },
+  "required_scope": "studio.render",
+  "result": {
+    "asset": {
+      "asset_id": "a-4c144a63bc5cbcdc47ae26155020ba9e78a563cf1211ef3f3e6c74453b229451",
+      "content_hash": "sha256:4c144a63bc5cbcdc47ae26155020ba9e78a563cf1211ef3f3e6c74453b229451",
+      "display_filename": "quadratic-640x360.webp",
+      "extension": "webp",
+      "height": 360,
+      "media_type": "image/webp",
+      "size_bytes": 8076,
+      "uri": "/api/classroom/v1/assets/a-4c144a63bc5cbcdc47ae26155020ba9e78a563cf1211ef3f3e6c74453b229451",
+      "width": 640
+    },
+    "duplicate": false,
+    "source_asset_id": "a-bcff35d9a11c63c85c9cc79c2b45b58bfb6fd8afa4fee59061db58c85b3611ae",
+    "validation": {
+      "allow_upscale": false,
+      "height": 360,
+      "metadata_removed": true,
+      "mode": "cover",
+      "passed": true,
+      "resampling": "lanczos",
+      "second_decode_verified": true,
+      "source_asset_id": "a-bcff35d9a11c63c85c9cc79c2b45b58bfb6fd8afa4fee59061db58c85b3611ae",
+      "source_content_hash": "sha256:bcff35d9a11c63c85c9cc79c2b45b58bfb6fd8afa4fee59061db58c85b3611ae",
+      "source_height": 520,
+      "source_kind": "registered_asset",
+      "source_render_height": 416,
+      "source_render_width": 640,
+      "source_width": 800,
+      "width": 640
+    }
+  },
+  "started_at": "2026-07-22T10:10:00.683529Z",
+  "state": "succeeded",
+  "tool_id": "asset.transform",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

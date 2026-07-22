@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -113,6 +114,16 @@ def configured_browser() -> str | None:
         if candidate and Path(candidate).is_file():
             return str(Path(candidate))
     return None
+
+
+def configured_node() -> str:
+    configured = os.getenv("MODEL_PREVIEW_NODE")
+    if configured and Path(configured).is_file():
+        return str(Path(configured))
+    discovered = shutil.which("node")
+    if discovered:
+        return discovered
+    raise RuntimeError("Node.js is required to capture browser asset evidence")
 
 
 def wait_until_ready(origin: str, process: subprocess.Popen[bytes]) -> None:
@@ -477,6 +488,50 @@ def generate(output_root: Path) -> None:
                     "theme": "dark",
                 },
             )
+            jobs["asset-ingest"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-ingest-quadratic-plot-v1",
+                tool_id="asset.ingest",
+                arguments={
+                    "filename": "quadratic.png",
+                    "source_job_id": jobs["plot"]["job_id"],
+                    "source_artifact_name": "figure.png",
+                    "output_format": "png",
+                    "alt_text": (
+                        "A symmetric quadratic curve with its minimum at the origin."
+                    ),
+                },
+            )
+            jobs["asset-transform"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-transform-quadratic-plot-v1",
+                tool_id="asset.transform",
+                arguments={
+                    "asset_id": jobs["asset-ingest"]["result"]["asset"]["asset_id"],
+                    "width": 640,
+                    "height": 360,
+                    "mode": "cover",
+                    "output_format": "webp",
+                    "quality": 88,
+                    "allow_upscale": False,
+                    "background": "#ffffff",
+                },
+            )
+            subprocess.run(
+                [
+                    configured_node(),
+                    str(ROOT / "tools" / "capture_classroom_asset.cjs"),
+                    origin,
+                    jobs["asset-transform"]["result"]["asset"]["uri"],
+                    str(output_root / "asset-transform"),
+                ],
+                cwd=ROOT,
+                env=environment,
+                check=True,
+                timeout=60,
+            )
             jobs["diagram"] = submit_and_wait(
                 origin,
                 studio_key,
@@ -631,6 +686,12 @@ def generate(output_root: Path) -> None:
                 write_bytes(output_root / "geometry2d" / artifact_name, content)
             for artifact_name, content in artifacts["scene3d"].items():
                 write_bytes(output_root / "scene3d" / artifact_name, content)
+            for asset_job in ("asset-ingest", "asset-transform"):
+                for artifact_name, content in artifacts[asset_job].items():
+                    write_bytes(
+                        output_root / asset_job / artifact_name,
+                        content,
+                    )
             for template_job in ("template-list", "template-instantiate"):
                 for artifact_name, content in artifacts[template_job].items():
                     write_bytes(

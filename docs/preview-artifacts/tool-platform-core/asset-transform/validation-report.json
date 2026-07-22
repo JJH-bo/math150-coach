@@ -1,0 +1,17 @@
+{
+  "allow_upscale": false,
+  "height": 360,
+  "metadata_removed": true,
+  "mode": "cover",
+  "passed": true,
+  "resampling": "lanczos",
+  "second_decode_verified": true,
+  "source_asset_id": "a-bcff35d9a11c63c85c9cc79c2b45b58bfb6fd8afa4fee59061db58c85b3611ae",
+  "source_content_hash": "sha256:bcff35d9a11c63c85c9cc79c2b45b58bfb6fd8afa4fee59061db58c85b3611ae",
+  "source_height": 520,
+  "source_kind": "registered_asset",
+  "source_render_height": 416,
+  "source_render_width": 640,
+  "source_width": 800,
+  "width": 640
+}

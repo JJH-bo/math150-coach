@@ -2,6 +2,428 @@
   "tools": [
     {
       "cacheable": true,
+      "category": "asset",
+      "description": "Normalize an explicit base64 image or a successful Studio job image artifact into immutable content-addressed classroom storage. Performs signature, dimensions, animation, metadata, and second-decode gates.",
+      "deterministic": true,
+      "execution_mode": "sync",
+      "input_schema": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "source_job_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "source_artifact_name"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "declared_media_type",
+              "content_base64"
+            ]
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "declared_media_type"
+                  ]
+                },
+                {
+                  "required": [
+                    "content_base64"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "source_job_id",
+              "source_artifact_name"
+            ]
+          }
+        ],
+        "properties": {
+          "alt_text": {
+            "maxLength": 1000,
+            "minLength": 8,
+            "type": "string"
+          },
+          "background": {
+            "default": "#ffffff",
+            "pattern": "^#[a-fA-F0-9]{6}$",
+            "type": "string"
+          },
+          "content_base64": {
+            "maxLength": 12582912,
+            "minLength": 4,
+            "type": "string"
+          },
+          "declared_media_type": {
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "type": "string"
+          },
+          "filename": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "output_format": {
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "type": "string"
+          },
+          "quality": {
+            "default": 90,
+            "maximum": 100,
+            "minimum": 40,
+            "type": "integer"
+          },
+          "source_artifact_name": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,119}$",
+            "type": "string"
+          },
+          "source_job_id": {
+            "pattern": "^tj-[a-f0-9]{24}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "alt_text",
+          "output_format"
+        ],
+        "type": "object"
+      },
+      "license": "HPND / Project-owned",
+      "max_artifact_bytes": 16777216,
+      "max_artifacts": 2,
+      "output_media_types": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "application/json"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset": {
+            "additionalProperties": false,
+            "properties": {
+              "asset_id": {
+                "pattern": "^a-[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "content_hash": {
+                "pattern": "^sha256:[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "display_filename": {
+                "type": "string"
+              },
+              "extension": {
+                "enum": [
+                  "png",
+                  "jpg",
+                  "webp"
+                ],
+                "type": "string"
+              },
+              "height": {
+                "maximum": 6000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "media_type": {
+                "enum": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp"
+                ],
+                "type": "string"
+              },
+              "size_bytes": {
+                "maximum": 8388608,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "uri": {
+                "pattern": "^/api/classroom/v1/assets/a-",
+                "type": "string"
+              },
+              "width": {
+                "maximum": 6000,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "asset_id",
+              "content_hash",
+              "media_type",
+              "extension",
+              "width",
+              "height",
+              "size_bytes",
+              "display_filename",
+              "uri"
+            ],
+            "type": "object"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "validation": {
+            "additionalProperties": true,
+            "properties": {
+              "metadata_removed": {
+                "type": "boolean"
+              },
+              "second_decode_verified": {
+                "type": "boolean"
+              },
+              "source_kind": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_kind",
+              "metadata_removed",
+              "second_decode_verified"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "asset",
+          "duplicate",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "mime_signature_match",
+        "bounded_still_image",
+        "metadata_removed",
+        "second_decode_verified",
+        "content_addressed_storage",
+        "artifact_hash_verified"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.author",
+      "timeout_seconds": 30,
+      "title": "Ingest a verified persistent classroom image",
+      "tool_id": "asset.ingest",
+      "upstream_project": "Pillow 12.3.0 and project AssetRepository",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "asset",
+      "description": "Transform an immutable classroom image with bounded contain or cover geometry, Lanczos resampling, explicit upscaling policy, safe alpha compositing, metadata removal, and persistent content addressing.",
+      "deterministic": true,
+      "execution_mode": "sync",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "allow_upscale": {
+            "type": "boolean"
+          },
+          "asset_id": {
+            "pattern": "^a-[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "background": {
+            "pattern": "^#[a-fA-F0-9]{6}$",
+            "type": "string"
+          },
+          "height": {
+            "maximum": 4096,
+            "minimum": 32,
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "contain",
+              "cover"
+            ],
+            "type": "string"
+          },
+          "output_format": {
+            "enum": [
+              "png",
+              "jpeg",
+              "webp"
+            ],
+            "type": "string"
+          },
+          "quality": {
+            "maximum": 100,
+            "minimum": 40,
+            "type": "integer"
+          },
+          "width": {
+            "maximum": 4096,
+            "minimum": 32,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "allow_upscale",
+          "asset_id",
+          "background",
+          "height",
+          "mode",
+          "output_format",
+          "quality",
+          "width"
+        ],
+        "type": "object"
+      },
+      "license": "HPND / Project-owned",
+      "max_artifact_bytes": 16777216,
+      "max_artifacts": 2,
+      "output_media_types": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "application/json"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "asset": {
+            "additionalProperties": false,
+            "properties": {
+              "asset_id": {
+                "pattern": "^a-[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "content_hash": {
+                "pattern": "^sha256:[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "display_filename": {
+                "type": "string"
+              },
+              "extension": {
+                "enum": [
+                  "png",
+                  "jpg",
+                  "webp"
+                ],
+                "type": "string"
+              },
+              "height": {
+                "maximum": 6000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "media_type": {
+                "enum": [
+                  "image/png",
+                  "image/jpeg",
+                  "image/webp"
+                ],
+                "type": "string"
+              },
+              "size_bytes": {
+                "maximum": 8388608,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "uri": {
+                "pattern": "^/api/classroom/v1/assets/a-",
+                "type": "string"
+              },
+              "width": {
+                "maximum": 6000,
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "asset_id",
+              "content_hash",
+              "media_type",
+              "extension",
+              "width",
+              "height",
+              "size_bytes",
+              "display_filename",
+              "uri"
+            ],
+            "type": "object"
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "source_asset_id": {
+            "pattern": "^a-[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "validation": {
+            "additionalProperties": true,
+            "properties": {
+              "metadata_removed": {
+                "type": "boolean"
+              },
+              "second_decode_verified": {
+                "type": "boolean"
+              },
+              "source_kind": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_kind",
+              "metadata_removed",
+              "second_decode_verified"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "asset",
+          "source_asset_id",
+          "duplicate",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "registered_source_asset",
+        "bounded_output_geometry",
+        "lanczos_resampling",
+        "explicit_upscale_policy",
+        "metadata_removed",
+        "second_decode_verified",
+        "content_addressed_storage"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.render",
+      "timeout_seconds": 30,
+      "title": "Create a verified classroom image variant",
+      "tool_id": "asset.transform",
+      "upstream_project": "Pillow 12.3.0 and project AssetRepository",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
       "category": "export",
       "description": "Create one offline-capable lesson HTML file with embedded presentation runtime and mathematics, per-slide evidence, and a strict external-resource and content-identity audit.",
       "deterministic": true,
@@ -2889,5 +3311,5 @@
       "version": "1.0.0"
     }
   ],
-  "total": 15
+  "total": 17
 }

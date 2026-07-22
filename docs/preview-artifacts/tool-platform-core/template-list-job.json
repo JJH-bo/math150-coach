@@ -8,7 +8,7 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-9f02d864f6ff4199826c26ad/artifacts/template-catalog.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-4c933396bb124129ad19022e/artifacts/template-catalog.json",
       "media_type": "application/json",
       "name": "template-catalog.json",
       "sha256": "sha256:caa4b9726e48992d1786b385540fe19bd4982e95dc633787f670b0516cc26c0b",
@@ -16,10 +16,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T09:29:04.554327Z",
+  "created_at": "2026-07-22T10:10:04.895368Z",
   "error": null,
-  "finished_at": "2026-07-22T09:29:04.587773Z",
-  "job_id": "tj-9f02d864f6ff4199826c26ad",
+  "finished_at": "2026-07-22T10:10:04.914544Z",
+  "job_id": "tj-4c933396bb124129ad19022e",
   "metrics": {
     "template_count": 4
   },
@@ -208,7 +208,7 @@
       "interaction_required"
     ]
   },
-  "started_at": "2026-07-22T09:29:04.567461Z",
+  "started_at": "2026-07-22T10:10:04.903889Z",
   "state": "succeeded",
   "tool_id": "template.list",
   "tool_version": "1.0.0",

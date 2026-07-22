@@ -1,0 +1,14 @@
+{
+  "asset_uri": "/api/classroom/v1/assets/a-4c144a63bc5cbcdc47ae26155020ba9e78a563cf1211ef3f3e6c74453b229451",
+  "status": 200,
+  "content_type": "image/webp",
+  "cache_control": "public, max-age=31536000, immutable",
+  "etag": "\"4c144a63bc5cbcdc47ae26155020ba9e78a563cf1211ef3f3e6c74453b229451\"",
+  "natural_width": 640,
+  "natural_height": 360,
+  "nonblank": true,
+  "varied_pixels": 12560,
+  "visible_pixels": 57600,
+  "console_errors": [],
+  "failed_requests": []
+}
