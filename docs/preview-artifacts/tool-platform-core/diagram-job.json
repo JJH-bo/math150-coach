@@ -47,49 +47,49 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-851a23ab8deb45b89932f98d/artifacts/diagram.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-272a96ad8c694fdbb034c1c0/artifacts/diagram.json",
       "media_type": "application/json",
       "name": "diagram.json",
       "sha256": "sha256:69700a2a79dfc0641dbad2ec4bad9950b7231dd498e6151eddeeb50171ac9690",
       "size_bytes": 1101
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-851a23ab8deb45b89932f98d/artifacts/diagram.mmd",
+      "download_path": "/api/studio/v1/tool-jobs/tj-272a96ad8c694fdbb034c1c0/artifacts/diagram.mmd",
       "media_type": "text/vnd.mermaid",
       "name": "diagram.mmd",
       "sha256": "sha256:2e70f3dff3bcaf5db180c8273951297ea64b97f763013693b481cd09f9c11d28",
       "size_bytes": 306
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-851a23ab8deb45b89932f98d/artifacts/diagram.svg",
+      "download_path": "/api/studio/v1/tool-jobs/tj-272a96ad8c694fdbb034c1c0/artifacts/diagram.svg",
       "media_type": "image/svg+xml",
       "name": "diagram.svg",
       "sha256": "sha256:be09f2246acc4c8e5463c3a41b46b6575098db5d1802d65351815ca3e45bd179",
       "size_bytes": 61929
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-851a23ab8deb45b89932f98d/artifacts/diagram.html",
+      "download_path": "/api/studio/v1/tool-jobs/tj-272a96ad8c694fdbb034c1c0/artifacts/diagram.html",
       "media_type": "text/html",
       "name": "diagram.html",
       "sha256": "sha256:152d43e608114358c1e14be4cfb7d8c822b80c13a7f6ded6378676c68779c7c4",
       "size_bytes": 62522
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-851a23ab8deb45b89932f98d/artifacts/diagram.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-272a96ad8c694fdbb034c1c0/artifacts/diagram.png",
       "media_type": "image/png",
       "name": "diagram.png",
       "sha256": "sha256:3dd14c1d7954a6c870ddc01ed83cd48c6f1f57b14d3e5030a4859ad0fdf76332",
       "size_bytes": 23399
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-851a23ab8deb45b89932f98d/artifacts/alt.txt",
+      "download_path": "/api/studio/v1/tool-jobs/tj-272a96ad8c694fdbb034c1c0/artifacts/alt.txt",
       "media_type": "text/plain",
       "name": "alt.txt",
       "sha256": "sha256:565c69fe575968d53fade3a19c13f8dd0a39877ba653fc066b0644995cf1165f",
       "size_bytes": 167
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-851a23ab8deb45b89932f98d/artifacts/validation.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-272a96ad8c694fdbb034c1c0/artifacts/validation.json",
       "media_type": "application/json",
       "name": "validation.json",
       "sha256": "sha256:8d136703657806449e7fa635005d937c303f2e805e30b888a449281c22c78ca9",
@@ -97,10 +97,10 @@
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T09:04:33.188337Z",
+  "created_at": "2026-07-22T09:29:01.116919Z",
   "error": null,
-  "finished_at": "2026-07-22T09:04:34.365587Z",
-  "job_id": "tj-851a23ab8deb45b89932f98d",
+  "finished_at": "2026-07-22T09:29:02.073205Z",
+  "job_id": "tj-272a96ad8c694fdbb034c1c0",
   "metrics": {
     "edge_count": 3,
     "node_count": 4,
@@ -150,7 +150,7 @@
     },
     "width": 1000
   },
-  "started_at": "2026-07-22T09:04:33.215631Z",
+  "started_at": "2026-07-22T09:29:01.126650Z",
   "state": "succeeded",
   "tool_id": "visualization.diagram",
   "tool_version": "1.0.0",

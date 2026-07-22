@@ -48,6 +48,11 @@ download hash-verified artifacts. The current verified pack includes:
 - `visualization.scene3d@1.0.0` for bounded Three.js surfaces, vectors, and
   points in self-contained WebGL lessons, with camera controls, frustum checks,
   GPU/runtime evidence, and before/after orbit screenshots;
+- `template.list@1.0.0` for ranking verified teaching structures by learning
+  intent, output medium, and interaction need rather than school subject;
+- `template.instantiate@1.0.0` for turning the selected structure into a
+  non-publishable semantic lesson blueprint that still requires authored and
+  validated lesson content;
 - `export.pptx@1.0.0` for editable native PowerPoint text and shapes, SVG
   mathematics, speaker notes, and OOXML/render validation;
 - `export.reveal@1.0.0` for self-contained browser presentations, print PDF,

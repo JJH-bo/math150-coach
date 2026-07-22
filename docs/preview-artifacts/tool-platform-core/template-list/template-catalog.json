@@ -1,0 +1,160 @@
+{
+  "templates": [
+    {
+      "intents": [
+        "concept_building"
+      ],
+      "interactive": false,
+      "narrative_arc": "question_analysis_answer",
+      "output_modes": [
+        "browser",
+        "presentation",
+        "document",
+        "mixed"
+      ],
+      "slide_blueprints": [
+        {
+          "job": "Create a concrete question and expose the need for the concept.",
+          "kind": "opening"
+        },
+        {
+          "job": "Name the central idea and connect every symbol or term.",
+          "kind": "concept"
+        },
+        {
+          "job": "Separate the new concept from a nearby misconception.",
+          "kind": "comparison"
+        },
+        {
+          "job": "Apply the concept in one fully explained case.",
+          "kind": "example"
+        },
+        {
+          "job": "Resolve the opening question and state the transferable idea.",
+          "kind": "synthesis"
+        }
+      ],
+      "template_id": "concept_journey",
+      "title": "Concept journey"
+    },
+    {
+      "intents": [
+        "worked_practice"
+      ],
+      "interactive": true,
+      "narrative_arc": "learning_progression",
+      "output_modes": [
+        "browser",
+        "presentation",
+        "document",
+        "mixed"
+      ],
+      "slide_blueprints": [
+        {
+          "job": "Pose a representative problem and identify what makes it difficult.",
+          "kind": "opening"
+        },
+        {
+          "job": "Expose the reusable method before calculating.",
+          "kind": "steps"
+        },
+        {
+          "job": "Solve a basic case with every transformation justified.",
+          "kind": "example"
+        },
+        {
+          "job": "Solve a contrasting case and call out the decision points.",
+          "kind": "example"
+        },
+        {
+          "job": "Compare a correct path with a plausible wrong path.",
+          "kind": "comparison"
+        },
+        {
+          "job": "Turn the worked cases into a checkable procedure.",
+          "kind": "synthesis"
+        }
+      ],
+      "template_id": "worked_examples",
+      "title": "Worked-example progression"
+    },
+    {
+      "intents": [
+        "visual_mechanism",
+        "concept_building"
+      ],
+      "interactive": true,
+      "narrative_arc": "claim_evidence_consequence",
+      "output_modes": [
+        "browser",
+        "presentation",
+        "mixed"
+      ],
+      "slide_blueprints": [
+        {
+          "job": "Ask learners to predict how the mechanism changes.",
+          "kind": "opening"
+        },
+        {
+          "job": "Introduce the visual model and map every visible object to meaning.",
+          "kind": "visual"
+        },
+        {
+          "job": "Vary one parameter while holding the comparison baseline fixed.",
+          "kind": "steps"
+        },
+        {
+          "job": "Compare two states and identify the invariant and the change.",
+          "kind": "comparison"
+        },
+        {
+          "job": "Use the model to explain or calculate a concrete result.",
+          "kind": "example"
+        },
+        {
+          "job": "Connect the observed mechanism back to the formal statement.",
+          "kind": "synthesis"
+        }
+      ],
+      "template_id": "visual_explainer",
+      "title": "Visual mechanism lab"
+    },
+    {
+      "intents": [
+        "discussion_proof"
+      ],
+      "interactive": false,
+      "narrative_arc": "claim_evidence_consequence",
+      "output_modes": [
+        "browser",
+        "presentation",
+        "document",
+        "mixed"
+      ],
+      "slide_blueprints": [
+        {
+          "job": "State a debatable claim and make its assumptions visible.",
+          "kind": "opening"
+        },
+        {
+          "job": "Define the objects and conditions used by the claim.",
+          "kind": "concept"
+        },
+        {
+          "job": "Build the proof or argument in dependency order.",
+          "kind": "steps"
+        },
+        {
+          "job": "Test a boundary case, counterexample, or alternative argument.",
+          "kind": "comparison"
+        },
+        {
+          "job": "State exactly what has been established and what remains conditional.",
+          "kind": "synthesis"
+        }
+      ],
+      "template_id": "seminar",
+      "title": "Claim and proof seminar"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "audience": "First-year calculus learners who know function notation.",
+  "learning_objective": "Explain and apply the derivative definition while justifying each algebraic transformation and checking the final result.",
+  "narrative_arc": "learning_progression",
+  "output_mode": "mixed",
+  "publication_ready": false,
+  "requires_interactive_model": true,
+  "schema_version": "semantic_lesson_blueprint_v1",
+  "semantic_template": "worked_examples",
+  "slide_blueprints": [
+    {
+      "job": "Pose a representative problem and identify what makes it difficult.",
+      "kind": "opening"
+    },
+    {
+      "job": "Expose the reusable method before calculating.",
+      "kind": "steps"
+    },
+    {
+      "job": "Solve a basic case with every transformation justified.",
+      "kind": "example"
+    },
+    {
+      "job": "Solve a contrasting case and call out the decision points.",
+      "kind": "example"
+    },
+    {
+      "job": "Compare a correct path with a plausible wrong path.",
+      "kind": "comparison"
+    },
+    {
+      "job": "Turn the worked cases into a checkable procedure.",
+      "kind": "synthesis"
+    }
+  ],
+  "title": "Reasoning from the derivative definition"
+}

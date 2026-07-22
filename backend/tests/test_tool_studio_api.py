@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app.api.studio.v1.router import create_studio_router, default_tool_service
 from app.classroom.idempotency import IdempotencyLedger
 from app.tools.adapters.symbolic_math import SymbolicMathAdapter
-from app.tools.contracts import ToolQualityTier
+from app.tools.contracts import ToolQualityTier, ToolScope
 from app.tools.execution import ToolExecutionService
 from app.tools.registry import ToolRegistry
 from app.tools.repository import ToolJobRepository
@@ -91,6 +91,8 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
         "visualization.diagram",
         "visualization.geometry2d",
         "visualization.scene3d",
+        "template.list",
+        "template.instantiate",
         "export.reveal",
         "export.pptx",
         "export.pdf",
@@ -125,6 +127,23 @@ def test_visualization_registry_includes_structured_diagram_media(
     scene = definitions["visualization.scene3d"]
     assert "text/html" in scene.output_media_types
     assert "script" not in scene.input_schema["properties"]
+
+
+def test_template_registry_separates_discovery_from_authoring(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("CLASSROOM_DATA_ROOT", str(tmp_path))
+
+    definitions = {
+        definition.tool_id: definition
+        for definition in default_tool_service().registry.list(category="template")
+    }
+
+    assert set(definitions) == {"template.list", "template.instantiate"}
+    assert definitions["template.list"].required_scope == ToolScope.READ
+    assert definitions["template.instantiate"].required_scope == ToolScope.AUTHOR
+    assert "learning_intent" in definitions["template.list"].input_schema["required"]
+    assert "subject" not in definitions["template.list"].input_schema["properties"]
 
 
 def test_export_media_contracts_support_intent_based_format_selection(

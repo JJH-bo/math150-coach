@@ -2071,6 +2071,169 @@
     },
     {
       "cacheable": true,
+      "category": "template",
+      "description": "Create an authoring blueprint from a verified teaching template without pretending placeholder content is a finished lesson.",
+      "deterministic": true,
+      "execution_mode": "sync",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "audience": {
+            "maxLength": 300,
+            "minLength": 8,
+            "type": "string"
+          },
+          "learning_objective": {
+            "maxLength": 600,
+            "minLength": 16,
+            "type": "string"
+          },
+          "output_mode": {
+            "enum": [
+              "browser",
+              "presentation",
+              "document",
+              "mixed"
+            ],
+            "type": "string"
+          },
+          "template_id": {
+            "enum": [
+              "concept_journey",
+              "seminar",
+              "visual_explainer",
+              "worked_examples"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "template_id",
+          "title",
+          "audience",
+          "learning_objective",
+          "output_mode"
+        ],
+        "type": "object"
+      },
+      "license": "Project-owned",
+      "max_artifact_bytes": 2097152,
+      "max_artifacts": 2,
+      "output_media_types": [
+        "application/json"
+      ],
+      "output_schema": {
+        "properties": {
+          "blueprint": {
+            "type": "object"
+          },
+          "required_next_step": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blueprint",
+          "required_next_step"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "known_verified_template",
+        "opening_to_synthesis_sequence",
+        "no_placeholder_publication",
+        "semantic_lesson_next_step"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.author",
+      "timeout_seconds": 10,
+      "title": "Instantiate a semantic lesson blueprint",
+      "tool_id": "template.instantiate",
+      "upstream_project": "Project semantic lesson template catalog",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
+      "category": "template",
+      "description": "Discover verified lesson structures ranked by learning intent, output mode, and interaction need instead of school subject.",
+      "deterministic": true,
+      "execution_mode": "sync",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "interaction_required": {
+            "type": "boolean"
+          },
+          "learning_intent": {
+            "enum": [
+              "concept_building",
+              "worked_practice",
+              "visual_mechanism",
+              "discussion_proof"
+            ],
+            "type": "string"
+          },
+          "max_results": {
+            "maximum": 4,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "output_mode": {
+            "enum": [
+              "browser",
+              "presentation",
+              "document",
+              "mixed"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "learning_intent"
+        ],
+        "type": "object"
+      },
+      "license": "Project-owned",
+      "max_artifact_bytes": 2097152,
+      "max_artifacts": 2,
+      "output_media_types": [
+        "application/json"
+      ],
+      "output_schema": {
+        "properties": {
+          "recommendations": {
+            "type": "array"
+          },
+          "selection_basis": {
+            "type": "array"
+          }
+        },
+        "required": [
+          "recommendations",
+          "selection_basis"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "intent_based_ranking",
+        "complete_narrative_sequence",
+        "compatible_output_mode",
+        "explicit_interaction_fit"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.read",
+      "timeout_seconds": 10,
+      "title": "Rank teaching templates by learning intent",
+      "tool_id": "template.list",
+      "upstream_project": "Project semantic lesson template catalog",
+      "version": "1.0.0"
+    },
+    {
+      "cacheable": true,
       "category": "visualization",
       "description": "Render bounded node-edge diagrams through Mermaid 11 and real Chromium. The GPT supplies structured nodes and edges rather than executable Mermaid source. Outputs include canonical JSON/source, accessible self-contained SVG/HTML, PNG, alt text, and clipping/pixel/browser QA.",
       "deterministic": true,
@@ -2726,5 +2889,5 @@
       "version": "1.0.0"
     }
   ],
-  "total": 13
+  "total": 15
 }

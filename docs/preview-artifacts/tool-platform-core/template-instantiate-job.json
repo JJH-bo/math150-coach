@@ -1,0 +1,73 @@
+{
+  "argument_hash": "sha256:2a05dc48e33f5c940f49919264069825f0dc60a9c3d2b92815d569045966a5b2",
+  "arguments": {
+    "audience": "First-year calculus learners who know function notation.",
+    "learning_objective": "Explain and apply the derivative definition while justifying each algebraic transformation and checking the final result.",
+    "output_mode": "mixed",
+    "template_id": "worked_examples",
+    "title": "Reasoning from the derivative definition"
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-c438eeb2a5e4436d83187f2f/artifacts/lesson-blueprint.json",
+      "media_type": "application/json",
+      "name": "lesson-blueprint.json",
+      "sha256": "sha256:f6e5eba375ac0ec4f16cf98ee45ab9b610a11ca3489ae23ba90351cf01c167af",
+      "size_bytes": 1230
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T09:29:04.654622Z",
+  "error": null,
+  "finished_at": "2026-07-22T09:29:04.690745Z",
+  "job_id": "tj-c438eeb2a5e4436d83187f2f",
+  "metrics": {
+    "slide_blueprint_count": 6
+  },
+  "required_scope": "studio.author",
+  "result": {
+    "blueprint": {
+      "audience": "First-year calculus learners who know function notation.",
+      "learning_objective": "Explain and apply the derivative definition while justifying each algebraic transformation and checking the final result.",
+      "narrative_arc": "learning_progression",
+      "output_mode": "mixed",
+      "publication_ready": false,
+      "requires_interactive_model": true,
+      "schema_version": "semantic_lesson_blueprint_v1",
+      "semantic_template": "worked_examples",
+      "slide_blueprints": [
+        {
+          "job": "Pose a representative problem and identify what makes it difficult.",
+          "kind": "opening"
+        },
+        {
+          "job": "Expose the reusable method before calculating.",
+          "kind": "steps"
+        },
+        {
+          "job": "Solve a basic case with every transformation justified.",
+          "kind": "example"
+        },
+        {
+          "job": "Solve a contrasting case and call out the decision points.",
+          "kind": "example"
+        },
+        {
+          "job": "Compare a correct path with a plausible wrong path.",
+          "kind": "comparison"
+        },
+        {
+          "job": "Turn the worked cases into a checkable procedure.",
+          "kind": "synthesis"
+        }
+      ],
+      "title": "Reasoning from the derivative definition"
+    },
+    "required_next_step": "author_and_validate_semantic_lesson_v1"
+  },
+  "started_at": "2026-07-22T09:29:04.667441Z",
+  "state": "succeeded",
+  "tool_id": "template.instantiate",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

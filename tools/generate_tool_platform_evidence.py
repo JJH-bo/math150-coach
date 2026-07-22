@@ -523,6 +523,34 @@ def generate(output_root: Path) -> None:
                 timeout_seconds=90,
                 arguments=scene3d_payload(),
             )
+            jobs["template-list"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-visual-browser-template-list-v1",
+                tool_id="template.list",
+                arguments={
+                    "learning_intent": "visual_mechanism",
+                    "output_mode": "browser",
+                    "interaction_required": True,
+                    "max_results": 4,
+                },
+            )
+            jobs["template-instantiate"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-worked-example-template-blueprint-v1",
+                tool_id="template.instantiate",
+                arguments={
+                    "template_id": "worked_examples",
+                    "title": "Reasoning from the derivative definition",
+                    "audience": "First-year calculus learners who know function notation.",
+                    "learning_objective": (
+                        "Explain and apply the derivative definition while justifying "
+                        "each algebraic transformation and checking the final result."
+                    ),
+                    "output_mode": "mixed",
+                },
+            )
             for format_name, tool_id in (
                 ("reveal", "export.reveal"),
                 ("pptx", "export.pptx"),
@@ -603,6 +631,12 @@ def generate(output_root: Path) -> None:
                 write_bytes(output_root / "geometry2d" / artifact_name, content)
             for artifact_name, content in artifacts["scene3d"].items():
                 write_bytes(output_root / "scene3d" / artifact_name, content)
+            for template_job in ("template-list", "template-instantiate"):
+                for artifact_name, content in artifacts[template_job].items():
+                    write_bytes(
+                        output_root / template_job / artifact_name,
+                        content,
+                    )
             for format_name in export_names:
                 for artifact_name, content in artifacts[format_name].items():
                     write_bytes(
