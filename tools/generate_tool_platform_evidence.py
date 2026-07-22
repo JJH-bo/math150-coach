@@ -413,7 +413,47 @@ def generate(output_root: Path) -> None:
                 f"{origin}/api/studio/v1/tools?quality_tier=verified",
                 studio_key=studio_key,
             )
+            workspace = request_json(
+                f"{origin}/api/studio/v1/workspace",
+                studio_key=studio_key,
+            )
+            classroom_draft = next(
+                draft
+                for draft in workspace["drafts"]
+                if draft["package_id"] == "calculus-foundations"
+            )
+            draft_record = request_json(
+                f"{origin}/api/studio/v1/drafts/{classroom_draft['draft_id']}",
+                studio_key=studio_key,
+            )
+            replacement = json.loads(
+                json.dumps(
+                    draft_record["package"]["courses"][0]["chapters"][0][
+                        "modules"
+                    ][0]["segments"][0]["blocks"][0]
+                )
+            )
+            replacement["data"]["markdown"] += (
+                "\n\nThis explanation was checked through a typed Studio patch."
+            )
             jobs = {}
+            jobs["classroom-patch"] = submit_and_wait(
+                origin,
+                studio_key,
+                idempotency_key="evidence-typed-classroom-patch-v1",
+                tool_id="classroom.patch",
+                arguments={
+                    "draft_id": classroom_draft["draft_id"],
+                    "expected_revision": classroom_draft["revision"],
+                    "operations": [
+                        {
+                            "op": "replace_block",
+                            "block_id": replacement["id"],
+                            "block": replacement,
+                        }
+                    ],
+                },
+            )
             jobs["symbolic"] = submit_and_wait(
                 origin,
                 studio_key,
@@ -731,6 +771,11 @@ def generate(output_root: Path) -> None:
             for artifact_name, content in artifacts["page-preview"].items():
                 write_bytes(
                     output_root / "page-preview" / artifact_name,
+                    content,
+                )
+            for artifact_name, content in artifacts["classroom-patch"].items():
+                write_bytes(
+                    output_root / "classroom-patch" / artifact_name,
                     content,
                 )
             for format_name in export_names:

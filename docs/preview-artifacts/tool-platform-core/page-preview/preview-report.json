@@ -1,16 +1,16 @@
 {
   "images": [
     {
-      "bytes": 221170,
-      "channel_variance": 1016.9763737429714,
+      "bytes": 223600,
+      "channel_variance": 1044.306627328206,
       "name": "desktop.png",
-      "unique_colors": 1557
+      "unique_colors": 1588
     },
     {
-      "bytes": 92829,
-      "channel_variance": 1938.6694629453305,
+      "bytes": 89835,
+      "channel_variance": 1983.071455247852,
       "name": "mobile.png",
-      "unique_colors": 1685
+      "unique_colors": 1750
     }
   ],
   "module_id": "limit-core",

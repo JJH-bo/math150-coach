@@ -1,0 +1,116 @@
+{
+  "argument_hash": "sha256:f5627628eabf06eb44df4ccaaad8d9cbb5787083005504fe01bedf043ff11775",
+  "arguments": {
+    "draft_id": "seed-calculus-foundations",
+    "expected_revision": 1,
+    "operations": [
+      {
+        "block": {
+          "data": {
+            "markdown": "极限描述的是变量趋近时，函数值稳定接近什么，而不是只读取一个孤立点。\n\nThis explanation was checked through a typed Studio patch."
+          },
+          "detail_branches": [
+            {
+              "blocks": [
+                {
+                  "data": {
+                    "markdown": "趋近研究的是邻域行为：即使点值不存在或被单独改掉，周围的共同趋势仍然可能保持不变。"
+                  },
+                  "detail_branches": [],
+                  "id": "limit-intro-detail-prose",
+                  "kind": "prose",
+                  "knowledge_point_ids": [
+                    "kp-limit-neighborhood"
+                  ]
+                },
+                {
+                  "data": {
+                    "prompt": "把 x=1 处的点值依次改成 2、100 和不存在，比较极限。",
+                    "steps": [
+                      "先只观察 x≠1 时的曲线 y=x+1",
+                      "三种改法都没有改变 1 附近的曲线",
+                      "所以三种函数在 x→1 时都趋近 2"
+                    ]
+                  },
+                  "detail_branches": [],
+                  "id": "limit-intro-detail-example",
+                  "kind": "worked_example",
+                  "knowledge_point_ids": [
+                    "kp-limit-neighborhood"
+                  ]
+                }
+              ],
+              "bridge_steps": [
+                "先遮住图像上 x=a 的单个点，只观察两侧曲线。",
+                "再任意改变这个点的取值，比较两侧趋近趋势是否变化。"
+              ],
+              "focus_relation": "点值属于单个位置，极限属于去心邻域中的共同趋势。",
+              "id": "limit-intro-detail",
+              "learning_obstacle": "把极限误认为把 a 直接代入函数后得到的点值。",
+              "representation": "counterexample",
+              "return_connection": "回到极限记号时，x→a 表示接近但不要求 x=a。",
+              "title": "为什么不是直接代入",
+              "trigger_question": "为什么函数在 x=a 处没有值，极限却仍然存在？"
+            }
+          ],
+          "id": "limit-intro",
+          "kind": "prose",
+          "knowledge_point_ids": [
+            "kp-limit-neighborhood"
+          ]
+        },
+        "block_id": "limit-intro",
+        "op": "replace_block"
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-cca549e8eb9244e5b62ac897/artifacts/patched-package.json",
+      "media_type": "application/json",
+      "name": "patched-package.json",
+      "sha256": "sha256:e368098c1b5b1f3e8e6128d3fe651bcac5b9072667d9dcfa10b961579cca308b",
+      "size_bytes": 14730
+    },
+    {
+      "download_path": "/api/studio/v1/tool-jobs/tj-cca549e8eb9244e5b62ac897/artifacts/patch-report.json",
+      "media_type": "application/json",
+      "name": "patch-report.json",
+      "sha256": "sha256:50d2561f5407dce5c7b98fe35176342d2c8a248217d50f198fe7fd2819d5c5c5",
+      "size_bytes": 546
+    }
+  ],
+  "cancellation_requested": false,
+  "created_at": "2026-07-22T10:31:13.295480Z",
+  "error": null,
+  "finished_at": "2026-07-22T10:31:13.336002Z",
+  "job_id": "tj-cca549e8eb9244e5b62ac897",
+  "metrics": {
+    "changed_object_count": 1,
+    "operation_count": 1,
+    "package_bytes": 14730,
+    "validation_issue_count": 0
+  },
+  "required_scope": "studio.author",
+  "result": {
+    "applied": false,
+    "candidate_content_hash": "sha256:e30b36cef03d475d77dd4e8bf1121b697d7b7c7a8324baf8df39ff65b4036f94",
+    "changed_ids": [
+      "limit-intro"
+    ],
+    "draft_id": "seed-calculus-foundations",
+    "operation_count": 1,
+    "publish_ready": true,
+    "source_content_hash": "sha256:0b0de9d855c2786a52352f3e69fcb00ed17d35db42fa107f8441f8d876c065bf",
+    "source_revision": 1,
+    "validation": {
+      "issues": [],
+      "passed": true
+    }
+  },
+  "started_at": "2026-07-22T10:31:13.306713Z",
+  "state": "succeeded",
+  "tool_id": "classroom.patch",
+  "tool_version": "1.0.0",
+  "warnings": []
+}

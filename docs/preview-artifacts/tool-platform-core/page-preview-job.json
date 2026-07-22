@@ -10,43 +10,43 @@
   },
   "artifacts": [
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-b2ab4e3d24634bd0bd4b1976/artifacts/preview-request.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-40e53d296fdd4505974d6fc4/artifacts/preview-request.json",
       "media_type": "application/json",
       "name": "preview-request.json",
       "sha256": "sha256:4a1489409e2a55f450e03b236bbaf1789b0b9a559fe9ff54bfd24cffd8c3f85b",
       "size_bytes": 422
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-b2ab4e3d24634bd0bd4b1976/artifacts/desktop.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-40e53d296fdd4505974d6fc4/artifacts/desktop.png",
       "media_type": "image/png",
       "name": "desktop.png",
-      "sha256": "sha256:1627fd12f4caf24141598f20038604722215e87df66b19d03989a813b3bf25a7",
-      "size_bytes": 221170
+      "sha256": "sha256:76fdd73c93919439bb6df5f813cd52b7d8a0913bbfd4ec65f4ecd6a79c13b75a",
+      "size_bytes": 223600
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-b2ab4e3d24634bd0bd4b1976/artifacts/mobile.png",
+      "download_path": "/api/studio/v1/tool-jobs/tj-40e53d296fdd4505974d6fc4/artifacts/mobile.png",
       "media_type": "image/png",
       "name": "mobile.png",
-      "sha256": "sha256:db2fb3097144b9247e7bbd2e51a2928346636f322bca8acd0e82ed651c08a58c",
-      "size_bytes": 92829
+      "sha256": "sha256:63553eaa1ad41eea2420289f21cc92a883306f1d3cbaf1e5d57e21cb9f4673ff",
+      "size_bytes": 89835
     },
     {
-      "download_path": "/api/studio/v1/tool-jobs/tj-b2ab4e3d24634bd0bd4b1976/artifacts/preview-report.json",
+      "download_path": "/api/studio/v1/tool-jobs/tj-40e53d296fdd4505974d6fc4/artifacts/preview-report.json",
       "media_type": "application/json",
       "name": "preview-report.json",
-      "sha256": "sha256:51742898c18ed2883c868661f6438a7a72c88c7bf557a96753bef7f73586abcb",
-      "size_bytes": 1537
+      "sha256": "sha256:b8da09cdb638a081ec9f8aeeb30a7197601b78735703aa643d04e2b86bc014e0",
+      "size_bytes": 1535
     }
   ],
   "cancellation_requested": false,
-  "created_at": "2026-07-22T10:21:23.010556Z",
+  "created_at": "2026-07-22T10:31:24.092193Z",
   "error": null,
-  "finished_at": "2026-07-22T10:21:30.159561Z",
-  "job_id": "tj-b2ab4e3d24634bd0bd4b1976",
+  "finished_at": "2026-07-22T10:31:29.712937Z",
+  "job_id": "tj-40e53d296fdd4505974d6fc4",
   "metrics": {
     "model_expected": true,
     "reveal_steps": 2,
-    "screenshot_bytes": 313999,
+    "screenshot_bytes": 313435,
     "viewport_count": 2
   },
   "required_scope": "studio.render",
@@ -58,16 +58,16 @@
     "validation": {
       "images": [
         {
-          "bytes": 221170,
-          "channel_variance": 1016.9763737429714,
+          "bytes": 223600,
+          "channel_variance": 1044.306627328206,
           "name": "desktop.png",
-          "unique_colors": 1557
+          "unique_colors": 1588
         },
         {
-          "bytes": 92829,
-          "channel_variance": 1938.6694629453305,
+          "bytes": 89835,
+          "channel_variance": 1983.071455247852,
           "name": "mobile.png",
-          "unique_colors": 1685
+          "unique_colors": 1750
         }
       ],
       "module_id": "limit-core",
@@ -114,7 +114,7 @@
     },
     "viewport_count": 2
   },
-  "started_at": "2026-07-22T10:21:23.022866Z",
+  "started_at": "2026-07-22T10:31:24.110696Z",
   "state": "succeeded",
   "tool_id": "page.preview",
   "tool_version": "1.0.0",

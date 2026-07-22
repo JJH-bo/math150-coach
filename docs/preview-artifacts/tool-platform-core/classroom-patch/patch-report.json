@@ -1,0 +1,17 @@
+{
+  "applied": false,
+  "candidate_content_hash": "sha256:e30b36cef03d475d77dd4e8bf1121b697d7b7c7a8324baf8df39ff65b4036f94",
+  "changed_ids": [
+    "limit-intro"
+  ],
+  "draft_id": "seed-calculus-foundations",
+  "next_action": "Call updateClassroomDraft with this package and source_revision.",
+  "operation_count": 1,
+  "publish_ready": true,
+  "source_content_hash": "sha256:0b0de9d855c2786a52352f3e69fcb00ed17d35db42fa107f8441f8d876c065bf",
+  "source_revision": 1,
+  "validation": {
+    "issues": [],
+    "passed": true
+  }
+}

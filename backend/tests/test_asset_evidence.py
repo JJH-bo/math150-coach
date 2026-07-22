@@ -18,7 +18,7 @@ def test_checked_in_asset_evidence_is_real_and_secret_free() -> None:
     transformed = read_json(EVIDENCE / "asset-transform-job.json")
     browser = read_json(EVIDENCE / "asset-transform" / "browser-report.json")
 
-    assert registry["total"] == 18
+    assert registry["total"] == 19
     assert ingest["state"] == transformed["state"] == "succeeded"
     assert ingest["result"]["validation"]["source_kind"] == "studio_job_artifact"
     assert transformed["result"]["asset"]["uri"].startswith(

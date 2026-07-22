@@ -423,6 +423,147 @@
       "version": "1.0.0"
     },
     {
+      "cacheable": false,
+      "category": "classroom",
+      "description": "Read one exact classroom draft revision and apply typed block, module, or asset-declaration edits to a candidate copy. Emits the complete structurally valid candidate package and semantic validation report. This tool never mutates the draft; apply the candidate with the existing revision-safe updateClassroomDraft Action after inspecting the report.",
+      "deterministic": true,
+      "execution_mode": "sync",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "draft_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "properties": {
+                "assets": {
+                  "type": "array"
+                },
+                "block": {
+                  "type": "object"
+                },
+                "block_id": {
+                  "type": "string"
+                },
+                "container_id": {
+                  "type": "string"
+                },
+                "index": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "module": {
+                  "type": "object"
+                },
+                "module_id": {
+                  "type": "string"
+                },
+                "op": {
+                  "enum": [
+                    "replace_block",
+                    "insert_block",
+                    "remove_block",
+                    "replace_module",
+                    "replace_assets"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "op"
+              ],
+              "type": "object"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "draft_id",
+          "expected_revision",
+          "operations"
+        ],
+        "type": "object"
+      },
+      "license": "Project-owned / MIT",
+      "max_artifact_bytes": 33554432,
+      "max_artifacts": 2,
+      "output_media_types": [
+        "application/json"
+      ],
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "applied": {
+            "type": "boolean"
+          },
+          "candidate_content_hash": {
+            "type": "string"
+          },
+          "changed_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "draft_id": {
+            "type": "string"
+          },
+          "operation_count": {
+            "type": "integer"
+          },
+          "publish_ready": {
+            "type": "boolean"
+          },
+          "source_content_hash": {
+            "type": "string"
+          },
+          "source_revision": {
+            "type": "integer"
+          },
+          "validation": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "draft_id",
+          "source_revision",
+          "source_content_hash",
+          "candidate_content_hash",
+          "operation_count",
+          "changed_ids",
+          "applied",
+          "publish_ready",
+          "validation"
+        ],
+        "type": "object"
+      },
+      "quality_gates": [
+        "exact_draft_revision",
+        "typed_id_targeted_operations",
+        "unique_existing_targets",
+        "replacement_identity_preserved",
+        "structurally_valid_candidate_package",
+        "semantic_publish_validation_reported",
+        "non_mutating_candidate_generation",
+        "content_hash_diff"
+      ],
+      "quality_tier": "verified",
+      "required_scope": "studio.author",
+      "timeout_seconds": 30,
+      "title": "Prepare a typed revision-safe classroom page patch",
+      "tool_id": "classroom.patch",
+      "upstream_project": "Project Classroom Package v1 and Pydantic v2",
+      "version": "1.0.0"
+    },
+    {
       "cacheable": true,
       "category": "export",
       "description": "Create one offline-capable lesson HTML file with embedded presentation runtime and mathematics, per-slide evidence, and a strict external-resource and content-identity audit.",
@@ -3423,5 +3564,5 @@
       "version": "1.0.0"
     }
   ],
-  "total": 18
+  "total": 19
 }
