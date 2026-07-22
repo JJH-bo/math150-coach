@@ -48,6 +48,10 @@ download hash-verified artifacts. The current verified pack includes:
 - `visualization.scene3d@1.0.0` for bounded Three.js surfaces, vectors, and
   points in self-contained WebGL lessons, with camera controls, frustum checks,
   GPU/runtime evidence, and before/after orbit screenshots;
+- `visualization.animation@1.0.0` for declarative Manim Community 0.20.1
+  timelines over axes, sampled curves, points, vectors, shapes, and Unicode
+  mathematical labels, with verified MP4/WebM/GIF, timed captions, poster,
+  frame sheet, decoded media metadata, nonblank pixels, and state-change gates;
 - `asset.ingest@1.0.0` for verified PNG/JPEG/WebP upload or prior-job artifact
   ingestion into an immutable, content-addressed classroom asset repository;
 - `asset.transform@1.0.0` for bounded contain/cover image resizing, format
@@ -121,6 +125,13 @@ package and patch report, repairs any reported semantic issue, then applies the
 complete candidate through `updateClassroomDraft` using the same expected
 revision. This keeps editing compositional without bypassing revision safety or
 the publish validator.
+
+Animation input is declarative: the GPT supplies bounded scene objects and a
+captioned timeline, never Python/Manim source, shell commands, URLs, or paths.
+Use MP4 for broad distribution, WebM for efficient web delivery, and GIF only
+for short silent previews. Every representative frame must contain meaningful
+visual information and the sampled timeline must show at least three distinct
+states.
 
 ## Learning Package
 

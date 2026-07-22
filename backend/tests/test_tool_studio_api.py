@@ -97,6 +97,7 @@ def test_default_registry_exposes_complete_verified_math_plot_and_export_pack(
         "asset.transform",
         "page.preview",
         "classroom.patch",
+        "visualization.animation",
         "export.reveal",
         "export.pptx",
         "export.pdf",
@@ -120,6 +121,7 @@ def test_visualization_registry_includes_structured_diagram_media(
         "visualization.diagram",
         "visualization.geometry2d",
         "visualization.scene3d",
+        "visualization.animation",
     }
     diagram = definitions["visualization.diagram"]
     assert "image/svg+xml" in diagram.output_media_types
@@ -131,6 +133,14 @@ def test_visualization_registry_includes_structured_diagram_media(
     scene = definitions["visualization.scene3d"]
     assert "text/html" in scene.output_media_types
     assert "script" not in scene.input_schema["properties"]
+    animation = definitions["visualization.animation"]
+    assert animation.upstream_project == "Manim Community 0.20.1"
+    assert animation.input_schema["properties"]["output_format"]["enum"] == [
+        "mp4",
+        "webm",
+        "gif",
+    ]
+    assert "script" not in animation.input_schema["properties"]
 
 
 def test_template_registry_separates_discovery_from_authoring(

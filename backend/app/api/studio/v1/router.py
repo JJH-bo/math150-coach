@@ -89,6 +89,7 @@ from app.tools.adapters.package_export import PackageExportAdapter
 from app.tools.adapters.asset_images import AssetIngestAdapter, AssetTransformAdapter
 from app.tools.adapters.page_preview import PagePreviewAdapter
 from app.tools.adapters.classroom_patch import ClassroomPatchAdapter
+from app.tools.adapters.animation_visualization import AnimationAdapter
 from app.tools.contracts import (
     ToolDefinition,
     ToolJob,
@@ -200,6 +201,7 @@ def default_tool_service() -> ToolExecutionService:
                         asset_resolver=assets.get,
                     ),
                 ),
+                AnimationAdapter(),
             ]
         ),
         jobs,

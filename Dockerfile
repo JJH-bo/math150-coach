@@ -11,15 +11,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     CLASSROOM_DATA_ROOT=/var/data \
     MODEL_PREVIEW_NODE=/usr/local/bin/node \
     MODEL_PREVIEW_BROWSER=/usr/bin/chromium \
+    MANIM_PYTHON=/usr/local/bin/python \
     NODE_PATH=/app/node_modules \
     PYTHON_EXECUTABLE=/usr/local/bin/python
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
+        build-essential \
         chromium \
         fonts-dejavu-core \
         fonts-noto-cjk \
+        libcairo2-dev \
+        libpango1.0-dev \
+        python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=node-runtime /usr/local /usr/local

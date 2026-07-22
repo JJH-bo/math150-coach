@@ -69,6 +69,16 @@
 
 下载 `patched-package.json` 与 `patch-report.json`：若 `publish_ready=false`，先按 validation issues 继续修补；若通过，则把完整候选包连同原 `expected_revision` 交给 `updateClassroomDraft` 原子写入。若 revision 已变化，重新读取最新草稿并在新版本上重放仍然适用的类型化修改，不覆盖并发结果。
 
+### 变化过程优先使用结构化数学动画
+
+当知识关键在于“怎样变化、趋近、移动、变形或逐步建立”，静态图不足以表达机制时，发现并调用 `visualization.animation`。只提交工具 Schema 声明的坐标轴、采样曲线、点、线、向量、形状、Unicode 数学标签和时间线动作；不得提交 Python、Manim 源码、Shell、URL 或路径。每个动作都要写能独立理解该时段教学意义的 caption，整段提供能替代视觉过程的 alt text。
+
+- 默认分发选择 MP4。
+- 网页内更重视压缩与透明的现代浏览器交付可选 WebM。
+- GIF 只用于短、静音、无需精确帧率的预览，不作为完整课程视频的默认格式。
+
+必须检查 `validation.json`：Manim 版本、尺寸、帧率/格式容差、可解码帧数、代表帧非空、至少三个不同场景状态都通过；同时保留 `poster.png`、`frame-sheet.png`、`captions.vtt` 和 `alt.txt`。若动画只是装饰或无法比静态图更清楚地揭示关系，就不要生成。
+
 ## 三、先证明全章覆盖，再写课堂
 
 发布包必须保留并填写以下证据：
